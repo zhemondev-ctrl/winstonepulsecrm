@@ -215,6 +215,26 @@ export function MaintenanceProfileNotice() {
   );
 }
 
+/** On phones the bill banner starts as a small pill so it never covers bottom buttons. */
+function phoneOpenClass(open: boolean) {
+  return open ? "mb-12 sm:mb-0" : "hidden sm:block";
+}
+
+function PhonePill({ open, setOpen, tone }: { open: boolean; setOpen: (v: boolean) => void; tone: "red" | "amber" }) {
+  return (
+    <button
+      type="button"
+      onClick={() => setOpen(!open)}
+      aria-label={open ? "Hide bill notice" : "Show bill notice"}
+      className={`fixed bottom-2 left-2 z-[61] rounded-full border px-2.5 py-1 text-[11px] font-bold shadow-sm sm:hidden ${
+        tone === "red" ? "border-destructive/50 bg-destructive text-destructive-foreground" : "border-warning/50 bg-warning text-warning-foreground"
+      }`}
+    >
+      {open ? "✕" : "🔔 Bill"}
+    </button>
+  );
+}
+
 const OPEN_PATHS = ["/system", "/tech", "/auth", "/service-bill-alert", "/service-bill-unlock"];
 
 /** CRM-wide banner before the lock, full lock screen after it. */
@@ -222,6 +242,7 @@ export function MaintenanceGate() {
   const t = useT();
   const { data } = useMaintenance();
   const path = useRouterState({ select: (r) => r.location.pathname });
+  const [phoneOpen, setPhoneOpen] = useState(false);
   if (!data) return null;
   if (OPEN_PATHS.some((p) => path.startsWith(p))) return null;
 
@@ -264,14 +285,17 @@ export function MaintenanceGate() {
             });
   const strong = data.stage !== "upcoming";
   return (
+    <>
+    <PhonePill open={phoneOpen} setOpen={setPhoneOpen} tone={strong ? "red" : "amber"} />
     <div
-      className={`fixed inset-x-0 bottom-0 z-[60] px-3 py-2 text-center text-xs font-semibold sm:text-sm ${
+      className={`${phoneOpenClass(phoneOpen)} fixed inset-x-0 bottom-0 z-[60] px-3 py-2 text-center text-xs font-semibold sm:text-sm ${
         strong ? "bg-destructive text-destructive-foreground" : "bg-warning/90 text-warning-foreground"
       }`}
       role="status"
     >
       {text}
     </div>
+    </>
   );
 }
 
@@ -301,11 +325,13 @@ function InvoiceDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (v
 function AmberReminderBanner({ period }: { period: string }) {
   const [hidden, setHidden] = useState(true);
   const [open, setOpen] = useState(false);
+  const [phoneOpen, setPhoneOpen] = useState(false);
   useEffect(() => setHidden(amberDismissed(period)), [period]);
   if (hidden) return <InvoiceDialog open={open} onOpenChange={setOpen} />;
   return (
     <>
-      <div role="status" className="fixed inset-x-0 bottom-0 z-[60] border-t border-warning/50 bg-warning/15 px-3 py-2 text-xs backdrop-blur sm:text-sm">
+      <PhonePill open={phoneOpen} setOpen={setPhoneOpen} tone="amber" />
+      <div role="status" className={`${phoneOpenClass(phoneOpen)} fixed inset-x-0 bottom-0 z-[60] border-t border-warning/50 bg-warning/15 px-3 py-2 text-xs backdrop-blur sm:text-sm`}>
         <div className="mx-auto flex max-w-5xl flex-wrap items-center gap-2">
           <p className="min-w-0 flex-1">
             <b className="text-warning">Subscription Reminder</b> — Your monthly invoice for {ARCH_PLAN_NAME} ({usd(ARCH_TOTAL_CENTS)} USD) is available. Payment must be verified before 15 {dhakaMonthName()} 00:00 Asia/Dhaka.
@@ -338,6 +364,7 @@ function UpcomingInvoiceWidget() {
 function UrgentRenewal({ period, admin, paymentStatus }: { period: string; admin: boolean; paymentStatus: string }) {
   const [invoice, setInvoice] = useState(false);
   const [modal, setModal] = useState(false);
+  const [phoneOpen, setPhoneOpen] = useState(false);
   useEffect(() => {
     if (admin && firstRedModalThisSession(period)) setModal(true);
   }, [admin, period]);
@@ -346,7 +373,8 @@ function UrgentRenewal({ period, admin, paymentStatus }: { period: string; admin
     paymentStatus === "pending" ? "Verification Pending" : paymentDueLabel();
   return (
     <>
-      <div role="alert" className="fixed inset-x-0 bottom-0 z-[60] bg-destructive px-3 py-2 text-xs text-destructive-foreground sm:text-sm">
+      <PhonePill open={phoneOpen} setOpen={setPhoneOpen} tone="red" />
+      <div role="alert" className={`${phoneOpenClass(phoneOpen)} fixed inset-x-0 bottom-0 z-[60] bg-destructive px-3 py-2 text-xs text-destructive-foreground sm:text-sm`}>
         <div className="mx-auto flex max-w-5xl flex-wrap items-center gap-2">
           <p className="min-w-0 flex-1">
             <b>Urgent Payment Notice</b> — Your {ARCH_PLAN_NAME} subscription requires payment. The final access deadline is 15 {month} at 00:00 Asia/Dhaka. If the invoice remains unpaid and unverified, the subscribed workspace will be locked automatically.
