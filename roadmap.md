@@ -1,6 +1,7 @@
 # Roadmap
 
 ## Open tasks
+20. Workspace move (Nov 10): re-link Google Drive and Google Sheets in the new workspace and verify each with a read.
 19. Scorecard source drilldown:
    - [ ] Source counts open an authority-only current-owner lead list using the scorecard bucket classifier, search, pagination and phone-safe display; read-only, no assignment changes.
 18. Cold database workflow and scorecard source breakdown:
