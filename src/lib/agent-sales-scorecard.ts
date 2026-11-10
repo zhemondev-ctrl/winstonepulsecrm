@@ -21,6 +21,47 @@ export function agentSourceLeads<T extends { id: string; assigned_to: string | n
   return unique(leads).filter(l => l.assignment_source !== "duplicate_skipped" && leadOwner(l) === agentId && leadSourceBucket(l) === bucket);
 }
 
+export type SourceTrendPoint = { period: string; companyDatabase: number; selfAssigned: number; unknownSource: number; otherSource: number };
+export type SourceTrend = { granularity: "day" | "week"; points: SourceTrendPoint[]; undated: Record<LeadSourceBucket, number>; outsideRange: number };
+type TrendLead = { id: string; assigned_to: string | null; assigned_agent_id: string | null; source?: string | null; assignment_source: string | null };
+type TrendAssignment = { id: string; lead_id: string; to_agent_id: string | null; created_at: string };
+const dhakaDay = (iso: string) => new Date(Date.parse(iso) + 6 * 3_600_000).toISOString().slice(0, 10);
+const addDays = (day: string, n: number) => new Date(Date.parse(`${day}T00:00:00Z`) + n * 864e5).toISOString().slice(0, 10);
+
+/**
+ * Current-portfolio leads, dated by the latest saved assignment to the current
+ * owner (Dhaka day). Leads without such a record are reported as undated —
+ * never placed on an invented date. Weekly periods start on the range's first day.
+ */
+export function agentSourceTrend(leads: TrendLead[], assignments: TrendAssignment[], agentId: string, from: string, to: string): SourceTrend {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(from) || !/^\d{4}-\d{2}-\d{2}$/.test(to) || from > to) throw new Error("Invalid trend dates");
+  const days = Math.round((Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / 864e5) + 1;
+  const granularity = days > 31 ? "week" : "day";
+  const step = granularity === "week" ? 7 : 1;
+  const points: SourceTrendPoint[] = [];
+  for (let i = 0; i < days; i += step) points.push({ period: addDays(from, i), companyDatabase: 0, selfAssigned: 0, unknownSource: 0, otherSource: 0 });
+  const latest = new Map<string, string>();
+  for (const a of unique(assignments)) {
+    if (a.to_agent_id !== agentId) continue;
+    const prior = latest.get(a.lead_id);
+    if (!prior || a.created_at > prior) latest.set(a.lead_id, a.created_at);
+  }
+  const undated: Record<LeadSourceBucket, number> = { companyDatabase: 0, selfAssigned: 0, unknownSource: 0, otherSource: 0 };
+  let outsideRange = 0;
+  for (const lead of unique(leads)) {
+    if (lead.assignment_source === "duplicate_skipped" || leadOwner(lead) !== agentId) continue;
+    const bucket = leadSourceBucket(lead);
+    const at = latest.get(lead.id);
+    if (!at) { undated[bucket]++; continue; }
+    const day = dhakaDay(at);
+    if (day < from || day > to) { outsideRange++; continue; }
+    const index = Math.floor(Math.round((Date.parse(`${day}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / 864e5) / step);
+    const point = points[index];
+    if (point) point[bucket]++;
+  }
+  return { granularity, points, undated, outsideRange };
+}
+
 /** Current portfolio denominator; period outcomes; confirmed same-agent Hot → rejection only. */
 export function agentSalesScorecards(input: ScorecardInput, start: string, end: string): AgentSalesScorecard[] {
   if (!Number.isFinite(Date.parse(start)) || !Number.isFinite(Date.parse(end)) || start >= end) throw new Error("Invalid scorecard dates");

@@ -1,9 +1,11 @@
 # Roadmap
 
 ## Open tasks
+21. Scorecard source trends:
+   - [x] Per-agent Trend window: stacked daily (weekly above 31 days) bars per source, dated by latest saved assignment to current owner; undated and outside-period counts shown. 7 tests; real check: Debbroto 297 in period + 19 undated + 278 earlier = 594 portfolio; phone no overflow.
 20. Workspace move (Nov 10): re-link Google Drive and Google Sheets in the new workspace and verify each with a read.
 19. Scorecard source drilldown:
-   - [ ] Source counts open an authority-only current-owner lead list using the scorecard bucket classifier, search, pagination and phone-safe display; read-only, no assignment changes.
+   - [x] Source counts open an authority-only, read-only current-owner lead list (same classifier, search, 25/page). Real check: Debbroto company database 449 = list 449, 18 pages; self-assigned 15 on phone, no overflow.
 18. Cold database workflow and scorecard source breakdown:
    - [x] Delivered comprehensive Bangla workflow document in Files; three-attempt SOP remains proposed, explicit opt-outs preserved, no new universal Closed blocking.
    - [x] Added current-portfolio company database/self/unknown/other known source buckets to scorecards and CSV; concrete source tests pass; real HQ shows 10 agents and phone cards without sideways overflow.

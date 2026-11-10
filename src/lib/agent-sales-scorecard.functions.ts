@@ -10,6 +10,26 @@ const input = z.object({ adminToken: z.string().nullable().optional(), from: day
   .refine(v => Date.parse(v.to) - Date.parse(v.from) < 92 * 864e5, "Choose at most 92 days");
 
 const sourceInput = z.object({ adminToken: z.string().nullable().optional(), agentId: z.string().uuid(), bucket: z.enum(["companyDatabase", "selfAssigned", "unknownSource", "otherSource"]) });
+const trendInput = z.object({ adminToken: z.string().nullable().optional(), agentId: z.string().uuid(), from: day, to: day })
+  .refine(v => v.from <= v.to, "From must not follow To")
+  .refine(v => Date.parse(v.to) - Date.parse(v.from) < 92 * 864e5, "Choose at most 92 days");
+export const readAgentSourceTrend = createServerFn({ method: "POST" })
+  .inputValidator((value: unknown) => trendInput.parse(value))
+  .handler(async ({ data }) => {
+    const { resolveCaller } = await import("./access.server");
+    const caller = await resolveCaller(data.adminToken);
+    if (caller.scope !== "authority") throw new Error("Executive HQ or IT access required");
+    const { supabaseAdmin: db } = await import("@/integrations/supabase/client.server");
+    const { pageAllParallel } = await import("./page-all");
+    const { agentSourceTrend } = await import("./agent-sales-scorecard");
+    const [leads, assignments] = await Promise.all([
+      pageAllParallel((a,b) => db.from("leads").select("id,source,assignment_source,assigned_to,assigned_agent_id")
+        .or(`assigned_to.eq.${data.agentId},and(assigned_to.is.null,assigned_agent_id.eq.${data.agentId})`).order("id").range(a,b)),
+      pageAllParallel((a,b) => db.from("lead_assignments").select("id,lead_id,to_agent_id,created_at").eq("to_agent_id", data.agentId).order("id").range(a,b)),
+    ]);
+    if (leads.error || assignments.error) throw new Error("Source trend unavailable. Please refresh.");
+    return { ...agentSourceTrend(leads.data ?? [], assignments.data ?? [], data.agentId, data.from, data.to), generatedAt: new Date().toISOString() };
+  });
 export const readAgentSourceLeads = createServerFn({ method: "POST" })
   .inputValidator((value: unknown) => sourceInput.parse(value))
   .handler(async ({ data }) => {

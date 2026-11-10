@@ -3,10 +3,15 @@ const state=vi.hoisted(()=>({scope:"authority",readError:false,reads:0}));
 vi.mock("@tanstack/react-start",()=>({createServerFn:()=>({inputValidator:(validate:(v:unknown)=>unknown)=>({handler:(fn:(v:unknown)=>unknown)=>(args:{data:unknown})=>fn({data:validate(args.data)})})})}));
 vi.mock("@/lib/access.server",()=>({resolveCaller:async()=>({scope:state.scope})}));
 vi.mock("@/integrations/supabase/client.server",()=>({supabaseAdmin:{from:()=>{state.reads++;const q:Record<string,unknown>={};for(const key of ["select","in","eq","lt","gte","order","or"])q[key]=()=>q;q.range=async()=>({data:[],error:state.readError?{message:"private database detail"}:null});return q;}}}));
-import { readAgentSalesScorecards, readAgentSourceLeads } from "@/lib/agent-sales-scorecard.functions";
+import { readAgentSalesScorecards, readAgentSourceLeads, readAgentSourceTrend } from "@/lib/agent-sales-scorecard.functions";
 const run=readAgentSalesScorecards as unknown as (args:{data:{from:string;to:string}})=>Promise<{rows:unknown[]}>;
 const data={from:"2026-11-01",to:"2026-11-10"};
 describe("sales scorecard authority boundary",()=>{
+ const trend=readAgentSourceTrend as unknown as (args:{data:{agentId:string;from:string;to:string}})=>Promise<{points:unknown[]}>;
+ const trendData={agentId:"00000000-0000-4000-8000-000000000001",from:"2026-11-01",to:"2026-11-10"};
+ it.each(["agent","none"])("source trend refuses %s before database access",async scope=>{state.scope=scope;state.reads=0;await expect(trend({data:trendData})).rejects.toThrow("Executive HQ or IT access required");expect(state.reads).toBe(0);});
+ it("source trend returns one point per selected Dhaka day for authority",async()=>{state.scope="authority";state.readError=false;expect((await trend({data:trendData})).points).toHaveLength(10);});
+ it("source trend fails closed on read errors and rejects ranges over 92 days",async()=>{state.scope="authority";state.readError=true;await expect(trend({data:trendData})).rejects.toThrow("Source trend unavailable");state.readError=false;state.reads=0;expect(()=>trend({data:{...trendData,from:"2026-01-01"}})).toThrow();expect(state.reads).toBe(0);});
  const detail=readAgentSourceLeads as unknown as (args:{data:{agentId:string;bucket:string}})=>Promise<{rows:unknown[]}>;
  const source={agentId:"00000000-0000-4000-8000-000000000001",bucket:"companyDatabase"};
  it.each(["agent","none"])("source drilldown refuses %s before database access",async scope=>{state.scope=scope;state.reads=0;await expect(detail({data:source})).rejects.toThrow("Executive HQ or IT access required");expect(state.reads).toBe(0);});
