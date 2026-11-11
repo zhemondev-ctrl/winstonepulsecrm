@@ -1,6 +1,7 @@
 # Roadmap
 
 ## Open tasks
+- [ ] Add a safe own-account CRM password change form reachable from IT access; preserve PIN and role boundaries, never store/log passwords, and do not change Gmail credentials or live account passwords during testing.
 - [x] Fix failed-call cadence through the shared report path without rewriting old reports; attempt and idempotency regression checks use isolated mocks.
 - [x] Resolve signed-in HQ loading and verify the private approval PDF download: original v2 report, 217077 bytes, exact SHA-256 match; no click errors. No publication or historical lead backfill.
 - [x] Extend meeting approvals with HQ-recorded MD decision dates and an item status tracker; preserve recorded timestamps and final locks. No meeting decisions or test records written to production.
