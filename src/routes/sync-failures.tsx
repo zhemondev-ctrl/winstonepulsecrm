@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { getAdminToken } from "@/lib/local-session";
 import { listAndroidSyncFailures } from "@/lib/android-sync-failures.functions";
+import { CallSyncAuditLog } from "@/components/crm/sync/CallSyncAuditLog";
 import {
   ITEM_LABEL,
   NEXT_STEP,
@@ -57,13 +58,14 @@ type RangeKey = (typeof RANGES)[number]["value"];
 function Board() {
   const listFn = useServerFn(listAndroidSyncFailures);
   const [range, setRange] = useState<RangeKey>("7d");
+  const window_ = useMemo(() => {
+    const to = new Date();
+    const from = new Date(to.getTime() - RANGES.find((r) => r.value === range)!.ms);
+    return { fromIso: from.toISOString(), toIso: to.toISOString() };
+  }, [range]);
   const q = useQuery({
     queryKey: ["android-sync-failures", range],
-    queryFn: () => {
-      const to = new Date();
-      const from = new Date(to.getTime() - RANGES.find((r) => r.value === range)!.ms);
-      return listFn({ data: { adminToken: getAdminToken(), fromIso: from.toISOString(), toIso: to.toISOString() } });
-    },
+    queryFn: () => listFn({ data: { adminToken: getAdminToken(), ...window_ } }),
     staleTime: 30_000,
   });
   const s = useMemo(() => summarizeSyncFailures(q.data?.events ?? []), [q.data]);
@@ -89,6 +91,8 @@ function Board() {
           </Button>
         </div>
       </div>
+
+      <CallSyncAuditLog fromIso={window_.fromIso} toIso={window_.toIso} />
 
       {q.isLoading ? (
         <div role="status" className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="size-4 animate-spin" /> Loading sync failures…</div>
