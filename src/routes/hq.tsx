@@ -4,6 +4,7 @@ import { LeadPoolNotice } from "@/components/crm/hq/LeadPoolNotice";
 import { AgentTargetPanel } from "@/components/crm/hq/AgentTargetPanel";
 import { AgentKpiDashboard } from "@/components/crm/hq/AgentKpiDashboard";
 import { AgentSalesScorecards } from "@/components/crm/hq/AgentSalesScorecards";
+import { MdApprovalReportButton } from "@/components/crm/hq/MdApprovalReportButton";
 import { DistributionFailurePanel } from "@/components/crm/DistributionFailurePanel";
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { ChevronDown, ShieldCheck } from "lucide-react";
@@ -218,6 +219,7 @@ function ControlBoard() {
           <div className="min-w-0 flex-1 rounded-2xl border border-border bg-card p-4 text-card-foreground shadow-sm sm:p-6">
             <MaintenanceProfileNotice />
             <Suspense fallback={null}><SiteVisitAlerts /></Suspense>
+            {tab === "overview" && <div className="mb-6"><MdApprovalReportButton /></div>}
             {tab === "kpis" && <div className="space-y-6"><AgentSalesScorecards /><AgentKpiDashboard /></div>}
             {tab === "overview" && (
               <div className="space-y-8">
