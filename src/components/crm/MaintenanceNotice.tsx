@@ -217,7 +217,7 @@ export function MaintenanceProfileNotice() {
 
 /** On phones the bill banner starts as a small pill so it never covers bottom buttons. */
 function phoneOpenClass(open: boolean) {
-  return open ? "mb-12 sm:mb-0" : "hidden sm:block";
+  return open ? "mb-12 md:mb-0" : "hidden md:block";
 }
 
 function PhonePill({ open, setOpen, tone }: { open: boolean; setOpen: (v: boolean) => void; tone: "red" | "amber" }) {
@@ -226,7 +226,7 @@ function PhonePill({ open, setOpen, tone }: { open: boolean; setOpen: (v: boolea
       type="button"
       onClick={() => setOpen(!open)}
       aria-label={open ? "Hide bill notice" : "Show bill notice"}
-      className={`fixed bottom-2 left-2 z-[61] rounded-full border px-2.5 py-1 text-[11px] font-bold shadow-sm sm:hidden ${
+      className={`fixed bottom-2 left-2 z-[61] rounded-full border px-2.5 py-1 text-[11px] font-bold shadow-sm md:hidden ${
         tone === "red" ? "border-destructive/50 bg-destructive text-destructive-foreground" : "border-warning/50 bg-warning text-warning-foreground"
       }`}
     >
@@ -331,10 +331,10 @@ function AmberReminderBanner({ period }: { period: string }) {
   return (
     <>
       <PhonePill open={phoneOpen} setOpen={setPhoneOpen} tone="amber" />
-      <div role="status" className={`${phoneOpenClass(phoneOpen)} fixed inset-x-0 bottom-0 z-[60] border-t border-warning/50 bg-warning/15 px-3 py-2 text-xs backdrop-blur sm:text-sm`}>
-        <div className="mx-auto flex max-w-5xl flex-wrap items-center gap-2">
-          <p className="min-w-0 flex-1">
-            <b className="text-warning">Subscription Reminder</b> — Your monthly invoice for {ARCH_PLAN_NAME} ({usd(ARCH_TOTAL_CENTS)} USD) is available. Payment must be verified before 15 {dhakaMonthName()} 00:00 Asia/Dhaka.
+      <div role="status" className={`${phoneOpenClass(phoneOpen)} fixed inset-x-0 bottom-0 z-[60] border-t border-warning/50 bg-warning/15 px-3 py-1.5 text-xs backdrop-blur`}>
+        <div className="mx-auto flex max-w-5xl items-center gap-2">
+          <p className="min-w-0 flex-1 truncate">
+            <b className="text-warning">Subscription Reminder</b> — {usd(ARCH_TOTAL_CENTS)} USD — verify before 15 {dhakaMonthName()}, 00:00 Dhaka.
           </p>
           <Button size="sm" variant="outline" className="h-7" onClick={() => setOpen(true)}>View Invoice</Button>
           <Button size="sm" className="h-7" onClick={() => setOpen(true)}>Pay Now</Button>
@@ -374,12 +374,12 @@ function UrgentRenewal({ period, admin, paymentStatus }: { period: string; admin
   return (
     <>
       <PhonePill open={phoneOpen} setOpen={setPhoneOpen} tone="red" />
-      <div role="alert" className={`${phoneOpenClass(phoneOpen)} fixed inset-x-0 bottom-0 z-[60] bg-destructive px-3 py-2 text-xs text-destructive-foreground sm:text-sm`}>
-        <div className="mx-auto flex max-w-5xl flex-wrap items-center gap-2">
-          <p className="min-w-0 flex-1">
-            <b>Urgent Payment Notice</b> — Your {ARCH_PLAN_NAME} subscription requires payment. The final access deadline is 15 {month} at 00:00 Asia/Dhaka. If the invoice remains unpaid and unverified, the subscribed workspace will be locked automatically.
+      <div role="alert" className={`${phoneOpenClass(phoneOpen)} fixed inset-x-0 bottom-0 z-[60] bg-destructive px-3 py-1.5 text-xs text-destructive-foreground`}>
+        <div className="mx-auto flex max-w-5xl items-center gap-2">
+          <p className="min-w-0 flex-1 truncate">
+            <b>Urgent Payment Notice</b> — verify before 15 {month}, 00:00 Dhaka<span className="hidden lg:inline"> or the workspace locks automatically</span>.
           </p>
-          <Button size="sm" variant="secondary" className="h-7" onClick={() => setInvoice(true)}>Complete Payment Immediately</Button>
+          <Button size="sm" variant="secondary" className="h-7" onClick={() => setInvoice(true)}>Pay now</Button>
         </div>
       </div>
       <Dialog open={modal} onOpenChange={setModal}>
