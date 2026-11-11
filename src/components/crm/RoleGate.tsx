@@ -48,7 +48,7 @@ export function RoleGate({
       </div>
       <div className="flex flex-wrap justify-center gap-2">
         {pinAllowed && (
-          <Button size="lg" onClick={() => setPinOpen(true)}>
+          surface === "system" ? <Button size="lg" asChild><Link to="/it-access"><Lock className="size-4" />পিন দিন</Link></Button> : <Button size="lg" onClick={() => setPinOpen(true)}>
             <Lock className="size-4" /> পিন দিন
           </Button>
         )}

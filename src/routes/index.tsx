@@ -231,7 +231,7 @@ function EntryHall() {
             illustration={<span className="grid h-16 w-full shrink-0 place-items-center rounded-md bg-secondary text-gold sm:h-24 sm:w-24 lg:w-28"><ShieldCheck className="size-10" /></span>}
             title="IT Console"
             subtitle="Secure administration"
-            onClick={() => openPin("/system")}
+            onClick={() => void navigate({ to: "/it-access" })}
           />
         </div>
 
