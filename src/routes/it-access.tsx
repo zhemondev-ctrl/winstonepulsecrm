@@ -4,6 +4,7 @@ import { ArrowLeft, KeyRound, Loader2, LogIn, ShieldCheck } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { AdminPinDialog } from "@/components/crm/AdminPinDialog";
+import { ItOwnPasswordForm } from "@/components/crm/ItOwnPasswordForm";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -30,6 +31,8 @@ function ItAccess() {
   const [pinVerified, setPinVerified] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [changePassword, setChangePassword] = useState(false);
+  const [operatorVerified, setOperatorVerified] = useState(false);
   const login = useMutation({
     mutationFn: async () => {
       const tokens = await signInWithIdentifier({ data: { identifier: email.trim(), password } });
@@ -43,11 +46,11 @@ function ItAccess() {
         throw new Error("এই অ্যাকাউন্টের IT Operator অনুমতি নেই।");
       }
     },
-    onSuccess: () => { toast.success("IT Operator signed in"); void navigate({ to: "/system" }); },
+    onSuccess: () => { toast.success("IT Operator signed in"); if (changePassword) setOperatorVerified(true); else void navigate({ to: "/system" }); },
     onError: (error: Error) => { setPassword(""); toast.error(error.message); },
   });
   return <main className="mx-auto min-h-dvh max-w-md space-y-6 px-4 py-8 sm:py-12">
-    {pinVerified ? <Button variant="ghost" size="sm" disabled={login.isPending} onClick={() => { setPinVerified(false); setPassword(""); login.reset(); }}><ArrowLeft className="size-4" />আগের ধাপে ফিরে যান</Button> : <Button asChild variant="ghost" size="sm"><Link to="/"><ArrowLeft className="size-4" />হোমে ফিরে যান</Link></Button>}
+    {pinVerified ? <Button variant="ghost" size="sm" disabled={login.isPending} onClick={() => { setPinVerified(false); setOperatorVerified(false); setChangePassword(false); setPassword(""); login.reset(); }}><ArrowLeft className="size-4" />আগের ধাপে ফিরে যান</Button> : <Button asChild variant="ghost" size="sm"><Link to="/"><ArrowLeft className="size-4" />হোমে ফিরে যান</Link></Button>}
     <header className="flex items-center gap-3 border-b border-border pb-4">
       <ShieldCheck className="size-6 text-primary" />
       <h1 className="text-xl font-semibold">IT Console access</h1>
@@ -56,12 +59,13 @@ function ItAccess() {
       <h2 className="flex items-center gap-2 text-base font-semibold"><KeyRound className="size-4" />১. IT Console PIN</h2>
       <Button variant={pinVerified ? "outline" : "default"} onClick={() => setPinOpen(true)}>{pinVerified ? "PIN যাচাই হয়েছে" : "PIN দিয়ে আনলক"}</Button>
     </section>
-    {pinVerified && <section className="space-y-4 border-t border-border pt-5">
+    {pinVerified && operatorVerified && changePassword ? <ItOwnPasswordForm onBack={() => { setOperatorVerified(false); setChangePassword(false); login.reset(); }} /> : pinVerified && <section className="space-y-4 border-t border-border pt-5">
       <h2 className="text-base font-semibold">২. IT Operator লগইন</h2>
       <form className="space-y-4" onSubmit={(event) => { event.preventDefault(); if (!login.isPending) login.mutate(); }}>
         <div className="space-y-2"><Label htmlFor="it-email">Email</Label><Input id="it-email" type="email" autoComplete="username" autoCapitalize="none" required value={email} onChange={(event) => setEmail(event.target.value)} /></div>
         <div className="space-y-2"><Label htmlFor="it-password">Password</Label><Input id="it-password" type="password" autoComplete="current-password" required value={password} onChange={(event) => setPassword(event.target.value)} /></div>
         <Button type="submit" className="w-full" disabled={login.isPending || !email.trim() || !password}>{login.isPending ? <Loader2 className="size-4 animate-spin" /> : <LogIn className="size-4" />}IT Operator হিসেবে লগইন</Button>
+        <label className="flex items-center gap-2 text-sm"><input type="checkbox" className="size-4 accent-primary" checked={changePassword} disabled={login.isPending} onChange={(event) => setChangePassword(event.target.checked)} />লগইনের পরে নিজের CRM পাসওয়ার্ড পরিবর্তন</label>
         {login.error && <p role="alert" className="text-sm text-destructive">{login.error.message}</p>}
       </form>
       <div className="space-y-3 border-t border-border pt-5">
