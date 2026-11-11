@@ -26,7 +26,7 @@ export function AgentSelfLeadsPanel() {
   const s = search.trim().toLowerCase();
   const rows = (data?.rows ?? []).filter(r => (agent === "all" || r.agentId === agent) && (!s || (r.name ?? "").toLowerCase().includes(s) || r.agentName.toLowerCase().includes(s)));
   const fmt = (iso: string) => new Date(iso).toLocaleString("en-GB", { timeZone: "Asia/Dhaka", day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
-  const exportCsv = () => downloadCsv(`own-leads-${from}-${to}.csv`, toCsv(rows.map(r => ({ agent: r.agentName, lead: r.name ?? "", phone: r.phone, added: r.createdAt, status: r.status ?? "", last_result: r.lastOutcome ?? "", temperature: r.temperature ?? "", follow_ups: r.followUps }))));
+  const exportCsv = () => downloadCsv(`own-leads-${from}-${to}.csv`, toCsv(["agent","lead","phone","added","status","last_result","temperature","follow_ups"], rows.map(r => [r.agentName, r.name ?? "", r.phone, r.createdAt, r.status ?? "", r.lastOutcome ?? "", r.temperature ?? "", r.followUps])));
 
   return (
     <section className="space-y-4 rounded-2xl border bg-card p-4 md:p-6">
