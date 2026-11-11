@@ -1,6 +1,6 @@
 import { useMutation } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Loader2, Lock, LockOpen } from "lucide-react";
+import { ArrowLeft, Loader2, Lock, LockOpen } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 
@@ -119,6 +119,7 @@ export function AdminPinDialog({
             Unlock
           </Button>
           {remaining > 0 && <p role="alert" className="text-center text-sm text-destructive">{t({ bn: "PIN প্রবেশে সাময়িক বিরতি। বাকি", en: "PIN entry temporarily paused. Remaining" })}: {Math.floor(remaining / 60)}:{String(remaining % 60).padStart(2, "0")}</p>}
+          <Button variant="ghost" className="w-full" disabled={attempt.isPending} onClick={() => { setPin(""); onOpenChange(false); }}><ArrowLeft className="size-4" />ফিরে যান</Button>
         </div>
       </DialogContent>
     </Dialog>

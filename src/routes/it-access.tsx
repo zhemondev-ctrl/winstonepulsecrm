@@ -1,6 +1,6 @@
 import { useMutation } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { KeyRound, Loader2, LogIn, ShieldCheck } from "lucide-react";
+import { ArrowLeft, KeyRound, Loader2, LogIn, ShieldCheck } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { AdminPinDialog } from "@/components/crm/AdminPinDialog";
@@ -47,6 +47,7 @@ function ItAccess() {
     onError: (error: Error) => { setPassword(""); toast.error(error.message); },
   });
   return <main className="mx-auto min-h-dvh max-w-md space-y-6 px-4 py-8 sm:py-12">
+    {pinVerified ? <Button variant="ghost" size="sm" disabled={login.isPending} onClick={() => { setPinVerified(false); setPassword(""); login.reset(); }}><ArrowLeft className="size-4" />আগের ধাপে ফিরে যান</Button> : <Button asChild variant="ghost" size="sm"><Link to="/"><ArrowLeft className="size-4" />হোমে ফিরে যান</Link></Button>}
     <header className="flex items-center gap-3 border-b border-border pb-4">
       <ShieldCheck className="size-6 text-primary" />
       <h1 className="text-xl font-semibold">IT Console access</h1>
@@ -68,7 +69,6 @@ function ItAccess() {
         <Button asChild variant="outline" className="w-full"><Link to="/tech"><ShieldCheck className="size-4" />Architect হিসেবে প্রবেশ</Link></Button>
       </div>
     </section>}
-    <Button asChild variant="ghost"><Link to="/">ফিরে যান</Link></Button>
     <AdminPinDialog open={pinOpen} onOpenChange={setPinOpen} surface="system" onUnlocked={() => setPinVerified(true)} />
   </main>;
 }
