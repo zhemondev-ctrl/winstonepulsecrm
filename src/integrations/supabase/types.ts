@@ -3643,6 +3643,155 @@ export type Database = {
         }
         Relationships: []
       }
+      meeting_approval_events: {
+        Row: {
+          action: string
+          actor: string
+          created_at: string
+          details: Json
+          id: string
+          item_id: string | null
+          note: string | null
+          request_id: string
+        }
+        Insert: {
+          action: string
+          actor: string
+          created_at?: string
+          details?: Json
+          id?: string
+          item_id?: string | null
+          note?: string | null
+          request_id: string
+        }
+        Update: {
+          action?: string
+          actor?: string
+          created_at?: string
+          details?: Json
+          id?: string
+          item_id?: string | null
+          note?: string | null
+          request_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meeting_approval_events_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "meeting_approval_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meeting_approval_events_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "meeting_approval_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      meeting_approval_items: {
+        Row: {
+          created_at: string
+          decided_at: string | null
+          decided_by: string | null
+          decision: string
+          decision_comment: string | null
+          detail: string | null
+          id: string
+          position: number
+          request_id: string
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          decision?: string
+          decision_comment?: string | null
+          detail?: string | null
+          id?: string
+          position: number
+          request_id: string
+          title: string
+        }
+        Update: {
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          decision?: string
+          decision_comment?: string | null
+          detail?: string | null
+          id?: string
+          position?: number
+          request_id?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meeting_approval_items_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "meeting_approval_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      meeting_approval_requests: {
+        Row: {
+          attendees: string | null
+          created_at: string
+          created_by: string
+          final_note: string | null
+          final_signer: string | null
+          finalized_at: string | null
+          first_opened_at: string | null
+          id: string
+          meeting_date: string
+          status: string
+          summary: string
+          title: string
+          updated_at: string
+          withdrawn_at: string | null
+          withdrawn_reason: string | null
+        }
+        Insert: {
+          attendees?: string | null
+          created_at?: string
+          created_by?: string
+          final_note?: string | null
+          final_signer?: string | null
+          finalized_at?: string | null
+          first_opened_at?: string | null
+          id?: string
+          meeting_date: string
+          status?: string
+          summary?: string
+          title: string
+          updated_at?: string
+          withdrawn_at?: string | null
+          withdrawn_reason?: string | null
+        }
+        Update: {
+          attendees?: string | null
+          created_at?: string
+          created_by?: string
+          final_note?: string | null
+          final_signer?: string | null
+          finalized_at?: string | null
+          first_opened_at?: string | null
+          id?: string
+          meeting_date?: string
+          status?: string
+          summary?: string
+          title?: string
+          updated_at?: string
+          withdrawn_at?: string | null
+          withdrawn_reason?: string | null
+        }
+        Relationships: []
+      }
       messenger_messages: {
         Row: {
           body: string | null

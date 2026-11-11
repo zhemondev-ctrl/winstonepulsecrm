@@ -12,6 +12,7 @@ export const PAGE_SECTIONS = {
     { key: "performance", label: "এজেন্টেদের কাজ", en: "Agent work" },
     { key: "leads", label: "লিড ও ধাপ", en: "Leads & stages" },
     { key: "tools", label: "তদারকি ও সরঞ্জাম", en: "Checks & tools" },
+    { key: "approvals", label: "মিটিং অনুমোদন", en: "Meeting approvals" },
   ],
   "/desk": [
     { key: "today", label: "আজকের কাজ", en: "Today's work" },
@@ -45,6 +46,7 @@ export const PAGE_SECTIONS = {
     { key: "access", label: "অ্যাকোউন্ট ও অ্যাক্সেস", en: "Accounts & access" },
     { key: "releases", label: "অ্যাপ ও সংস্করণ", en: "Apps & versions" },
     { key: "billing", label: "বিল ও তদারকি", en: "Billing & review" },
+    { key: "approvals", label: "মিটিং অনুমোদন", en: "Meeting approvals" },
   ],
 } as const;
 
@@ -53,11 +55,12 @@ export type SectionKey<R extends SectionRoute> = (typeof PAGE_SECTIONS)[R][numbe
 
 export const sectionSearch = (
   s: Record<string, unknown>,
-): { s?: string; lead?: string; from?: string; to?: string } => ({
+): { s?: string; lead?: string; from?: string; to?: string; approval?: string } => ({
   ...(typeof s["from"] === "string" && /^\d{4}-\d{2}-\d{2}$/.test(s["from"]) ? { from: s["from"] } : {}),
   ...(typeof s["to"] === "string" && /^\d{4}-\d{2}-\d{2}$/.test(s["to"]) ? { to: s["to"] } : {}),
   ...(typeof s["s"] === "string" ? { s: s["s"] } : {}),
   ...(typeof s["lead"] === "string" && /^[0-9a-f-]{36}$/i.test(s["lead"]) ? { lead: s["lead"] } : {}),
+  ...(typeof s["approval"] === "string" && /^[0-9a-f-]{36}$/i.test(s["approval"]) ? { approval: s["approval"] } : {}),
 });
 
 export function useSection<R extends SectionRoute>(route: R): [SectionKey<R>, (k: SectionKey<R>) => void] {

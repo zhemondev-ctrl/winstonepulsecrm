@@ -5,6 +5,7 @@ import { AgentTargetPanel } from "@/components/crm/hq/AgentTargetPanel";
 import { AgentKpiDashboard } from "@/components/crm/hq/AgentKpiDashboard";
 import { AgentSalesScorecards } from "@/components/crm/hq/AgentSalesScorecards";
 import { MdApprovalReportButton } from "@/components/crm/hq/MdApprovalReportButton";
+import { MeetingApprovalsPanel } from "@/components/crm/meeting/MeetingApprovalsPanel";
 import { DistributionFailurePanel } from "@/components/crm/DistributionFailurePanel";
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { ChevronDown, ShieldCheck } from "lucide-react";
@@ -310,6 +311,7 @@ function ControlBoard() {
             {tab === "followups" && <div className="space-y-4"><ConversationOutcomesPanel /><ReportsBoard /></div>}
 
             {tab === "lead360" && <Lead360Workspace />}
+            {tab === "approvals" && <MeetingApprovalsPanel surface="hq" />}
             {tab === "recovery" && <Suspense fallback={<SnapshotSkeleton />}><VipRecoveryQueue onOpenLead={setOpenLeadId} /></Suspense>}
 
             {tab === "tools" && (

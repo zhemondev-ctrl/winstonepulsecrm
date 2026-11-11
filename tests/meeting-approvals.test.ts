@@ -1,0 +1,82 @@
+import { describe, expect, it, vi } from "vitest";
+
+const state = vi.hoisted(() => ({ scope: null as string | null, callerScope: "authority", writes: 0, reads: 0 }));
+vi.mock("@tanstack/react-start", () => ({
+  createServerFn: () => ({
+    inputValidator: (validate: (v: unknown) => unknown) => ({
+      handler: (fn: (v: unknown) => unknown) => (args: { data: unknown }) => fn({ data: validate(args.data) }),
+    }),
+  }),
+}));
+vi.mock("@/lib/admin-gate.server", () => ({ adminTokenScope: () => state.scope }));
+vi.mock("@/lib/access.server", () => ({ resolveCaller: async () => ({ scope: state.callerScope }) }));
+vi.mock("@/integrations/supabase/client.server", () => ({
+  supabaseAdmin: {
+    from: () => {
+      const q: Record<string, unknown> = {};
+      for (const k of ["select", "eq", "in", "is", "order", "limit"]) q[k] = () => { state.reads++; return q; };
+      for (const k of ["insert", "update"]) q[k] = () => { state.writes++; return q; };
+      q.maybeSingle = async () => ({ data: null, error: null });
+      q.single = async () => ({ data: null, error: null });
+      return q;
+    },
+  },
+}));
+
+import { canFinalize, decisionNeedsComment, meetingApprovalPath } from "@/lib/meeting-approvals";
+import { createMeetingApproval, decideMeetingItem, finalizeMeetingApproval, listMeetingApprovals, withdrawMeetingApproval } from "@/lib/meeting-approvals.functions";
+
+type Fn = (a: { data: unknown }) => Promise<unknown>;
+const id = "00000000-0000-4000-8000-000000000001";
+const create = createMeetingApproval as unknown as Fn;
+const decide = decideMeetingItem as unknown as Fn;
+const finalize = finalizeMeetingApproval as unknown as Fn;
+const withdraw = withdrawMeetingApproval as unknown as Fn;
+const list = listMeetingApprovals as unknown as Fn;
+const newRequest = { adminToken: "t", title: "Sales meeting", meetingDate: "2026-11-11", summary: "Notes", items: [{ title: "Net 50 rule" }] };
+
+describe("meeting approval rules", () => {
+  it("only plain approval may skip a comment", () => {
+    expect(decisionNeedsComment("approved")).toBe(false);
+    expect(decisionNeedsComment("approved_with_changes")).toBe(true);
+    expect(decisionNeedsComment("rejected")).toBe(true);
+  });
+  it("final submit needs every item decided", () => {
+    expect(canFinalize([])).toBe(false);
+    expect(canFinalize([{ decision: "approved" }, { decision: "pending" }])).toBe(false);
+    expect(canFinalize([{ decision: "approved" }, { decision: "rejected" }])).toBe(true);
+  });
+  it("the WhatsApp link opens the HQ approvals section", () => {
+    expect(meetingApprovalPath(id)).toBe(`/hq?s=approvals&approval=${id}`);
+  });
+});
+
+describe("meeting approval access", () => {
+  it.each(["hq", "leadhub", null])("only IT Console creates (refuses %s before writing)", async (scope) => {
+    state.scope = scope; state.writes = 0;
+    await expect(create({ data: newRequest })).rejects.toThrow("Only the IT Console");
+    expect(state.writes).toBe(0);
+  });
+  it.each(["full", "leadhub", null])("only Executive HQ decides (refuses %s before writing)", async (scope) => {
+    state.scope = scope; state.writes = 0;
+    await expect(decide({ data: { adminToken: "t", itemId: id, decision: "approved" } })).rejects.toThrow("Only Executive HQ");
+    await expect(finalize({ data: { adminToken: "t", id, signer: "MD" } })).rejects.toThrow("Only Executive HQ");
+    expect(state.writes).toBe(0);
+  });
+  it("HQ must explain a rejection before anything is saved", async () => {
+    state.scope = "hq"; state.writes = 0;
+    await expect(decide({ data: { adminToken: "t", itemId: id, decision: "rejected" } })).rejects.toThrow("Add a comment");
+    expect(state.writes).toBe(0);
+  });
+  it("HQ cannot withdraw an IT request", async () => {
+    state.scope = "hq"; state.writes = 0;
+    await expect(withdraw({ data: { adminToken: "t", id, reason: "not needed" } })).rejects.toThrow("Only the IT Console");
+    expect(state.writes).toBe(0);
+  });
+  it("agents cannot read approvals", async () => {
+    state.callerScope = "agent"; state.reads = 0;
+    await expect(list({ data: { adminToken: null } })).rejects.toThrow("Executive HQ or IT access required");
+    expect(state.reads).toBe(0);
+    state.callerScope = "authority";
+  });
+});
