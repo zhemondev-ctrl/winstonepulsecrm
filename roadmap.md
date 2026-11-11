@@ -1,6 +1,7 @@
 # Roadmap
 
 ## Open tasks
+- [x] Match IT/Architect browser Back/Forward with visible back actions; PIN dialog uses history step names only and URL steps cannot grant access. 30 tests pass; browser PIN Back/Forward, dialog back and Architect fallback verified at 625×433; authenticated operator/password navigation not exercised with real credentials. Not published.
 - [x] Add a safe own-account CRM password change form in IT access after PIN + operator login; current-password proof and session-owner update, secret fields cleared, no Gmail or live password changes. 31 tests pass and PIN-first mobile screen verified; full authenticated change not exercised against a real account.
 - [x] Fix failed-call cadence through the shared report path without rewriting old reports; attempt and idempotency regression checks use isolated mocks.
 - [x] Resolve signed-in HQ loading and verify the private approval PDF download: original v2 report, 217077 bytes, exact SHA-256 match; no click errors. No publication or historical lead backfill.

@@ -1,7 +1,7 @@
 import { useMutation } from "@tanstack/react-query";
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate, useRouter } from "@tanstack/react-router";
 import { ArrowLeft, KeyRound, Loader2, LogIn, ShieldCheck } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { AdminPinDialog } from "@/components/crm/AdminPinDialog";
 import { ItOwnPasswordForm } from "@/components/crm/ItOwnPasswordForm";
@@ -10,9 +10,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { getMyAccount, signInWithIdentifier } from "@/lib/accounts.functions";
+import { visibleItStep } from "@/lib/access-navigation";
 
 export const Route = createFileRoute("/it-access")({
   ssr: false,
+  validateSearch: (search: Record<string, unknown>): { step?: string } => typeof search["step"] === "string" ? { step: search["step"] } : {},
   head: () => ({ meta: [
     { title: "IT access — Winstone Pulse" },
     { name: "description", content: "IT PIN verification and operator sign-in for Winstone Pulse." },
@@ -27,12 +29,20 @@ export const Route = createFileRoute("/it-access")({
 
 function ItAccess() {
   const navigate = useNavigate();
-  const [pinOpen, setPinOpen] = useState(false);
+  const router = useRouter();
+  const { step: requestedStep } = Route.useSearch();
   const [pinVerified, setPinVerified] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [changePassword, setChangePassword] = useState(false);
   const [operatorVerified, setOperatorVerified] = useState(false);
+  const unlocking = useRef(false);
+  const step = visibleItStep(requestedStep, pinVerified, operatorVerified);
+  useEffect(() => { setPassword(""); }, [requestedStep]);
+  const returnTo = (fallback: "entry" | "operator") => {
+    if (router.history.canGoBack()) router.history.back();
+    else void navigate({ to: "/it-access", search: fallback === "entry" ? {} : { step: fallback }, replace: true });
+  };
   const login = useMutation({
     mutationFn: async () => {
       const tokens = await signInWithIdentifier({ data: { identifier: email.trim(), password } });
@@ -46,20 +56,20 @@ function ItAccess() {
         throw new Error("এই অ্যাকাউন্টের IT Operator অনুমতি নেই।");
       }
     },
-    onSuccess: () => { toast.success("IT Operator signed in"); if (changePassword) setOperatorVerified(true); else void navigate({ to: "/system" }); },
+    onSuccess: () => { toast.success("IT Operator signed in"); if (changePassword) { setOperatorVerified(true); void navigate({ to: "/it-access", search: { step: "password" } }); } else void navigate({ to: "/system" }); },
     onError: (error: Error) => { setPassword(""); toast.error(error.message); },
   });
   return <main className="mx-auto min-h-dvh max-w-md space-y-6 px-4 py-8 sm:py-12">
-    {pinVerified ? <Button variant="ghost" size="sm" disabled={login.isPending} onClick={() => { setPinVerified(false); setOperatorVerified(false); setChangePassword(false); setPassword(""); login.reset(); }}><ArrowLeft className="size-4" />আগের ধাপে ফিরে যান</Button> : <Button asChild variant="ghost" size="sm"><Link to="/"><ArrowLeft className="size-4" />হোমে ফিরে যান</Link></Button>}
+    {step === "operator" || step === "password" ? <Button variant="ghost" size="sm" disabled={login.isPending} onClick={() => returnTo(step === "password" ? "operator" : "entry")}><ArrowLeft className="size-4" />আগের ধাপে ফিরে যান</Button> : <Button asChild variant="ghost" size="sm"><Link to="/"><ArrowLeft className="size-4" />হোমে ফিরে যান</Link></Button>}
     <header className="flex items-center gap-3 border-b border-border pb-4">
       <ShieldCheck className="size-6 text-primary" />
       <h1 className="text-xl font-semibold">IT Console access</h1>
     </header>
     <section className="space-y-3">
       <h2 className="flex items-center gap-2 text-base font-semibold"><KeyRound className="size-4" />১. IT Console PIN</h2>
-      <Button variant={pinVerified ? "outline" : "default"} onClick={() => setPinOpen(true)}>{pinVerified ? "PIN যাচাই হয়েছে" : "PIN দিয়ে আনলক"}</Button>
+      <Button asChild variant={step === "operator" || step === "password" ? "outline" : "default"}><Link to="/it-access" search={{ step: "pin" }}>{step === "operator" || step === "password" ? "PIN যাচাই হয়েছে" : "PIN দিয়ে আনলক"}</Link></Button>
     </section>
-    {pinVerified && operatorVerified && changePassword ? <ItOwnPasswordForm onBack={() => { setOperatorVerified(false); setChangePassword(false); login.reset(); }} /> : pinVerified && <section className="space-y-4 border-t border-border pt-5">
+    {step === "password" ? <ItOwnPasswordForm onBack={() => returnTo("operator")} /> : step === "operator" && <section className="space-y-4 border-t border-border pt-5">
       <h2 className="text-base font-semibold">২. IT Operator লগইন</h2>
       <form className="space-y-4" onSubmit={(event) => { event.preventDefault(); if (!login.isPending) login.mutate(); }}>
         <div className="space-y-2"><Label htmlFor="it-email">Email</Label><Input id="it-email" type="email" autoComplete="username" autoCapitalize="none" required value={email} onChange={(event) => setEmail(event.target.value)} /></div>
@@ -73,6 +83,6 @@ function ItAccess() {
         <Button asChild variant="outline" className="w-full"><Link to="/tech"><ShieldCheck className="size-4" />Architect হিসেবে প্রবেশ</Link></Button>
       </div>
     </section>}
-    <AdminPinDialog open={pinOpen} onOpenChange={setPinOpen} surface="system" onUnlocked={() => setPinVerified(true)} />
+    <AdminPinDialog open={step === "pin"} onOpenChange={(open) => { if (!open) queueMicrotask(() => { if (!unlocking.current) returnTo("entry"); unlocking.current = false; }); }} surface="system" onUnlocked={() => { unlocking.current = true; setPinVerified(true); void navigate({ to: "/it-access", search: { step: "operator" }, replace: true }); }} />
   </main>;
 }

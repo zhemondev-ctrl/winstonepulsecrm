@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useCanGoBack, useRouter } from "@tanstack/react-router";
 import { ArrowLeft, KeyRound, Loader2, LogOut, ShieldAlert, ShieldCheck } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -34,6 +34,8 @@ export const Route = createFileRoute("/tech")({
 });
 
 function ArchitectPage() {
+  const router = useRouter();
+  const canGoBack = useCanGoBack();
   const [hasSession, setHasSession] = useState<boolean | null>(null);
   const [session, setSession] = useState<string | null>(null); // memory only
   useEffect(() => {
@@ -51,7 +53,7 @@ function ArchitectPage() {
 
   const shell = (child: React.ReactNode) => (
     <main className="mx-auto min-h-screen max-w-3xl space-y-6 p-4 sm:p-8">
-      <Button asChild variant="ghost" size="sm"><Link to="/it-access"><ArrowLeft className="size-4" />ফিরে যান</Link></Button>
+      {canGoBack ? <Button variant="ghost" size="sm" onClick={() => router.history.back()}><ArrowLeft className="size-4" />ফিরে যান</Button> : <Button asChild variant="ghost" size="sm"><Link to="/it-access"><ArrowLeft className="size-4" />ফিরে যান</Link></Button>}
       <header className="flex flex-wrap items-center gap-2 border-b border-border pb-4">
         <ShieldCheck className="size-6 shrink-0 text-primary" />
         <h1 className="text-xl font-semibold">System Architect</h1>
