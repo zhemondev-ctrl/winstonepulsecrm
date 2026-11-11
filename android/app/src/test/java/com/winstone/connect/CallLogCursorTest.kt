@@ -15,4 +15,11 @@ class CallLogCursorTest {
     @Test fun laterTimestampWinsRegardlessOfRowId() {
         assertTrue(CallLogCursor(1_001L, 1L) > CallLogCursor(1_000L, 999L))
     }
+
+    /** A11: re-reading the call log never picks up the already-handled row again. */
+    @Test fun sameRowIsNotPickedUpTwice() {
+        val cursor = CallLogCursor(1_000L, 10L)
+        assertFalse(CallLogCursor(1_000L, 10L) > cursor)
+        assertFalse(CallLogCursor(999L, 50L) > cursor)
+    }
 }

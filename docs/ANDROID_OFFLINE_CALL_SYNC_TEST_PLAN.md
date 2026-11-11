@@ -19,9 +19,14 @@
 
 চালানো: `bunx vitest run tests/call-history-once.test.ts tests/call-log-reconcile.test.ts tests/call-evidence.test.ts tests/phone-measured-call.test.ts tests/sync-failure-drill.test.ts` এবং `android/` থেকে `./gradlew testSandboxDebugUnitTest`।
 
-ঘাটতি (নতুন টেস্ট যোগ করা উচিত):
-- A10: একই call_uid দিয়ে outcome দুবার পাঠালে সার্ভার দ্বিতীয়টিকে নতুন কল হিসেবে না গোনে (KPI কল সংখ্যা ১ থাকে)।
-- A11: একই CallLog `_ID` দুবার স্ক্যান হলে (কার্সর রিসেট) দ্বিতীয়বার কাজ সারিতে না ওঠে।
+অতিরিক্ত:
+- A10: একই call_uid দিয়ে outcome দুবার → দ্বিতীয়টি duplicate, call_attempts ১, ইতিহাস ১, নোট ১ — `tests/sql/finalize-and-outcome.test.sql` §6 (`scripts/run-sql-tests.sh`, অস্থায়ী লোকাল Postgres)।
+- A11: একই CallLog সারি আবার পড়লে কার্সর তাকে নতুন ধরে না — `CallLogCursorTest.sameRowIsNotPickedUpTwice`।
+
+### সর্বশেষ চালানো (১২ নভেম্বর ২০২৬, ০৫:১০ ঢাকা)
+- Web/সার্ভার: ৬ ফাইল, ৪৮ টেস্ট পাস (A6–A9 + অডিট লগ)।
+- SQL (A10): ৯৬ চেক পাস, "SQL tests: PASS"।
+- Android (A1–A5, A9 Kotlin, A11): এই পরিবেশে Java/Android SDK নেই, তাই চালানো যায়নি; GitHub-এর android-tests CI-তে চলবে।
 
 ## খ) ডিভাইসে হাতে-কলমে টেস্ট (sandbox APK, আসল ফোন)
 
