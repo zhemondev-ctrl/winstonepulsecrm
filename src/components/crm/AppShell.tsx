@@ -1,7 +1,7 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { Lock, LockOpen, LogOut, Smartphone, Sparkles } from "lucide-react";
 import { MobileNavDrawer, NavSidebar, NAV_ICONS } from "@/components/crm/NavSidebar";
-import { Suspense, lazy, useEffect, useState, type ReactNode } from "react";
+import { Suspense, lazy, useEffect, useRef, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 
 import logoAsset from "@/assets/winstone-properties-logo.png.asset.json";
@@ -87,6 +87,18 @@ export const READ_ONLY_HIDDEN: readonly string[] = ["/system", "/docs-admin"];
 
 export function AppShell({ children }: { children: ReactNode }) {
   useCrmRealtime();
+  const shellRef = useRef<HTMLDivElement>(null);
+  const headerRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    const header = headerRef.current;
+    const shell = shellRef.current;
+    if (!header || !shell) return;
+    const measure = () => shell.style.setProperty("--shell-header-height", `${header.getBoundingClientRect().height}px`);
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(header);
+    return () => observer.disconnect();
+  }, []);
   const adminToken = useAdminToken();
   const { scope, account } = useMyAccount();
   const signOut = useSignOut();
@@ -109,8 +121,8 @@ export function AppShell({ children }: { children: ReactNode }) {
   }));
 
   return (
-    <div className="hq-luxe min-h-screen">
-      <header className="glass sticky top-0 z-40 border-b border-border">
+    <div ref={shellRef} className="hq-luxe min-h-screen">
+      <header ref={headerRef} className="glass sticky top-0 z-40 border-b border-border">
         <div className="mx-auto grid w-full max-w-[1600px] grid-cols-[auto_minmax(0,1fr)] items-center gap-2 px-3 py-2 sm:flex sm:min-h-14 sm:gap-4 sm:px-6">
           <div className="lg:hidden">
             <MobileNavDrawer items={nav} />

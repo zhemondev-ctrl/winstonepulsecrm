@@ -206,7 +206,7 @@ export function NavSidebar({ items }: { items: readonly Item[] }) {
       ref={ref}
       aria-label={t({ bn: "প্রধান নেভিগেশন", en: "Main navigation" })}
       onKeyDown={onNavKeys}
-      className="nav-navy sticky top-14 hidden h-[calc(100vh-3.5rem)] w-60 shrink-0 flex-col border-r border-border bg-sidebar px-3 py-3 lg:flex"
+      className="nav-navy sticky top-[var(--shell-header-height,3.5rem)] hidden h-[calc(100dvh-var(--shell-header-height,3.5rem))] w-60 shrink-0 flex-col border-r border-border bg-sidebar px-3 py-3 lg:flex"
     >
       <div className="min-h-0 flex-1 overflow-y-auto">
         <NavContent items={items} collapsed={collapsed} />
@@ -276,7 +276,7 @@ export function MobileNavDrawer({ items }: { items: readonly Item[] }) {
       </SheetTrigger>
       <SheetContent
         side="bottom"
-        className="max-h-[85dvh] w-full overflow-y-auto bg-background p-0"
+        className="nav-navy max-h-[85dvh] w-full overflow-y-auto bg-sidebar p-0"
       >
         <SheetHeader className="m-0 border-b border-border px-4 py-4 text-left">
           <SheetTitle asChild>

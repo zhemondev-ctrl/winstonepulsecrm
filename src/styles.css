@@ -653,9 +653,9 @@ html[lang="bn"] h3 {
 
 .font-hand { font-family: "Caveat", var(--font-display); }
 
-/* Desktop side menu: fixed navy matching the logo disc; tokens re-scoped so every child stays readable. */
+/* Shared navigation: exact dominant logo blue; tokens keep desktop and phone menus readable. */
 .nav-navy {
-  --logo-navy: oklch(from #11213A l c h);
+  --logo-navy: #11213A;
   --sidebar: var(--logo-navy);
   --foreground: oklch(from #F7F1E6 l c h);
   --muted-foreground: oklch(from #AEB8C8 l c h);
