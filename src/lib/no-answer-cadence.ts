@@ -23,6 +23,10 @@ export const SLOT_TIME: Record<Exclude<RetrySlot, "custom">, string> = {
 };
 export const REACTIVATION_DAYS = 7;
 export const PARKED_STATES = ["snoozed", "unresponsive"] as const;
+export function usesRetryCadence(status: string | null | undefined) {
+  return status === "no_answer" || status === "busy" || status === "failed";
+}
+
 const DHAKA_MS = 6 * 3_600_000;
 
 function shiftDay(day: string, delta: number) {

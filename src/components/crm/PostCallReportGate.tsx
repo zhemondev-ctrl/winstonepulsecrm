@@ -1,5 +1,6 @@
 import { EVALUATION_QUESTIONS, EVALUATION_QUESTIONS_LABEL_EN, categoryForScore, type EvaluationKey } from "@/lib/lead-evaluation";
 import { FAKE_NEEDS_ANSWERED_CALL, fakeNeedsAnsweredCall, fastDisqualification } from "@/lib/fast-disqualification";
+import { usesRetryCadence } from "@/lib/no-answer-cadence";
 import { REPORT_GRADES, REPORT_GRADE_LABELS } from "@/lib/call-qualification";
 import { CONTACT_CLOSE_REASONS, contactCloseReasonLabelFor } from "@/lib/contact-close-reasons";
 import { FOLLOW_UP_REASONS, FOLLOW_UP_REASONS_EN, type FollowUpReasonCode } from "@/lib/follow-up-reasons";
@@ -678,7 +679,7 @@ export function PostCallReportGate() {
         ? null
         : connected
           ? noFuNote.trim() || null
-          : t({ bn: "কথা হয়নি — কিউ-এর শেষে আবার আসবে", en: "No answer — will come back to the end of the queue" }),
+          : t({ bn: "কথা হয়নি — নির্ধারিত রি-ট্রাইয়ের সময় আবার আসবে", en: "Not connected — returns at the scheduled retry time" }),
       interest: connected ? (interest as "high" | "medium" | "low" | "fake") : null,
       requirement: connected ? requirement : null,
       customerResponse: connected ? response : null,
@@ -687,7 +688,7 @@ export function PostCallReportGate() {
       smartReasons: Object.keys(smartReasons).length ? smartReasons : null,
       evaluationAnswers: connected && answeredAll ? (answers as Record<string, boolean>) : null,
       retryPlan:
-        !connected && (callState === "no_answer" || callState === "busy")
+        !connected && usesRetryCadence(callState)
           ? {
               mode: retryPick.mode,
               slot: retryPick.slot,
@@ -727,7 +728,7 @@ export function PostCallReportGate() {
         <SmartRow id="sr-direction" label={t({ bn: "কলের দিক", en: "Call direction" })} required options={DIRECTIONS} value={direction} onChange={setDirection} />
         <SmartRow id="sr-status" label="Call Status" required options={CALL_STATES} value={callState} onChange={setCallState} />
       </div>
-      {!rejection && !connected && (callState === "no_answer" || callState === "busy") ? (
+      {!rejection && !connected && usesRetryCadence(callState) ? (
         <NoAnswerRetryPicker value={retryPick} onChange={setRetryPick} />
       ) : !connected && callState ? (
         <p className="rounded-lg bg-warning/10 px-3 py-2 text-xs text-warning">

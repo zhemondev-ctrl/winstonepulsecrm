@@ -1,6 +1,8 @@
 # Roadmap
 
 ## Open tasks
+- [x] Fix failed-call cadence through the shared report path without rewriting old reports; attempt and idempotency regression checks use isolated mocks.
+- [x] Resolve signed-in HQ loading and verify the private approval PDF download: original v2 report, 217077 bytes, exact SHA-256 match; no click errors. No publication or historical lead backfill.
 - [x] Extend meeting approvals with HQ-recorded MD decision dates and an item status tracker; preserve recorded timestamps and final locks. No meeting decisions or test records written to production.
 21. Scorecard source trends:
    - [x] Per-agent Trend window: stacked daily (weekly above 31 days) bars per source, dated by latest saved assignment to current owner; undated and outside-period counts shown. 7 tests; real check: Debbroto 297 in period + 19 undated + 278 earlier = 594 portfolio; phone no overflow.

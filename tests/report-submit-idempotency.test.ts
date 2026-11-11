@@ -21,6 +21,8 @@ const s = vi.hoisted(() => ({
   leadAdvances: 0,
   writes: [] as string[],
   sideEffects: [] as string[],
+  lastArgs: null as Record<string, any> | null,
+  priorAttempts: 0,
 }));
 
 vi.mock("@/integrations/supabase/client.server", () => {
@@ -34,7 +36,7 @@ vi.mock("@/integrations/supabase/client.server", () => {
     c.maybeSingle = async () => {
       if (table === "call_reports")
         return { data: { id: "report-1", agent_id: "agent-1", lead_id: "lead-1", recording_id: "rec-1", device_id: null, status: s.reportStatus, connected: false, duration_seconds: 0, channel: "call", created_at: "2026-10-31T06:00:00Z" }, error: null };
-      if (table === "leads") return { data: { assigned_to: "agent-1", assigned_agent_id: "agent-1", unanswered_attempts: 0, notes: null }, error: null };
+      if (table === "leads") return { data: { assigned_to: "agent-1", assigned_agent_id: "agent-1", unanswered_attempts: s.priorAttempts, notes: null }, error: null };
       return { data: null, error: null };
     };
     c.single = c.maybeSingle;
@@ -47,6 +49,7 @@ vi.mock("@/integrations/supabase/client.server", () => {
       rpc: async (fn: string, args: Record<string, unknown>) => {
         if (fn !== "finalize_call_report_v2") return { data: null, error: null };
         s.rpcCalls++;
+        s.lastArgs = args;
         // Row lock inside the function: only one request ever commits.
         if (s.committed) return { data: { alreadySubmitted: true }, error: null };
         s.committed = true;
@@ -100,9 +103,27 @@ beforeEach(() => {
   s.leadAdvances = 0;
   s.writes = [];
   s.sideEffects = [];
+  s.lastArgs = null;
+  s.priorAttempts = 0;
 });
 
 describe("call report retries are idempotent", () => {
+  it("a failed call is counted and parked with a saved retry task", async () => {
+    const { submitCallReport } = await import("@/lib/call-reports.server");
+    await submitCallReport({ ...payload, callStatus: "failed", followUpAt: null, followUpNeeded: false, noFollowUpReason: "not_connected" } as never);
+    expect(s.lastArgs?._lead_patch).toMatchObject({ work_state: "snoozed", unanswered_attempts: 1 });
+    expect(Date.parse(s.lastArgs?._lead_patch?.retry_after)).toBeGreaterThan(Date.now());
+    expect(s.lastArgs?._followup?.scheduled_at).toBe(s.lastArgs?._lead_patch?.retry_after);
+    expect(s.lastArgs?._report_patch.connected).toBe(false);
+  });
+  it("the third failed call goes to the unresponsive pool without claiming connection", async () => {
+    s.priorAttempts = 2;
+    const { submitCallReport } = await import("@/lib/call-reports.server");
+    await submitCallReport({ ...payload, callStatus: "failed", followUpAt: null, followUpNeeded: false, noFollowUpReason: "not_connected" } as never);
+    expect(s.lastArgs?._lead_patch).toMatchObject({ work_state: "unresponsive", unanswered_attempts: 3 });
+    expect(s.lastArgs?._report_patch.connection_verified).toBe(false);
+    expect(s.lastArgs?._followup?.reason_code).toBe("call_later");
+  });
   it("two simultaneous submits of one report advance the lead once and run follow-on steps once", async () => {
     const { submitCallReport } = await import("@/lib/call-reports.server");
     // Both requests read the report as pending and race into the save step; the

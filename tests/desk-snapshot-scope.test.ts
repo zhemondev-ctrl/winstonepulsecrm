@@ -18,7 +18,7 @@ vi.mock("@/lib/access.server", () => ({
   },
 }));
 
-import { resolveSnapshotCaller } from "@/lib/crm.functions";
+import { resolveSnapshotCaller } from "@/lib/crm-snapshot-scope.server";
 
 beforeEach(() => {
   mocks.session = null;

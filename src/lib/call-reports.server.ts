@@ -1,5 +1,6 @@
 import { isContactCloseReason } from "@/lib/contact-close-reasons";
 import { fastDisqualification } from "@/lib/fast-disqualification";
+import { usesRetryCadence } from "@/lib/no-answer-cadence";
 import { qualifyCallReport } from "@/lib/call-qualification";
 /**
  * The mandatory post-call workflow.
@@ -497,14 +498,15 @@ export async function submitCallReport(input: {
 
   // Did-not-receive cadence: planned (and validated) before anything is saved,
   // so a past custom time is refused without touching the report.
-  const didNotReceive = !rejection && !reassigned && !received && (input.callStatus === "no_answer" || input.callStatus === "busy");
+  const didNotReceive = !rejection && !reassigned && !received && usesRetryCadence(input.callStatus);
   let cadence: ReturnType<typeof import("@/lib/no-answer-cadence").planNoAnswer> | null = null;
   if (didNotReceive) {
     const { planNoAnswer, RetryPlanError } = await import("@/lib/no-answer-cadence");
-    const [{ data: leadRow }, { data: holidayRow }] = await Promise.all([
+    const [{ data: leadRow, error: leadError }, { data: holidayRow, error: holidayError }] = await Promise.all([
       supabaseAdmin.from("leads").select("unanswered_attempts").eq("id", report.lead_id).maybeSingle(),
       supabaseAdmin.from("app_config").select("data").eq("id", "office_holidays").maybeSingle(),
     ]);
+    if (leadError || holidayError || !leadRow) throw new Error("Could not verify retry history. Please try again.");
     const dates = (holidayRow?.data as { dates?: unknown } | null)?.dates;
     const holidays = Array.isArray(dates) ? dates.filter((d): d is string => typeof d === "string") : [];
     try {
