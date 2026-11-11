@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
-import { MAX_MEETING_ITEMS, MEETING_DECISIONS, canFinalize, decisionNeedsComment } from "@/lib/meeting-approvals";
+import { MAX_MEETING_ITEMS, MEETING_DECISIONS, canFinalize, decisionNeedsComment, validMdDecisionDate } from "@/lib/meeting-approvals";
 
 const Token = z.object({ adminToken: z.string().nullable().optional() });
 const Id = z.string().uuid();
@@ -131,7 +131,7 @@ export const logMeetingLinkShared = createServerFn({ method: "POST" })
 
 export const decideMeetingItem = createServerFn({ method: "POST" })
   .inputValidator((v: unknown) =>
-    Token.extend({ itemId: Id, decision: z.enum(MEETING_DECISIONS), comment: z.string().trim().max(2000).optional() }).parse(v),
+    Token.extend({ itemId: Id, decision: z.enum(MEETING_DECISIONS), mdDecisionDate: z.string().optional(), comment: z.string().trim().max(2000).optional() }).parse(v),
   )
   .handler(async ({ data }) => {
     await requireHq(data.adminToken);
@@ -139,13 +139,16 @@ export const decideMeetingItem = createServerFn({ method: "POST" })
     const sb = await db();
     const { data: item, error } = await sb.from("meeting_approval_items").select("id, request_id, decision").eq("id", data.itemId).maybeSingle();
     if (error || !item) throw new Error("Item not found");
+    const { data: parent, error: parentError } = await sb.from("meeting_approval_requests").select("meeting_date, status").eq("id", item.request_id).maybeSingle();
+    if (parentError || !parent || parent.status !== "awaiting") throw new Error("This approval is already closed");
+    if (!data.mdDecisionDate || !validMdDecisionDate(data.mdDecisionDate, parent.meeting_date)) throw new Error("Choose the MD decision date between the meeting date and today in Dhaka");
     const at = new Date().toISOString();
     const { error: upErr } = await sb
       .from("meeting_approval_items")
-      .update({ decision: data.decision, decision_comment: data.comment || null, decided_by: "Executive HQ", decided_at: at })
+      .update({ decision: data.decision, md_decision_date: data.mdDecisionDate, decision_comment: data.comment || null, decided_by: "Executive HQ", decided_at: at })
       .eq("id", item.id);
     if (upErr) throw new Error(upErr.message.includes("closed") ? "This approval is already closed" : "Could not save the decision");
-    await addEvent({ request_id: item.request_id, item_id: item.id, action: "item_decided", actor: "Executive HQ", note: data.comment || null, details: { from: item.decision, to: data.decision } });
+    await addEvent({ request_id: item.request_id, item_id: item.id, action: "item_decided", actor: "Executive HQ", note: data.comment || null, details: { from: item.decision, to: data.decision, mdDecisionDate: data.mdDecisionDate } });
     return { ok: true };
   });
 

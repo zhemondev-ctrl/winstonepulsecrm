@@ -14,6 +14,8 @@ import {
   canFinalize,
   decisionCounts,
   decisionNeedsComment,
+  dhakaDecisionToday,
+  validMdDecisionDate,
   meetingApprovalPath,
   MAX_MEETING_ITEMS,
   type MeetingDecision,
@@ -301,9 +303,32 @@ function Detail({ id, surface, onBack }: { id: string; surface: Surface; onBack:
         <p className="rounded-lg border border-border bg-muted px-3 py-2 text-xs text-muted-foreground">{t({ en: "View only. Decisions need the Executive HQ PIN.", bn: "শুধু দেখা যাবে। সিদ্ধান্ত দিতে এক্সিকিউটিভ HQ পিন লাগবে।" })}</p>
       )}
 
+      <section className="space-y-2">
+        <h4 className="text-sm font-semibold">{t({ en: "MD approval status tracker", bn: "MD অনুমোদনের অবস্থা" })}</h4>
+        <div className="divide-y divide-border md:hidden">
+          {items.map((it) => <div key={it.id} className="space-y-2 py-3">
+            <p className="break-words text-sm font-medium">{it.position}. {it.title}</p>
+            <Pill tone={(DECISION[it.decision as MeetingItemDecision] ?? DECISION.pending).tone}>{t(DECISION[it.decision as MeetingItemDecision] ?? DECISION.pending)}</Pill>
+            <p className="text-xs text-muted-foreground">{t({ en: "MD decision date", bn: "MD-এর সিদ্ধান্তের তারিখ" })}: {it.md_decision_date ? fmtDate(it.md_decision_date) : "—"}</p>
+          </div>)}
+        </div>
+        <table className="hidden w-full text-left text-sm md:table">
+          <thead className="border-b border-border text-xs text-muted-foreground"><tr>
+            <th className="py-2">{t({ en: "Proposed change", bn: "প্রস্তাবিত পরিবর্তন" })}</th>
+            <th className="py-2">{t({ en: "MD decision", bn: "MD-এর সিদ্ধান্ত" })}</th>
+            <th className="py-2">{t({ en: "Decision / approval date", bn: "সিদ্ধান্ত / অনুমোদনের তারিখ" })}</th>
+          </tr></thead>
+          <tbody>{items.map((it) => <tr key={it.id} className="border-b border-border">
+            <td className="max-w-64 break-words py-3 pr-3">{it.position}. {it.title}</td>
+            <td className="py-3 pr-3">{t(DECISION[it.decision as MeetingItemDecision] ?? DECISION.pending)}</td>
+            <td className="py-3">{it.md_decision_date ? fmtDate(it.md_decision_date) : "—"}</td>
+          </tr>)}</tbody>
+        </table>
+      </section>
+
       <ol className="space-y-3">
         {items.map((it) => (
-          <ItemCard key={it.id} item={it} canDecide={canDecide} requestId={request.id} />
+          <ItemCard key={it.id} item={it} canDecide={canDecide} requestId={request.id} meetingDate={request.meeting_date} />
         ))}
       </ol>
 
@@ -325,6 +350,7 @@ function Detail({ id, surface, onBack }: { id: string; surface: Surface; onBack:
                   <span className="font-medium">{t(EVENT[e.action] ?? { en: e.action, bn: e.action })}</span>
                   {item ? ` · #${item.position}` : ""}
                   {to ? ` → ${t(to)}` : ""}
+                  {typeof det["mdDecisionDate"] === "string" ? ` · MD: ${fmtDate(det["mdDecisionDate"])}` : ""}
                   {via ? ` (${via})` : ""}
                   {" · "}<span className="text-muted-foreground">{e.actor}</span>
                   {e.note ? <span className="block text-xs text-muted-foreground">{e.note}</span> : null}
@@ -373,18 +399,19 @@ function ShareBox({ id }: { id: string }) {
   );
 }
 
-type Item = { id: string; position: number; title: string; detail: string | null; decision: string; decision_comment: string | null; decided_at: string | null; decided_by: string | null };
+type Item = { id: string; position: number; title: string; detail: string | null; decision: string; decision_comment: string | null; decided_at: string | null; decided_by: string | null; md_decision_date: string | null };
 
-function ItemCard({ item, canDecide, requestId }: { item: Item; canDecide: boolean; requestId: string }) {
+function ItemCard({ item, canDecide, requestId, meetingDate }: { item: Item; canDecide: boolean; requestId: string; meetingDate: string }) {
   const t = useT();
   const adminToken = useAdminToken();
   const decide = useServerFn(decideMeetingItem);
   const qc = useQueryClient();
   const [comment, setComment] = useState(item.decision_comment ?? "");
+  const [decisionDate, setDecisionDate] = useState(item.md_decision_date ?? "");
   const d = DECISION[item.decision as MeetingItemDecision] ?? DECISION.pending;
 
   const m = useMutation({
-    mutationFn: (decision: MeetingDecision) => decide({ data: { adminToken, itemId: item.id, decision, comment: comment.trim() || undefined } }),
+    mutationFn: (decision: MeetingDecision) => decide({ data: { adminToken, itemId: item.id, decision, mdDecisionDate: decisionDate, comment: comment.trim() || undefined } }),
     onSuccess: () => {
       toast.success(t({ en: "Decision saved", bn: "সিদ্ধান্ত সংরক্ষিত" }));
       qc.invalidateQueries({ queryKey: ["meeting-approval", requestId] });
@@ -394,6 +421,10 @@ function ItemCard({ item, canDecide, requestId }: { item: Item; canDecide: boole
   });
 
   const pick = (decision: MeetingDecision) => {
+    if (!validMdDecisionDate(decisionDate, meetingDate)) {
+      toast.error(t({ en: "Choose the MD decision date between the meeting date and today in Dhaka", bn: "মিটিংয়ের তারিখ থেকে আজ (ঢাকা) পর্যন্ত MD-এর সিদ্ধান্তের তারিখ বাছুন" }));
+      return;
+    }
     if (decisionNeedsComment(decision) && !comment.trim()) {
       toast.error(t({ en: "Write a comment for changes or rejection", bn: "পরিবর্তন বা বাতিলের কারণ লিখুন" }));
       return;
@@ -409,10 +440,17 @@ function ItemCard({ item, canDecide, requestId }: { item: Item; canDecide: boole
       </div>
       {item.detail && <p className="whitespace-pre-wrap text-sm text-muted-foreground">{item.detail}</p>}
       {item.decision !== "pending" && (
-        <p className="text-xs text-muted-foreground">{item.decided_by} · {fmt(item.decided_at)}{item.decision_comment ? ` — ${item.decision_comment}` : ""}</p>
+        <div className="space-y-1 text-xs text-muted-foreground">
+          <p>{t({ en: item.decision === "rejected" ? "MD decision date" : "MD approval date", bn: item.decision === "rejected" ? "MD-এর সিদ্ধান্তের তারিখ" : "MD-এর অনুমোদনের তারিখ" })}: {item.md_decision_date ? fmtDate(item.md_decision_date) : t({ en: "Not recorded", bn: "সংরক্ষিত নেই" })}</p>
+          <p>{t({ en: "Recorded by", bn: "সংরক্ষণ করেছেন" })} {item.decided_by} · {fmt(item.decided_at)}{item.decision_comment ? ` — ${item.decision_comment}` : ""}</p>
+        </div>
       )}
       {canDecide && (
         <div className="space-y-2 border-t border-border pt-3">
+          <label className="block space-y-1 text-sm">
+            <span className="font-medium">{t({ en: "MD decision / approval date", bn: "MD-এর সিদ্ধান্ত / অনুমোদনের তারিখ" })}</span>
+            <Input type="date" value={decisionDate} min={meetingDate} max={dhakaDecisionToday()} onChange={(e) => setDecisionDate(e.target.value)} required className="w-full sm:w-56" />
+          </label>
           <Textarea value={comment} onChange={(e) => setComment(e.target.value)} rows={2} maxLength={2000} placeholder={t({ en: "Comment (needed for changes or rejection)", bn: "মন্তব্য (পরিবর্তন বা বাতিলে বাধ্যতামূলক)" })} />
           <div className="grid gap-2 sm:grid-cols-3">
             <Button size="sm" disabled={m.isPending} onClick={() => pick("approved")}><Check className="mr-1 size-4" />{t({ en: "Approve", bn: "অনুমোদন" })}</Button>

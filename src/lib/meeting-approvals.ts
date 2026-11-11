@@ -6,6 +6,16 @@ export type MeetingStatus = "awaiting" | "decided" | "withdrawn";
 
 export const MAX_MEETING_ITEMS = 30;
 
+export function dhakaDecisionToday(now = new Date()) {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Dhaka" }).format(now);
+}
+
+export function validMdDecisionDate(date: string, meetingDate: string, today = dhakaDecisionToday()) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return false;
+  const parsed = new Date(`${date}T00:00:00Z`);
+  return !Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === date && date >= meetingDate && date <= today;
+}
+
 /** "Approve with changes" and "Reject" must say why. */
 export function decisionNeedsComment(decision: MeetingDecision) {
   return decision !== "approved";

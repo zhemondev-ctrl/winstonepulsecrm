@@ -23,7 +23,7 @@ vi.mock("@/integrations/supabase/client.server", () => ({
   },
 }));
 
-import { canFinalize, decisionNeedsComment, meetingApprovalPath } from "@/lib/meeting-approvals";
+import { canFinalize, decisionNeedsComment, meetingApprovalPath, validMdDecisionDate, dhakaDecisionToday } from "@/lib/meeting-approvals";
 import { createMeetingApproval, decideMeetingItem, finalizeMeetingApproval, listMeetingApprovals, withdrawMeetingApproval } from "@/lib/meeting-approvals.functions";
 
 type Fn = (a: { data: unknown }) => Promise<unknown>;
@@ -36,6 +36,21 @@ const list = listMeetingApprovals as unknown as Fn;
 const newRequest = { adminToken: "t", title: "Sales meeting", meetingDate: "2026-11-11", summary: "Notes", items: [{ title: "Net 50 rule" }] };
 
 describe("meeting approval rules", () => {
+  it("accepts the actual MD approval date without changing the recording timestamp", () => {
+    expect(validMdDecisionDate("2026-11-11", "2026-11-11", "2026-11-12")).toBe(true);
+  });
+  it("rejects dates before the meeting", () => {
+    expect(validMdDecisionDate("2026-11-10", "2026-11-11", "2026-11-12")).toBe(false);
+  });
+  it("rejects future approval dates", () => {
+    expect(validMdDecisionDate("2026-11-13", "2026-11-11", "2026-11-12")).toBe(false);
+  });
+  it("rejects invalid calendar dates", () => {
+    expect(validMdDecisionDate("2026-02-30", "2026-01-01", "2026-11-12")).toBe(false);
+  });
+  it("uses Dhaka rather than UTC for today's date", () => {
+    expect(dhakaDecisionToday(new Date("2026-11-11T19:52:00Z"))).toBe("2026-11-12");
+  });
   it("only plain approval may skip a comment", () => {
     expect(decisionNeedsComment("approved")).toBe(false);
     expect(decisionNeedsComment("approved_with_changes")).toBe(true);

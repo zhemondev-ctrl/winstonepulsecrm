@@ -1,6 +1,7 @@
 # Roadmap
 
 ## Open tasks
+- [x] Extend meeting approvals with HQ-recorded MD decision dates and an item status tracker; preserve recorded timestamps and final locks. No meeting decisions or test records written to production.
 21. Scorecard source trends:
    - [x] Per-agent Trend window: stacked daily (weekly above 31 days) bars per source, dated by latest saved assignment to current owner; undated and outside-period counts shown. 7 tests; real check: Debbroto 297 in period + 19 undated + 278 earlier = 594 portfolio; phone no overflow.
 20. Workspace move (Nov 10): re-link Google Drive and Google Sheets in the new workspace and verify each with a read.

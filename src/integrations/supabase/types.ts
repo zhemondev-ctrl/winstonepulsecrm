@@ -3700,6 +3700,7 @@ export type Database = {
           decision_comment: string | null
           detail: string | null
           id: string
+          md_decision_date: string | null
           position: number
           request_id: string
           title: string
@@ -3712,6 +3713,7 @@ export type Database = {
           decision_comment?: string | null
           detail?: string | null
           id?: string
+          md_decision_date?: string | null
           position: number
           request_id: string
           title: string
@@ -3724,6 +3726,7 @@ export type Database = {
           decision_comment?: string | null
           detail?: string | null
           id?: string
+          md_decision_date?: string | null
           position?: number
           request_id?: string
           title?: string
