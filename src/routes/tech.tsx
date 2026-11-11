@@ -51,9 +51,9 @@ function ArchitectPage() {
 
   const shell = (child: React.ReactNode) => (
     <main className="mx-auto min-h-screen max-w-3xl space-y-6 p-4 sm:p-8">
-      <header className="flex items-center gap-2">
-        <ShieldCheck className="size-6 text-primary" />
-        <h1 className="text-xl font-bold">SYSTEM ARCHITECT CONTROL CENTER</h1>
+      <header className="flex flex-wrap items-center gap-2 border-b border-border pb-4">
+        <ShieldCheck className="size-6 shrink-0 text-primary" />
+        <h1 className="text-xl font-semibold">System Architect</h1>
         {hasSession && (
           <Button variant="ghost" size="sm" className="ml-auto" onClick={() => { setSession(null); void supabase.auth.signOut(); }}>
             <LogOut className="size-4" /> Sign out
@@ -130,6 +130,25 @@ function Dashboard({ session, onExpired }: { session: string; onExpired: () => v
 
   return (
     <div className="space-y-6">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-4">
+        <div>
+          <p className={`text-base font-semibold ${state.locked ? "text-destructive" : "text-success"}`}>{state.locked ? "SYSTEM LOCKED" : "SYSTEM ACTIVE"}</p>
+          <p className="mt-1 text-sm text-muted-foreground">{state.period} · {MAINTENANCE_FEE_LABEL}</p>
+        </div>
+        <p className="text-sm font-medium">Payment: {state.paymentStatus.toUpperCase()}</p>
+      </div>
+      <section className="space-y-3" aria-labelledby="payment-heading">
+        <h2 id="payment-heading" className="text-base font-semibold">Payment verification</h2>
+        <PaymentReview session={session} status={state.paymentStatus} paymentRef={state.paymentRef} period={state.period} onDone={() => void qc.invalidateQueries({ queryKey: ["architect-overview"] })} />
+        {(state.paymentStatus !== "pending" || !state.paymentRef) && <p className="text-sm text-muted-foreground">{state.paymentStatus === "verified" ? "Payment verified for this period." : "No payment reference awaiting verification."}</p>}
+      </section>
+      <section className="space-y-3" aria-labelledby="unlock-heading">
+        <h2 id="unlock-heading" className="text-base font-semibold">Temporary unlock approval</h2>
+        {open.length === 0 && <p className="text-sm text-muted-foreground">No pending request.</p>}
+        {open.map((r) => (
+          <RequestCard key={r.id} r={r} session={session} locked={state.locked} onDone={() => void qc.invalidateQueries({ queryKey: ["architect-overview"] })} />
+        ))}
+      </section>
       {state.stage === "unlocked" && (
         <div className="card-elevated border-success/40 p-4 text-sm">
           <p className="font-bold text-success">SYSTEM UNLOCKED</p>
@@ -137,7 +156,9 @@ function Dashboard({ session, onExpired }: { session: string; onExpired: () => v
           {state.approvalReason && <p>Reason: {state.approvalReason}</p>}
         </div>
       )}
-      <table className="card-elevated w-full text-sm">
+      <details className="border-t border-border pt-4">
+        <summary className="cursor-pointer text-sm font-medium">Billing &amp; access details</summary>
+      <table className="mt-3 w-full text-sm">
         <tbody>
           {[
             ["CRM Status", state.locked ? "LOCKED" : "ACTIVE"],
@@ -153,22 +174,17 @@ function Dashboard({ session, onExpired }: { session: string; onExpired: () => v
           ].map(([k, v]) => (
             <tr key={k} className="border-b border-border last:border-0">
               <td className="p-2 text-muted-foreground">{k}</td>
-              <td className="p-2 font-semibold">{v}</td>
+              <td className="break-words p-2 font-semibold">{v}</td>
             </tr>
           ))}
         </tbody>
       </table>
-      <div className="card-elevated space-y-1 p-4 text-sm">
+      <div className="space-y-1 py-4 text-sm">
         <p className="font-bold">Monthly architecture charge</p>
         <p>{MAINTENANCE_FEE_LABEL}</p>
         <p className="text-xs text-muted-foreground">Payment must be verified here before the 15th 00:00 Asia/Dhaka. Customer approval of an invoice is not payment; a verified late payment restores access.</p>
       </div>
-      <PaymentReview session={session} status={state.paymentStatus} paymentRef={state.paymentRef} period={state.period} onDone={() => void qc.invalidateQueries({ queryKey: ["architect-overview"] })} />
-      <h2 className="text-base font-semibold">Maintenance access requests</h2>
-      {open.length === 0 && <p className="text-sm text-muted-foreground">No pending request.</p>}
-      {open.map((r) => (
-        <RequestCard key={r.id} r={r} session={session} locked={state.locked} onDone={() => void qc.invalidateQueries({ queryKey: ["architect-overview"] })} />
-      ))}
+      </details>
     </div>
   );
 }
@@ -189,7 +205,9 @@ function RequestCard({ r, session, locked, onDone }: { r: Req; session: string; 
   return (
     <div className="card-elevated space-y-3 p-4 text-sm">
       <p className="font-semibold">IT Console has requested temporary system unlock.</p>
-      <dl className="grid grid-cols-2 gap-1 text-xs">
+      <details>
+      <summary className="cursor-pointer text-xs font-medium">Request details</summary>
+      <dl className="mt-2 grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-2 text-xs [&_dd]:break-words">
         <dt>Request ID</dt><dd className="break-all">{r.id}</dd>
         <dt>Billing period</dt><dd>{r.billing_period}</dd>
         <dt>Maintenance fee</dt><dd>{MAINTENANCE_FEE_LABEL}</dd>
@@ -200,6 +218,7 @@ function RequestCard({ r, session, locked, onDone }: { r: Req; session: string; 
         <dt>Reason</dt><dd>{r.reason ?? "—"}</dd>
         <dt>Current system</dt><dd>{locked ? "LOCKED" : "ACTIVE"}</dd>
       </dl>
+      </details>
       <div className="flex flex-wrap gap-1">
         {UNLOCK_PRESET_HOURS.map((h) => (
           <Button key={h} size="sm" variant={!custom && hours === h ? "default" : "secondary"} onClick={() => { setCustom(""); setHours(h); }}>{h} Hour{h > 1 ? "s" : ""}</Button>
@@ -207,7 +226,7 @@ function RequestCard({ r, session, locked, onDone }: { r: Req; session: string; 
         <Input className="w-32" inputMode="decimal" placeholder="Custom hours" value={custom} onChange={(e) => setCustom(e.target.value)} />
       </div>
       <Input placeholder="Reason (required to deny)" value={reason} onChange={(e) => setReason(e.target.value)} />
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         <Button disabled={decide.isPending} onClick={() => decide.mutate(true)}>APPROVE & UNLOCK</Button>
         <Button variant="destructive" disabled={decide.isPending || reason.trim().length < 3} onClick={() => decide.mutate(false)}>DENY</Button>
       </div>
@@ -227,9 +246,9 @@ function PaymentReview({ session, status, paymentRef, period, onDone }: { sessio
   return (
     <div className="card-elevated space-y-2 border-warning/40 p-4 text-sm">
       <p className="font-bold">Payment submitted for verification — {period}</p>
-      <p>Reference: <b>{paymentRef}</b> · {MAINTENANCE_FEE_LABEL}</p>
+      <p className="break-words">Reference: <b>{paymentRef}</b> · {MAINTENANCE_FEE_LABEL}</p>
       <Input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Audit reason (required)" />
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         <Button disabled={reason.trim().length < 3 || decide.isPending} onClick={() => decide.mutate(true)}>Verify &amp; mark paid</Button>
         <Button variant="destructive" disabled={reason.trim().length < 3 || decide.isPending} onClick={() => decide.mutate(false)}>Reject</Button>
       </div>
