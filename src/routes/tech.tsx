@@ -16,6 +16,7 @@ import {
   architectOverview,
 } from "@/lib/maintenance.functions";
 import { MAINTENANCE_FEE_LABEL, UNLOCK_PRESET_HOURS, dhakaTime } from "@/lib/maintenance-rules";
+import { requestArchitectReturnFocus } from "@/lib/access-focus";
 
 export const Route = createFileRoute("/tech")({
   ssr: false,
@@ -53,7 +54,7 @@ function ArchitectPage() {
 
   const shell = (child: React.ReactNode) => (
     <main className="mx-auto min-h-screen max-w-3xl space-y-6 p-4 sm:p-8">
-      {canGoBack ? <Button variant="ghost" size="sm" onClick={() => router.history.back()}><ArrowLeft className="size-4" />ফিরে যান</Button> : <Button asChild variant="ghost" size="sm"><Link to="/it-access"><ArrowLeft className="size-4" />ফিরে যান</Link></Button>}
+      {canGoBack ? <Button variant="ghost" size="sm" onClick={() => { requestArchitectReturnFocus(); router.history.back(); }}><ArrowLeft className="size-4" />ফিরে যান</Button> : <Button asChild variant="ghost" size="sm"><Link to="/it-access" onClick={requestArchitectReturnFocus}><ArrowLeft className="size-4" />ফিরে যান</Link></Button>}
       <header className="flex flex-wrap items-center gap-2 border-b border-border pb-4">
         <ShieldCheck className="size-6 shrink-0 text-primary" />
         <h1 className="text-xl font-semibold">System Architect</h1>

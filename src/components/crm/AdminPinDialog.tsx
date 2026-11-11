@@ -22,11 +22,13 @@ export function AdminPinDialog({
   open,
   onOpenChange,
   onUnlocked,
+  onCloseAutoFocus,
   surface = "system",
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onUnlocked?: () => void;
+  onCloseAutoFocus?: (event: Event) => void;
   /** HQ is view-only; system and LeadHub mint isolated full-access sessions. */
   surface?: "hq" | "system" | "leadhub";
 }) {
@@ -76,7 +78,7 @@ export function AdminPinDialog({
         onOpenChange(next);
       }}
     >
-      <DialogContent className="sm:max-w-sm">
+      <DialogContent className="sm:max-w-sm" onCloseAutoFocus={onCloseAutoFocus}>
         <DialogHeader className="items-center text-center">
           <span className="grid size-11 place-items-center rounded-full bg-primary/15 text-primary">
             <Lock className="size-5" />

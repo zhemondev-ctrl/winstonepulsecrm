@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { getMyAccount, signInWithIdentifier } from "@/lib/accounts.functions";
 import { visibleItStep } from "@/lib/access-navigation";
+import { takeArchitectReturnFocus } from "@/lib/access-focus";
 
 export const Route = createFileRoute("/it-access")({
   ssr: false,
@@ -37,8 +38,20 @@ function ItAccess() {
   const [changePassword, setChangePassword] = useState(false);
   const [operatorVerified, setOperatorVerified] = useState(false);
   const unlocking = useRef(false);
+  const pinTrigger = useRef<HTMLAnchorElement>(null);
+  const emailInput = useRef<HTMLInputElement>(null);
+  const architectTrigger = useRef<HTMLAnchorElement>(null);
   const step = visibleItStep(requestedStep, pinVerified, operatorVerified);
   useEffect(() => { setPassword(""); }, [requestedStep]);
+  useEffect(() => {
+    if (step === "pin" || step === "password") return;
+    const fromArchitect = takeArchitectReturnFocus();
+    const frame = requestAnimationFrame(() => {
+      const target = fromArchitect ? architectTrigger.current ?? pinTrigger.current : step === "operator" ? emailInput.current : pinTrigger.current;
+      target?.focus({ preventScroll: true });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [step]);
   const returnTo = (fallback: "entry" | "operator") => {
     if (router.history.canGoBack()) router.history.back();
     else void navigate({ to: "/it-access", search: fallback === "entry" ? {} : { step: fallback }, replace: true });
@@ -67,12 +80,12 @@ function ItAccess() {
     </header>
     <section className="space-y-3">
       <h2 className="flex items-center gap-2 text-base font-semibold"><KeyRound className="size-4" />১. IT Console PIN</h2>
-      <Button asChild variant={step === "operator" || step === "password" ? "outline" : "default"}><Link to="/it-access" search={{ step: "pin" }}>{step === "operator" || step === "password" ? "PIN যাচাই হয়েছে" : "PIN দিয়ে আনলক"}</Link></Button>
+      <Button asChild variant={step === "operator" || step === "password" ? "outline" : "default"}><Link ref={pinTrigger} to="/it-access" search={{ step: "pin" }}>{step === "operator" || step === "password" ? "PIN যাচাই হয়েছে" : "PIN দিয়ে আনলক"}</Link></Button>
     </section>
     {step === "password" ? <ItOwnPasswordForm onBack={() => returnTo("operator")} /> : step === "operator" && <section className="space-y-4 border-t border-border pt-5">
       <h2 className="text-base font-semibold">২. IT Operator লগইন</h2>
       <form className="space-y-4" onSubmit={(event) => { event.preventDefault(); if (!login.isPending) login.mutate(); }}>
-        <div className="space-y-2"><Label htmlFor="it-email">Email</Label><Input id="it-email" type="email" autoComplete="username" autoCapitalize="none" required value={email} onChange={(event) => setEmail(event.target.value)} /></div>
+        <div className="space-y-2"><Label htmlFor="it-email">Email</Label><Input ref={emailInput} id="it-email" type="email" autoComplete="username" autoCapitalize="none" required value={email} onChange={(event) => setEmail(event.target.value)} /></div>
         <div className="space-y-2"><Label htmlFor="it-password">Password</Label><Input id="it-password" type="password" autoComplete="current-password" required value={password} onChange={(event) => setPassword(event.target.value)} /></div>
         <Button type="submit" className="w-full" disabled={login.isPending || !email.trim() || !password}>{login.isPending ? <Loader2 className="size-4 animate-spin" /> : <LogIn className="size-4" />}IT Operator হিসেবে লগইন</Button>
         <label className="flex items-center gap-2 text-sm"><input type="checkbox" className="size-4 accent-primary" checked={changePassword} disabled={login.isPending} onChange={(event) => setChangePassword(event.target.checked)} />লগইনের পরে নিজের CRM পাসওয়ার্ড পরিবর্তন</label>
@@ -80,9 +93,9 @@ function ItAccess() {
       </form>
       <div className="space-y-3 border-t border-border pt-5">
         <h2 className="text-base font-semibold">System Architect</h2>
-        <Button asChild variant="outline" className="w-full"><Link to="/tech"><ShieldCheck className="size-4" />Architect হিসেবে প্রবেশ</Link></Button>
+        <Button asChild variant="outline" className="w-full"><Link ref={architectTrigger} to="/tech"><ShieldCheck className="size-4" />Architect হিসেবে প্রবেশ</Link></Button>
       </div>
     </section>}
-    <AdminPinDialog open={step === "pin"} onOpenChange={(open) => { if (!open) queueMicrotask(() => { if (!unlocking.current) returnTo("entry"); unlocking.current = false; }); }} surface="system" onUnlocked={() => { unlocking.current = true; setPinVerified(true); void navigate({ to: "/it-access", search: { step: "operator" }, replace: true }); }} />
+    <AdminPinDialog open={step === "pin"} onCloseAutoFocus={(event) => { event.preventDefault(); (step === "operator" ? emailInput.current : pinTrigger.current)?.focus({ preventScroll: true }); }} onOpenChange={(open) => { if (!open) queueMicrotask(() => { if (!unlocking.current) returnTo("entry"); unlocking.current = false; }); }} surface="system" onUnlocked={() => { unlocking.current = true; setPinVerified(true); void navigate({ to: "/it-access", search: { step: "operator" }, replace: true }); }} />
   </main>;
 }
