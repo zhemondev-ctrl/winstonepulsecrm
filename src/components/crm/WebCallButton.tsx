@@ -171,23 +171,23 @@ export function WebCallButton({
       <div className="min-w-0 space-y-2">
       <p role="status" className="text-xs text-muted-foreground">{t({ bn: "ডায়াল শুরু থেকে সময়", en: "Time since dial started" })} · {mm}:{ss}</p>
       <div className="grid grid-cols-2 gap-2">
-        <Button variant="outline" disabled><MicOff />{t({ bn: "মিউট · ফোনে", en: "Mute · on phone" })}</Button>
-        <Button variant="outline" disabled><Volume2 />{t({ bn: "স্পিকার · ফোনে", en: "Speaker · on phone" })}</Button>
+        <Button variant="outline" className="h-auto min-h-11 min-w-0 flex-col gap-1 whitespace-normal px-2 py-2 text-center leading-snug" disabled><MicOff /><span className="min-w-0 break-words">{t({ bn: "মিউট · ফোনে", en: "Mute · on phone" })}</span></Button>
+        <Button variant="outline" className="h-auto min-h-11 min-w-0 flex-col gap-1 whitespace-normal px-2 py-2 text-center leading-snug" disabled><Volume2 /><span className="min-w-0 break-words">{t({ bn: "স্পিকার · ফোনে", en: "Speaker · on phone" })}</span></Button>
       </div>
       <p className="text-xs text-muted-foreground">{t({ bn: "SIM কলের মিউট, স্পিকার ও কল কাটা ফোনের কল-পর্দা থেকে করুন।", en: "Mute, speaker and hang-up for SIM calls are controlled on your phone call screen." })}</p>
-      {leadId && <Button variant="secondary" className="min-h-11 w-full" onClick={() => setContextOpen(true)}><NotebookPen />{t({ bn: "লিড · আগের নোট · ইতিহাস", en: "Lead · saved notes · history" })}</Button>}
+      {leadId && <Button variant="secondary" className="h-auto min-h-11 w-full min-w-0 whitespace-normal px-3 py-2 leading-snug" onClick={() => setContextOpen(true)}><NotebookPen /><span className="min-w-0 break-words">{t({ bn: "লিড · আগের নোট · ইতিহাস", en: "Lead · saved notes · history" })}</span></Button>}
       <Dialog open={contextOpen} onOpenChange={setContextOpen}><DialogContent className="max-h-[85dvh] overflow-y-auto sm:max-w-lg"><DialogHeader><DialogTitle>{t({ bn: "কলের নোট ও ইতিহাস", en: "Call notes & history" })}</DialogTitle><DialogDescription>{t({ bn: "ব্যক্তিগত নোট", en: "Personal notes" })}</DialogDescription></DialogHeader>{leadId && <CallLeadContext leadId={leadId} />}</DialogContent></Dialog>
       <Button
         type="button"
         size="lg"
         variant="destructive"
-        className={cn("h-11 min-w-0 flex-1 rounded-xl text-base font-semibold", className)}
+        className={cn("h-11 min-w-0 flex-1 rounded-xl text-base font-semibold", className, "h-auto min-h-11 w-full whitespace-normal px-3 py-3 leading-snug")}
         disabled={end.isPending}
         onClick={() => end.mutate()}
         aria-label={ariaLabel ? `${ariaLabel} শেষ করুন` : undefined}
       >
         {end.isPending ? <Loader2 className="size-5 animate-spin" /> : <Square className="size-5" />}
-        <span className="tabular">
+        <span className="tabular min-w-0 break-words">
           {t({ bn: "কল শেষ হয়েছে · রিপোর্ট খুলুন", en: "Call has ended · open report" })}
         </span>
       </Button>
