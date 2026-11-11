@@ -23,6 +23,7 @@ import { DocSummaryPanel } from "@/components/crm/DocSummaryPanel";
 import { DriveBackupPanel } from "@/components/crm/DriveBackupPanel";
 import { ExtraLeadPanel } from "@/components/crm/ExtraLeadPanel";
 import { LeadDatabasePanel } from "@/components/crm/LeadDatabasePanel";
+import { AgentSelfLeadsPanel } from "@/components/crm/hq/AgentSelfLeadsPanel";
 import { TeamSupportInbox } from "@/components/crm/TeamSupportInbox";
 import { MaintenancePanel } from "@/components/crm/MaintenancePanel";
 import { OsSyncPanel } from "@/components/crm/OsSyncPanel";
@@ -188,6 +189,7 @@ function SystemBoard() {
       {sec === "leads" && (
         <div className="space-y-6">
           <LeadDatabasePanel />
+          <AgentSelfLeadsPanel />
           <SheetLeadStreamPanel />
           <ExtraLeadPanel />
           <YearArchivePanel />

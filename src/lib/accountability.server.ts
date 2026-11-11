@@ -26,7 +26,8 @@ export async function measureAgentDay(agentId: string, day: string): Promise<Acc
     .limit(1000);
   if (leadsError) throw new Error("Accountability lead evidence unavailable");
   if ((leads ?? []).length >= 1000) throw new Error("Accountability lead evidence truncated");
-  const usable = (leads ?? []).filter((l) => l.assignment_source !== "duplicate_skipped");
+  // Self-added leads are extra credit, not the mandatory company task.
+  const usable = (leads ?? []).filter((l) => l.assignment_source !== "duplicate_skipped" && l.assignment_source !== "self");
   const ids = usable.map((l) => l.id);
 
   const reported = new Set<string>();
