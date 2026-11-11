@@ -18,8 +18,6 @@ import {
   LifeBuoy,
   Lightbulb,
   Menu,
-  PanelLeftClose,
-  PanelLeftOpen,
   Network,
   Newspaper,
   MapPin,
@@ -187,25 +185,13 @@ function NavContent({
   );
 }
 
-/** Grouped left navigator for desktop; collapsible to icons (Ctrl/⌘+B). */
+/** Grouped left navigator for desktop; always open and fixed (never collapses), navy like the logo. */
 export function NavSidebar({ items }: { items: readonly Item[] }) {
   const t = useT();
-  const [collapsed, setCollapsed] = useState(false);
+  const collapsed = false;
   const ref = useRef<HTMLElement>(null);
   useEffect(() => {
-    setCollapsed(localStorage.getItem("nav-collapsed") === "1");
-  }, []);
-  const toggle = () =>
-    setCollapsed((c) => {
-      localStorage.setItem("nav-collapsed", c ? "0" : "1");
-      return !c;
-    });
-  useEffect(() => {
     const onKey = (e: globalThis.KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "b") {
-        e.preventDefault();
-        toggle();
-      }
       // Alt+M jumps keyboard focus into the menu.
       if (e.altKey && e.key.toLowerCase() === "m") {
         e.preventDefault();
@@ -220,31 +206,19 @@ export function NavSidebar({ items }: { items: readonly Item[] }) {
       ref={ref}
       aria-label={t({ bn: "প্রধান নেভিগেশন", en: "Main navigation" })}
       onKeyDown={onNavKeys}
-      className={`sticky top-14 hidden h-[calc(100vh-3.5rem)] shrink-0 flex-col border-r border-border bg-sidebar py-4 transition-[width] duration-200 lg:flex ${collapsed ? "w-16 px-2" : "w-64 px-3"}`}
+      className="nav-navy sticky top-14 hidden h-[calc(100vh-3.5rem)] w-60 shrink-0 flex-col border-r border-border bg-sidebar px-3 py-3 lg:flex"
     >
-      <button
-        type="button"
-        onClick={toggle}
-        aria-expanded={!collapsed}
-        aria-label={collapsed ? t({ bn: "সাইডবার প্রসারিত করুন (Ctrl+B)", en: "Expand sidebar (Ctrl+B)" }) : t({ bn: "সাইডবার ভাঁজ করুন (Ctrl+B)", en: "Collapse sidebar (Ctrl+B)" })}
-        title={collapsed ? t({ bn: "প্রসারিত করুন (Ctrl+B)", en: "Expand (Ctrl+B)" }) : t({ bn: "ভাঁজ করুন (Ctrl+B)", en: "Collapse (Ctrl+B)" })}
-        className={`${FOCUS} mb-4 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-[12px] text-muted-foreground hover:bg-accent/60 hover:text-foreground ${collapsed ? "justify-center" : ""}`}
-      >
-        {collapsed ? <PanelLeftOpen className="size-4" /> : <PanelLeftClose className="size-4" />}
-        {!collapsed && <span>{t({ bn: "ভাঁজ করুন", en: "Collapse" })}</span>}
-      </button>
       <div className="min-h-0 flex-1 overflow-y-auto">
         <NavContent items={items} collapsed={collapsed} />
       </div>
       <SidebarAccount collapsed={collapsed} />
-      <div className={`mt-2 ${collapsed ? "flex justify-center" : "px-1"}`}>
+      <div className="mt-2 px-1">
         <BuildBadge compact={collapsed} />
       </div>
     </aside>
   );
 }
 
-/** Avatar + sign-out at the foot of the sidebar; same sign-out as the top bar. */
 function SidebarAccount({ collapsed }: { collapsed: boolean }) {
   const { account, scope } = useMyAccount();
   const signOut = useSignOut();

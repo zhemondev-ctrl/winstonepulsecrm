@@ -652,3 +652,19 @@ html[lang="bn"] h3 {
 }
 
 .font-hand { font-family: "Caveat", var(--font-display); }
+
+/* Desktop side menu: fixed navy matching the logo disc; tokens re-scoped so every child stays readable. */
+.nav-navy {
+  --logo-navy: oklch(from #11213A l c h);
+  --sidebar: var(--logo-navy);
+  --foreground: oklch(from #F7F1E6 l c h);
+  --muted-foreground: oklch(from #AEB8C8 l c h);
+  --accent: color-mix(in oklab, var(--gold) 22%, var(--logo-navy));
+  --accent-foreground: var(--foreground);
+  --border: color-mix(in oklab, var(--foreground) 16%, var(--logo-navy));
+  --card: color-mix(in oklab, var(--foreground) 6%, var(--logo-navy));
+  --secondary: var(--card);
+  --secondary-foreground: var(--foreground);
+  --muted: var(--card);
+  color: var(--foreground);
+}

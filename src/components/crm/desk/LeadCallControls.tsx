@@ -14,7 +14,7 @@ export function LeadCallControls({ leadId, phone, name, onDetails }: {
   onDetails: () => void;
 }) {
   const t = useT();
-  const tools = "mx-auto size-11 rounded-full border border-border bg-secondary text-secondary-foreground hover:bg-muted [&_svg]:size-5";
+  const tools = "mx-auto size-11 md:size-11 rounded-full border border-border bg-secondary text-secondary-foreground hover:bg-muted [&_svg]:size-5";
   return (
     <div className="space-y-3 border-t border-border/70 pt-4">
       <div className="grid grid-cols-3 gap-2 text-center">

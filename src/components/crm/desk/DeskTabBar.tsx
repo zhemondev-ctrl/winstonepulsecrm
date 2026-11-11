@@ -1,4 +1,4 @@
-import { CalendarClock, ChevronDown, MessagesSquare, Home, List, MessageCircle, PhoneCall, Send, LayoutGrid, FileText, LifeBuoy } from "lucide-react";
+import { CalendarClock, MessagesSquare, Home, List, MessageCircle, PhoneCall, Send, LayoutGrid, FileText, LifeBuoy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useT } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
@@ -20,21 +20,16 @@ const ITEMS = [
   { tab: "support", label: { bn: "সাপোর্ট", en: "Support" }, Icon: LifeBuoy, tone: "text-destructive bg-destructive/10" },
 ] as const;
 
-/** All sections visible in a two-column picker; no sideways navigation. */
+/** All sections always visible in a compact grid; no sideways navigation, never hidden. */
 export function DeskTabBar({ tab, onChange }: { tab: string; onChange: (t: string) => void }) {
   const t = useT();
-  return <details className="group border-y border-border bg-background">
-    <summary className="grid min-h-14 cursor-pointer list-none grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-3 [&::-webkit-details-marker]:hidden">
-      <span className="min-w-0 text-sm font-semibold">{t({ bn: "আমার ডেস্ক", en: "My desk" })}<span className="ml-2 text-muted-foreground">/ {t(ITEMS.find((item) => item.tab === tab)?.label ?? ITEMS[0].label)}</span></span>
-      <ChevronDown className="size-4 shrink-0 transition-transform group-open:rotate-180" />
-    </summary>
-    <nav aria-label={t({ bn: "ডেস্ক সেকশন", en: "Desk sections" })} className="grid grid-cols-2 gap-2 border-t border-border p-3 sm:grid-cols-4">
-      {ITEMS.map(({ tab: value, label, Icon, tone }) => <Button key={value} variant="ghost" aria-current={tab === value ? "page" : undefined}
-        onClick={(event) => { onChange(value); event.currentTarget.closest("details")?.removeAttribute("open"); }}
-        className={cn("h-auto min-h-14 min-w-0 justify-start gap-2 rounded-lg border px-2 text-left text-sm", tab === value ? "border-ring bg-accent font-bold" : "border-transparent")}>
-        <span className={cn("grid size-9 shrink-0 place-items-center rounded-lg", tone)}><Icon className="size-4" /></span>
-        <span className="min-w-0 whitespace-normal break-words">{t(label)}</span>
-      </Button>)}
-    </nav>
-  </details>;
+  return <nav aria-label={t({ bn: "ডেস্ক সেকশন", en: "Desk sections" })}
+    className="grid grid-cols-2 gap-1 border-y border-border bg-background p-1.5 sm:grid-cols-5 lg:grid-cols-7">
+    {ITEMS.map(({ tab: value, label, Icon, tone }) => <Button key={value} variant="ghost" aria-current={tab === value ? "page" : undefined}
+      onClick={() => onChange(value)}
+      className={cn("h-auto min-h-9 min-w-0 justify-start gap-1.5 rounded-md border px-1.5 py-1 text-left text-xs", tab === value ? "border-ring bg-accent font-bold" : "border-transparent")}>
+      <span className={cn("grid size-6 shrink-0 place-items-center rounded-md", tone)}><Icon className="size-3.5" /></span>
+      <span className="min-w-0 break-words leading-tight">{t(label)}</span>
+    </Button>)}
+  </nav>;
 }
