@@ -73,4 +73,4 @@
 - `bun run scan:sensitive` is the read-only scan for signing keys/secrets in tracked files and public downloads (ZIPs opened); it prints file + rule only, never values — why: one check, no leaked matches.
 - No GitHub logic in the CRM app (panels, API calls, cron, issues); Git only runs Android CI (`.github/workflows/android-*.yml`, see android/AGENTS.md); APKs reach agents only via IT's PIN-gated `android-apk` links — why: no runtime Git dependency.
 
-- HQ-only documents live in the private hq-documents bucket and are served only via short-lived signed links after a server authority check — why: reports contain named staff audit data.
+- HQ docs: private hq-documents bucket, 60s signed links after server authority check — why: staff audit data.
