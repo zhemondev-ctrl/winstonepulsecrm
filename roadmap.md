@@ -62,6 +62,6 @@
 2. Android official signed APK — blocker: signing key/passwords live only in GitHub secrets / user's PC; user must fix WINSTONE_KEY_PASSWORD and run the workflow.
 
 ## MD approval report (2026-11-11)
-- [ ] Transcribe meeting audio My_Video1.mp3
-- [ ] Report v2 PDF with recommended best plan for MD approval
-- [ ] HQ/IT-only download button for the MD report in CRM
+- [x] Transcribe meeting audio My_Video1.mp3
+- [x] Report v2 PDF with recommended best plan for MD approval
+- [x] HQ/IT-only download button for the MD report in CRM
