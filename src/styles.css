@@ -668,3 +668,9 @@ html[lang="bn"] h3 {
   --muted: var(--card);
   color: var(--foreground);
 }
+.nav-navy [data-nav-link]:focus-visible {
+  outline: 3px solid var(--ring);
+  outline-offset: -3px;
+  background: var(--accent);
+  color: var(--foreground);
+}

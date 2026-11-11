@@ -93,20 +93,23 @@ const GROUPS: { title: { bn: string; en: string }; routes: string[] }[] = [
   { title: { bn: "সহায়তা", en: "Help" }, routes: ["/walkthrough", "/docs", "/docs-admin", "/help"] },
 ];
 
-const FOCUS = "outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background";
+const FOCUS = "outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-sidebar";
 
 /** Arrow keys / Home / End move focus between menu links. */
 function onNavKeys(e: KeyboardEvent<HTMLElement>) {
   if (!["ArrowDown", "ArrowUp", "Home", "End"].includes(e.key)) return;
   const links = [...e.currentTarget.querySelectorAll<HTMLElement>("[data-nav-link]")];
   if (!links.length) return;
-  e.preventDefault();
   const i = links.indexOf(document.activeElement as HTMLElement);
+  if (i < 0 || e.altKey || e.ctrlKey || e.metaKey) return;
+  e.preventDefault();
   const next =
     e.key === "Home" ? 0 : e.key === "End" ? links.length - 1
     : e.key === "ArrowDown" ? (i + 1) % links.length
     : (i - 1 + links.length) % links.length;
-  links[next]?.focus();
+  const target = links[next];
+  target?.focus({ preventScroll: true });
+  target?.scrollIntoView({ block: "nearest" });
 }
 
 function NavContent({
@@ -193,9 +196,9 @@ export function NavSidebar({ items }: { items: readonly Item[] }) {
   useEffect(() => {
     const onKey = (e: globalThis.KeyboardEvent) => {
       // Alt+M jumps keyboard focus into the menu.
-      if (e.altKey && e.key.toLowerCase() === "m") {
+      if (e.altKey && !e.ctrlKey && !e.metaKey && e.key.toLowerCase() === "m" && window.innerWidth >= 1024) {
         e.preventDefault();
-        (ref.current?.querySelector('[data-status="active"]') as HTMLElement | null ?? ref.current?.querySelector<HTMLElement>("[data-nav-link]"))?.focus();
+        (ref.current?.querySelector<HTMLElement>('[data-nav-link][aria-current="page"]') ?? ref.current?.querySelector<HTMLElement>('[data-nav-link][data-status="active"]') ?? ref.current?.querySelector<HTMLElement>("[data-nav-link]"))?.focus();
       }
     };
     window.addEventListener("keydown", onKey);
@@ -205,6 +208,7 @@ export function NavSidebar({ items }: { items: readonly Item[] }) {
     <aside
       ref={ref}
       aria-label={t({ bn: "প্রধান নেভিগেশন", en: "Main navigation" })}
+      aria-keyshortcuts="Alt+M"
       onKeyDown={onNavKeys}
       className="nav-navy sticky top-[var(--shell-header-height,3.5rem)] hidden h-[calc(100dvh-var(--shell-header-height,3.5rem))] w-60 shrink-0 flex-col border-r border-border bg-sidebar px-3 py-3 lg:flex"
     >
@@ -253,28 +257,40 @@ function SidebarAccount({ collapsed }: { collapsed: boolean }) {
 export function MobileNavDrawer({ items }: { items: readonly Item[] }) {
   const t = useT();
   const [open, setOpen] = useState(false);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const keyboardOpen = useRef(false);
   useEffect(() => {
     const onKey = (e: globalThis.KeyboardEvent) => {
-      if (e.altKey && e.key.toLowerCase() === "m" && window.innerWidth < 1024) {
+      if (e.altKey && !e.ctrlKey && !e.metaKey && e.key.toLowerCase() === "m" && window.innerWidth < 1024) {
         e.preventDefault();
+        keyboardOpen.current = true;
+        if (open) contentRef.current?.querySelector<HTMLElement>("[data-nav-link]")?.focus();
         setOpen(true);
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, []);
+  }, [open]);
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
         <button
           type="button"
           aria-label={t({ bn: "নেভিগেশন মেনু খুলুন (Alt+M)", en: "Open navigation menu (Alt+M)" })}
+          aria-keyshortcuts="Alt+M"
           className={`${FOCUS} inline-flex size-8 shrink-0 items-center justify-center rounded-full border border-border bg-card text-foreground transition-all duration-200 hover:bg-accent/60 lg:hidden`}
         >
           <Menu className="size-4.5" />
         </button>
       </SheetTrigger>
       <SheetContent
+        ref={contentRef}
+        onOpenAutoFocus={(event) => {
+          if (!keyboardOpen.current) return;
+          keyboardOpen.current = false;
+          const target = contentRef.current?.querySelector<HTMLElement>('[data-nav-link][aria-current="page"]') ?? contentRef.current?.querySelector<HTMLElement>('[data-nav-link][data-status="active"]') ?? contentRef.current?.querySelector<HTMLElement>("[data-nav-link]");
+          if (target) { event.preventDefault(); target.focus(); }
+        }}
         side="bottom"
         className="nav-navy max-h-[85dvh] w-full overflow-y-auto bg-sidebar p-0"
       >
