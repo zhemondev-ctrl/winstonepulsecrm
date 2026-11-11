@@ -1,6 +1,7 @@
 # Roadmap
 
 ## Open tasks
+- [x] Track permitted web dial handoff (not connected proof), blocked/request-failed start and online-saved failed outcome; reuse call_captured for saved call end without a duplicate. 24 isolated tests pass, nine-event catalog validates against HEAD; no customer fields, live calls or publication. Actual collector arrival unverified; verified CallLog connected-lead daily goal remains uninstrumented.
 - [x] Matched desktop/phone navigation to logo's dominant exact blue RGB(17,33,58); measured header offset prevents sidebar moving under wrapped header. Verified 1234/1280/1024px before/after scroll and fixed bottom drawers at 740/390/320px; 6 tests pass, build OK. Phone menu remains open-on-demand as before; not published.
 - [x] Verified 24 real Desk cards at 1234/1280/740/390/320px: desktop/tablet keep two columns, phones stack; fixed in-progress call controls wrapping/height. Repeated check shows no card overflow at all five widths; 19 tests pass. Call state simulated locally only, no calls or CRM writes; not published.
 - [x] Restore keyboard focus after IT/Architect back actions: PIN trigger on dialog close, operator email after password-step return, Architect trigger when available (safe PIN fallback otherwise). PIN and Architect fallback focus plus Tab/history verified at 625×433; 30 tests pass. Real signed-in operator return not exercised; not published.

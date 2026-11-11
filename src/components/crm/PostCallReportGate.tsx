@@ -977,7 +977,7 @@ function ReportDialog({
         return { offline: true as const };
       }
       const res = (await save({ data: payload } as never)) as { reassigned?: boolean } | undefined;
-      return { offline: false as const, reassigned: Boolean(res?.reassigned) };
+      return { offline: false as const, reassigned: Boolean(res?.reassigned), failedCall: payload["callStatus"] === "failed" };
   })).current;
   const send = useMutation({
     mutationFn: () => sendOnce(),
@@ -986,6 +986,9 @@ function ReportDialog({
       toast.dismiss(`report-save-${detail.report.id}`);
     },
     onSuccess: (result) => {
+      if (!result.offline && result.failedCall) {
+        window.__lovableEvents?.track?.("project.call_failed", { evidence: "agent_report_saved" });
+      }
       window.__lovableEvents?.track?.("project.call_report_saved", {
         mode: result.offline ? "queued_offline" : "synced",
         reassigned: !result.offline && "reassigned" in result && Boolean(result.reassigned),

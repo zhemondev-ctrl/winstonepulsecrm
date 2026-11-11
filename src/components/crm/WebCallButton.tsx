@@ -110,6 +110,7 @@ export function WebCallButton({
     const next: Live = { leadId: handle, startedAt: Date.now() };
     localStorage.setItem(KEY, JSON.stringify(next));
     setLive(next);
+    window.__lovableEvents?.track?.("project.call_started", { source: "web_dialer", lead_linked: Boolean(leadId) });
     window.location.href = `tel:${phone}`;
   };
 
@@ -119,13 +120,17 @@ export function WebCallButton({
     },
     onSuccess: (result) => {
       if (result.blocked) {
+        window.__lovableEvents?.track?.("project.call_start_failed", { kind: "blocked" });
         toast.error(result.reason);
         void queryClient.invalidateQueries({ queryKey: ["pending-call-report"] });
         return;
       }
       dial();
     },
-    onError: (error: Error) => toast.error(error.message),
+    onError: (error: Error) => {
+      window.__lovableEvents?.track?.("project.call_start_failed", { kind: "request_error" });
+      toast.error(error.message);
+    },
   });
 
   const end = useMutation({

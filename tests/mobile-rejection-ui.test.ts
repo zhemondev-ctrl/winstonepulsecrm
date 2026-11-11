@@ -53,6 +53,16 @@ function fillSales(answer: (i: number) => "Yes" | "No" | null = () => "Yes") {
 }
 const submitButton = () => screen.getByRole("button", { name: "Confirm & Submit" }) as HTMLButtonElement;
 describe("actual mobile report interactions with isolated server fixtures", () => {
+  it("tracks failed call outcome only after online report save, without customer data", async () => {
+    const track = vi.fn(); window.__lovableEvents = { track };
+    try {
+      fixture.connected = false; fixture.submit.mockResolvedValue({}); await open(); choose("no_answer");
+      fireEvent.change(screen.getByLabelText(/^Call Status/), { target: { value: "failed" } });
+      fireEvent.click(submitButton());
+      await waitFor(() => expect(track).toHaveBeenCalledWith("project.call_failed", { evidence: "agent_report_saved" }));
+      expect(track.mock.calls.filter(([name]) => name === "project.call_failed")).toHaveLength(1);
+    } finally { delete window.__lovableEvents; }
+  });
   for (const category of ["not_interested", "wrong_number", "fake"]) it(`${category} immediately removes every irrelevant input and sends only rejection facts`, async () => {
     await open(); choose(category); absentSalesInputs();
     expect((screen.getByRole("button", { name: "Confirm & Submit" }) as HTMLButtonElement).disabled).toBe(false);

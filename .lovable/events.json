@@ -42,6 +42,29 @@
         }
       }
     },
+    "project.call_failed": {
+      "event_schema_version": 1,
+      "description": "An agent-reported failed call outcome was successfully saved online; not device-verified failure and not merely queued offline.",
+      "privacy": {
+        "contains_pii": false,
+        "purpose": "product_analytics"
+      },
+      "properties_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "evidence"
+        ],
+        "properties": {
+          "evidence": {
+            "type": "string",
+            "enum": [
+              "agent_report_saved"
+            ]
+          }
+        }
+      }
+    },
     "project.call_report_save_failed": {
       "event_schema_version": 1,
       "description": "Saving a call report failed; only the failure category is recorded.",
@@ -94,6 +117,57 @@
             ]
           },
           "reassigned": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    "project.call_start_failed": {
+      "event_schema_version": 1,
+      "description": "Existing web call initiation was blocked or its request failed; no raw error or customer identifiers.",
+      "privacy": {
+        "contains_pii": false,
+        "purpose": "product_analytics"
+      },
+      "properties_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "kind"
+        ],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "blocked",
+              "request_error"
+            ]
+          }
+        }
+      }
+    },
+    "project.call_started": {
+      "event_schema_version": 1,
+      "description": "Server permitted the call and the web card initiated the phone dial handoff; not evidence of connection.",
+      "privacy": {
+        "contains_pii": false,
+        "purpose": "product_analytics"
+      },
+      "properties_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "source",
+          "lead_linked"
+        ],
+        "properties": {
+          "source": {
+            "type": "string",
+            "enum": [
+              "web_dialer"
+            ]
+          },
+          "lead_linked": {
             "type": "boolean"
           }
         }
