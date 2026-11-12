@@ -40,7 +40,7 @@ export function ScoreFormulaSettings() {
         <Calculator className="mt-0.5 size-5 shrink-0 text-primary" />
         <div className="min-w-0">
           <h2 className="text-lg font-semibold">{t({ en: "Daily score formula (C, R, A, V, F)", bn: "দৈনিক স্কোর সূত্র (C, R, A, V, F)" })}</h2>
-          <p className="text-sm text-muted-foreground">{t({ en: "Choose what each letter counts and its points out of 100. Saving keeps every earlier version. Daily scores don't use these settings until the scoring step is built.", bn: "প্রতিটি অক্ষর কী গণনা করবে ও ১০০-এর মধ্যে কত পয়েন্ট, বেছে নিন। আগের সব সংস্করণ রাখা হয়। স্কোরিং তৈরি না হওয়া পর্যন্ত দৈনিক স্কোরে এটি প্রযোজ্য নয়।" })}</p>
+          <p className="text-sm text-muted-foreground">{t({ en: "Choose what each letter counts and its points out of 100. Saving keeps every earlier version. Each letter earns its full points when the daily target is reached, and a share below it.", bn: "প্রতিটি অক্ষর কী গণনা করবে ও ১০০-এর মধ্যে কত পয়েন্ট, বেছে নিন। আগের সব সংস্করণ রাখা হয়। দৈনিক লক্ষ্য পূরণ হলে পূর্ণ পয়েন্ট, কম হলে আনুপাতিক।" })}</p>
           {q.data?.savedAt && <p className="mt-1 text-xs text-muted-foreground">{t({ en: "Last saved", bn: "শেষ সংরক্ষণ" })}: {new Date(q.data.savedAt).toLocaleString("en-GB", { timeZone: "Asia/Dhaka" })} · {q.data.savedBy}</p>}
         </div>
       </header>
@@ -48,13 +48,14 @@ export function ScoreFormulaSettings() {
         <>
           <div className="space-y-3">
             {SCORE_LETTERS.map((l) => (
-              <div key={l} className="grid grid-cols-[2rem_1fr] gap-2 md:grid-cols-[2rem_1fr_1fr_6rem] md:items-center">
-                <span className="row-span-3 flex size-8 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground md:row-span-1">{l}</span>
+              <div key={l} className="grid grid-cols-[2rem_1fr] gap-2 md:grid-cols-[2rem_1fr_1fr_6rem_6rem] md:items-center">
+                <span className="row-span-4 flex size-8 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground md:row-span-1">{l}</span>
                 <input aria-label={`${l} name`} className={input} placeholder={t({ en: "Name, e.g. Connected calls", bn: "নাম, যেমন সংযুক্ত কল" })} value={form.letters[l].label} onChange={(e) => set(l, { label: e.target.value })} />
                 <select aria-label={`${l} counts`} className={input} value={form.letters[l].metric} onChange={(e) => set(l, { metric: e.target.value as ScoreMetric })}>
                   {(Object.keys(SCORE_METRICS) as ScoreMetric[]).map((m) => <option key={m} value={m}>{t(SCORE_METRICS[m])}</option>)}
                 </select>
                 <input aria-label={`${l} points`} type="number" min={0} max={100} className={input} value={form.letters[l].points} onChange={(e) => set(l, { points: Math.max(0, Math.min(100, Math.round(Number(e.target.value) || 0))) })} />
+                <input aria-label={`${l} daily target`} title={t({ en: "Daily count for full points", bn: "পূর্ণ পয়েন্টের দৈনিক সংখ্যা" })} type="number" min={1} max={500} placeholder={t({ en: "Target", bn: "লক্ষ্য" })} className={input} value={form.letters[l].target || ""} onChange={(e) => set(l, { target: Math.max(0, Math.min(500, Math.round(Number(e.target.value) || 0))) })} />
               </div>
             ))}
           </div>

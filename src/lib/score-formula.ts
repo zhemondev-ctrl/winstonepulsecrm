@@ -1,8 +1,7 @@
 /**
  * Daily score formula settings (C, R, A, V, F) — pure validation, no I/O.
  * Each letter maps to one measurable metric from a fixed list and a point value;
- * points must total exactly 100. Saved settings do not change any score until
- * the scoring build reads them.
+ * points must total exactly 100. Each letter earns points × min(1, count ÷ target); see daily-score.ts.
  */
 import { z } from "zod";
 
@@ -26,6 +25,8 @@ const letter = (l: string) => z.object({
   label: z.string().trim().min(1, `${l}: name required`).max(60),
   metric: z.enum(metricKeys),
   points: z.number().int().min(0).max(100),
+  /** Daily count that earns the full points; fewer earns a share. */
+  target: z.number().int().min(1, `${l}: daily target required`).max(500),
 });
 
 export const scoreFormulaSchema = z.object({
@@ -43,11 +44,11 @@ export const pointsTotal = (f: Pick<ScoreFormula, "letters">) => SCORE_LETTERS.r
 
 export const EMPTY_FORMULA: ScoreFormula = {
   letters: {
-    C: { label: "", metric: "connected_calls", points: 0 },
-    R: { label: "", metric: "reports_submitted", points: 0 },
-    A: { label: "", metric: "call_attempts", points: 0 },
-    V: { label: "", metric: "site_visits", points: 0 },
-    F: { label: "", metric: "follow_ups_on_time", points: 0 },
+    C: { label: "", metric: "connected_calls", points: 0, target: 0 },
+    R: { label: "", metric: "reports_submitted", points: 0, target: 0 },
+    A: { label: "", metric: "call_attempts", points: 0, target: 0 },
+    V: { label: "", metric: "site_visits", points: 0, target: 0 },
+    F: { label: "", metric: "follow_ups_on_time", points: 0, target: 0 },
   },
   includeSelfLeads: false,
 };
