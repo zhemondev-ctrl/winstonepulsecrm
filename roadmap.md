@@ -1,6 +1,10 @@
 # Roadmap
 
 ## Open tasks
+23. Maintenance mode audit + startup 500s (Nov 12):
+   - [x] Every development notice on/off is saved together with an audit row naming the System Architect (email + account) or IT Console; refused if the record can't be written. History shown in IT Console and on the Architect page. Isolated database checks pass; not exercised with a real Architect sign-in.
+   - [x] Root cause: a restarted preview didn't know server functions an open tab called until their file was compiled ("Invalid server function ID" 500). Preview now prepares them first; both return 200 on a cold restart. Board/inbox retry briefly and keep last good data.
+   - [x] Regression tests: 16 startup/unavailable checks + 7 audit checks.
 22. Development notice extras (Nov 12):
    - [x] Safe preview mode (IT Console + Architect "Preview notice screen"): same screen, simulated controls, no hold writes. Checked 1280/360px.
    - [x] Bangla captions on all three notice videos (on by default, show when muted). Two from saved scripts; the 17-min one from automatic transcription.

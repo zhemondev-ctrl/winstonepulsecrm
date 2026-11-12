@@ -19,31 +19,41 @@ async function itCaller(adminToken: string | null | undefined) {
   const { resolveCaller } = await import("@/lib/access.server");
   const caller = await resolveCaller(adminToken ?? null, { skipMaintenance: true });
   if (caller.scope !== "authority" || caller.readOnly) throw new Error("IT Console access required");
-  return caller.profile?.name ?? "IT Console";
+  return { kind: "it_console" as const, profileId: caller.profile?.id ?? null, name: caller.profile?.name ?? "IT Console" };
+}
+
+/** Current state plus the on/off history; a history read failure never hides the state. */
+async function stateWithHistory() {
+  const { readDevelopmentHold, developmentHoldHistory } = await import("@/lib/development-hold.server");
+  const hold = await readDevelopmentHold();
+  try {
+    return { ...hold, history: await developmentHoldHistory(), historyError: null };
+  } catch (error) {
+    console.error("development hold history failed", error instanceof Error ? error.message : error);
+    return { ...hold, history: [], historyError: "unavailable" as const };
+  }
 }
 
 export const itDevelopmentHold = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => z.object({ adminToken: z.string().nullable().optional() }).parse(input))
   .handler(async ({ data }) => {
     await itCaller(data.adminToken);
-    const { readDevelopmentHold } = await import("@/lib/development-hold.server");
-    return readDevelopmentHold();
+    return stateWithHistory();
   });
 
 export const itStartDevelopmentHold = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => z.object({ adminToken: z.string().nullable().optional() }).parse(input))
   .handler(async ({ data }) => {
-    const actor = await itCaller(data.adminToken);
+    const who = await itCaller(data.adminToken);
     const { startDevelopmentHold } = await import("@/lib/development-hold.server");
-    return startDevelopmentHold({ actor, actorRole: "it_console" });
+    return startDevelopmentHold({ who });
   });
 
 export const architectDevelopmentHold = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => z.object({ session: z.string().min(10) }).parse(input))
   .handler(async ({ data }) => {
     await architect(data.session);
-    const { readDevelopmentHold } = await import("@/lib/development-hold.server");
-    return readDevelopmentHold();
+    return stateWithHistory();
   });
 
 export const architectStartDevelopmentHold = createServerFn({ method: "POST" })
@@ -51,7 +61,7 @@ export const architectStartDevelopmentHold = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const who = await architect(data.session);
     const { startDevelopmentHold } = await import("@/lib/development-hold.server");
-    return startDevelopmentHold({ actor: `System Architect (${who.email})`, actorRole: "architect" });
+    return startDevelopmentHold({ who: { kind: "architect", userId: who.userId, email: who.email } });
   });
 
 export const architectConfirmDevelopmentHold = createServerFn({ method: "POST" })
@@ -61,5 +71,5 @@ export const architectConfirmDevelopmentHold = createServerFn({ method: "POST" }
   .handler(async ({ data }) => {
     const who = await architect(data.session);
     const { confirmDevelopmentHold } = await import("@/lib/development-hold.server");
-    return confirmDevelopmentHold({ actor: `System Architect (${who.email})`, note: data.note });
+    return confirmDevelopmentHold({ who: { kind: "architect", userId: who.userId, email: who.email }, note: data.note });
   });

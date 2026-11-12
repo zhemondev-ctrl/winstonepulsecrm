@@ -10,6 +10,7 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "
 import { useT } from "@/lib/i18n";
 import { Bi } from "@/components/crm/Bi";
 import { SCORE_FORMULA } from "@/lib/performance-audit";
+import { loadLiveBoard } from "@/lib/transient-retry";
 
 type ResultsData = { dateKey: string; generatedAt?: string; revealAt?: string; revealed: boolean; topThree: BoardRow[]; otherAgents: BoardRow[] };
 
@@ -20,13 +21,16 @@ const n = (v: number) => (Number.isInteger(v) ? v : v.toFixed(1));
 
 const performanceQuery = queryOptions({
   queryKey: ["public-daily-performance"],
-  queryFn: async () => {
-    try { return (await topPerformerToday()) as unknown as ResultsData; }
-    catch { return null; }
-  },
+  // Retries startup/temporary failures; keeps the last good board on a failed
+  // refresh and never replaces results with zeros.
+  queryFn: ({ client, queryKey }) =>
+    loadLiveBoard(
+      async () => (await topPerformerToday()) as unknown as ResultsData | null,
+      client.getQueryData<ResultsData | null>(queryKey),
+    ),
   staleTime: 60_000,
   refetchInterval: 60_000,
-  retry: 1,
+  retry: false,
 });
 
 export function DailyPerformance() {

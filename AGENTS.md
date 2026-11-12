@@ -27,6 +27,7 @@
 - Bookings start `approval_status='pending'`; only HQ/IT approval (server-checked, final via trigger) queues the signed OS relay event — why: HQ gatekeeps what reaches Winstone OS.
 - Knowledge Hub (winstonebd.com) data enters only as website_pages, official RSS market_news and signed site_visit.requested events (website_visit_requests); a site_visit needs agent/HQ confirmation — why: no invented facts.
 - Vite pre-bundles the TanStack router-core/seroval/h3-v2 deps in vite.config optimizeDeps.include — why: late discovery re-optimized on every cold start and broke open tabs.
+- Dev only: vite.config serverFnColdStartRegistration compiles the src/**.functions.ts named in a /_serverFn ID before dispatch; polled reads use transient-retry.ts and keep last good data — why: open tabs after a preview restart got "Invalid server function ID" 500s.
 - Module recovery: deploy-recovery-script.ts probes page + /assets/ before backed-off reloads (max 3, one late retry); sw.js never caches /@; /load-diagnostics is authority-only, read-only, redacted — why: no reload loops, blank tabs or leaked headers.
 - Vitest loads tests/setup/block-live-database.ts (fails any backend request); live probes need RUN_LIVE_SCOPE_TESTS=1, writes only under the staging guard, signed-in tests use tests/fixtures/staff-session.ts — why: preview and live share one database.
 - Board live refresh coalesces realtime changes into one snapshot reload per 8s; hidden tabs only mark it stale — why: per-change full-floor reloads were the top database load.

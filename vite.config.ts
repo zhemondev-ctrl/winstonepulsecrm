@@ -9,6 +9,7 @@ import path from "node:path";
 import { loadEnv } from "vite";
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 import { mcpPlugin } from "@lovable.dev/mcp-js/stacks/tanstack/vite";
+import { serverFnSourceFromUrl } from "./src/lib/server-fn-dev-id";
 
 // Load non-VITE_ env vars into process.env for server-side code only (email API keys,
 // service role key). These are never injected into the client bundle.
@@ -70,8 +71,34 @@ function browserAsyncHooksStub() {
   };
 }
 
+// Root cause of the top-performer / support-inbox 500s after a preview restart:
+// TanStack Start registers a server-function ID only when its source file is
+// compiled for the browser. A tab left open across a restart keeps calling IDs
+// the fresh dev server has never compiled, so they failed with "Invalid server
+// function ID". Compile the named source file (src/**.functions.ts only) before
+// the request reaches TanStack Start. Dev server only; the published build ships
+// a complete manifest and never runs this.
+function serverFnColdStartRegistration() {
+  return {
+    name: "server-fn-cold-start-registration",
+    apply: "serve" as const,
+    configureServer(server: any) {
+      server.middlewares.use(async (req: any, _res: unknown, next: () => void) => {
+        const source = serverFnSourceFromUrl(req.originalUrl ?? req.url);
+        if (!source) return next();
+        try {
+          await server.environments.client.transformRequest(source);
+        } catch (error) {
+          console.warn(`[server-fn cold start] could not prepare ${source}:`, error instanceof Error ? error.message : error);
+        }
+        next();
+      });
+    },
+  };
+}
+
 export default defineConfig({
-  plugins: [mcpPlugin(), browserAsyncHooksStub()],
+  plugins: [mcpPlugin(), browserAsyncHooksStub(), serverFnColdStartRegistration()],
   vite: {
     // Build stamp shown in the nav so staff can confirm which published build they run.
     define: {

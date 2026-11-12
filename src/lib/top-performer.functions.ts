@@ -8,8 +8,16 @@ import { createServerFn } from "@tanstack/react-start";
  * lead data or anything customer-identifying.
  */
 export const topPerformerToday = createServerFn({ method: "GET" }).handler(async () => {
-  const { dailyTopPerformer } = await import("@/lib/top-performer.server");
-  return dailyTopPerformer();
+  // Polled every minute by the public entry page: a backend read failing during
+  // a restart or outage returns a typed "unavailable" (null), never a 500 and
+  // never a board of invented zeros.
+  try {
+    const { dailyTopPerformer } = await import("@/lib/top-performer.server");
+    return await dailyTopPerformer();
+  } catch (error) {
+    console.error("[topPerformerToday] results unavailable:", error instanceof Error ? error.message : error);
+    return null;
+  }
 });
 
 /** Public history is an explicit aggregate projection, never raw source records. */

@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { CheckCircle2, Construction, Eye, Loader2, X } from "lucide-react";
+import { CheckCircle2, Construction, Eye, History, Loader2, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -13,6 +13,7 @@ import {
   itStartDevelopmentHold,
 } from "@/lib/development-hold.functions";
 import { DEVELOPMENT_HOLD_BODY, DEVELOPMENT_HOLD_TITLE } from "@/lib/development-hold";
+import type { HoldHistoryItem } from "@/lib/development-hold-audit";
 import { dhakaTime } from "@/lib/maintenance-rules";
 import { useT } from "@/lib/i18n";
 import { NoticeVideos } from "@/components/crm/NoticeVideos";
@@ -142,6 +143,40 @@ function StatusLine({ active, startedAt, startedBy }: { active: boolean; started
   );
 }
 
+/** Who turned the notice on or off, and when (append-only audit, newest first). */
+export function HoldHistory({ items, error }: { items: HoldHistoryItem[] | undefined; error: string | null | undefined }) {
+  const t = useT();
+  return (
+    <details className="rounded-md border border-border px-3 py-2 text-xs" open={Boolean(items?.length) || Boolean(error)}>
+      <summary className="flex cursor-pointer items-center gap-1.5 font-medium text-foreground">
+        <History className="size-3.5" aria-hidden /> {t({ bn: "চালু/বন্ধের অডিট লগ", en: "On/off audit log" })}
+        {items ? <span className="text-muted-foreground">({items.length})</span> : null}
+      </summary>
+      {error ? (
+        <p role="alert" className="mt-2 text-destructive">{t({ bn: "অডিট লগ এখন আনা যায়নি — একটু পরে আবার দেখুন।", en: "The audit log could not be loaded right now — check again shortly." })}</p>
+      ) : !items?.length ? (
+        <p className="mt-2 text-muted-foreground">{t({ bn: "এখনও কোনো চালু/বন্ধ রেকর্ড নেই।", en: "No on/off changes recorded yet." })}</p>
+      ) : (
+        <ol className="mt-2 space-y-2">
+          {items.map((item) => (
+            <li key={item.id} className="min-w-0 border-l-2 border-border pl-2">
+              <p className={item.change === "enabled" ? "font-semibold text-warning" : "font-semibold text-success"}>
+                {item.change === "enabled" ? t({ bn: "চালু করা হয়েছে (CRM বন্ধ)", en: "Turned on (CRM closed)" }) : t({ bn: "বন্ধ করা হয়েছে (CRM খোলা)", en: "Turned off (CRM reopened)" })}
+              </p>
+              <p className="text-muted-foreground">{dhakaTime(item.at)} ({t({ bn: "ঢাকা", en: "Dhaka" })})</p>
+              <p className="break-words">
+                {item.role === "architect" ? t({ bn: "System Architect", en: "System Architect" }) : item.role === "it_console" ? "IT Console" : item.performedBy}
+                {item.role === "architect" ? `: ${item.architectEmail ?? item.performedBy}` : item.role === "it_console" && item.performedBy !== "IT Console" ? `: ${item.performedBy}` : ""}
+              </p>
+              {item.note && <p className="break-words text-muted-foreground">“{item.note}”</p>}
+            </li>
+          ))}
+        </ol>
+      )}
+    </details>
+  );
+}
+
 /** IT Console: can start the notice, never end it. */
 export function ItDevelopmentHoldCard({ adminToken }: { adminToken: string }) {
   const t = useT();
@@ -166,6 +201,7 @@ export function ItDevelopmentHoldCard({ adminToken }: { adminToken: string }) {
         {t({ bn: "চালু করলে IT Console ছাড়া সবাই (এজেন্ট, HQ, ফোন অ্যাপ) বন্ধ থাকবে। শুধু System Architect নিশ্চিত করে আবার খুলতে পারবেন।", en: "When on, everyone except IT Console (agents, HQ, phone app) is closed out. Only the System Architect can confirm and reopen." })}
       </p>
       <DevelopmentHoldPreviewButton />
+      {q.data && <HoldHistory items={q.data.history} error={q.data.historyError} />}
       {q.data && !q.data.active && (
         <Button
           variant="destructive"
@@ -245,6 +281,7 @@ export function ArchitectDevelopmentHoldCard({ session }: { session: string }) {
           </Button>
         </>
       ) : null}
+      {hold && <HoldHistory items={hold.history} error={hold.historyError} />}
     </section>
   );
 }
