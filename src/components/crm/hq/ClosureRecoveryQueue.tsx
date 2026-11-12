@@ -1,7 +1,7 @@
 import { lazy, Suspense, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Download, PhoneOff, RefreshCw, Search } from "lucide-react";
+import { Download, FileText, PhoneOff, RefreshCw, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Bi } from "@/components/crm/Bi";
@@ -62,6 +62,23 @@ export function ClosureRecoveryQueue({ onOpenLead }: { onOpenLead: (id: string) 
     ["closed_at_dhaka", "lead", "closing_agent", "closure_type", "close_reason", "reports_filed", "phone_recorded_attempts", "phone_proven_conversations", "required"],
     rows.map(r => [when(r.closedAt), r.name, r.agentName, r.kind, r.reason ?? r.category ?? "", r.reportedAttempts, r.verifiedAttempts, r.provenConversations, r.required]),
   ));
+  const [pdfBusy, setPdfBusy] = useState(false);
+  const exportWeeklyPdf = async () => {
+    if (!q.data) return;
+    setPdfBusy(true);
+    try {
+      const { buildWeeklyRecoveryPdf, weekWindow } = await import("@/lib/recovery-weekly-pdf");
+      const w = weekWindow(from, to);
+      const bytes = await buildWeeklyRecoveryPdf({
+        cells: q.data.cells, agentNames: q.data.agentNames, from: w.from, to: w.to, generatedAt: new Date(),
+        rows: q.data.rows.map((r) => ({ closedAt: r.closedAt, name: r.name, agentName: r.agentName, kind: r.kind, day: dhakaDateOf(Date.parse(r.closedAt)) })),
+      });
+      const url = URL.createObjectURL(new Blob([bytes as BlobPart], { type: "application/pdf" }));
+      const a = document.createElement("a"); a.href = url; a.download = `recovery-review-week-${w.from}-${w.to}.pdf`;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 30_000);
+    } finally { setPdfBusy(false); }
+  };
   const reset = () => setPage(0);
   const reasonLabel = (r: { reason: string | null; category: string | null }) => { const k = r.reason ?? r.category ?? ""; return REASON[k] ? t(REASON[k]) : k || "—"; };
 
@@ -78,6 +95,7 @@ export function ClosureRecoveryQueue({ onOpenLead }: { onOpenLead: (id: string) 
         <div className="flex shrink-0 gap-2">
           <Button variant="outline" size="icon" aria-label={t({ en: "Refresh", bn: "রিফ্রেশ" })} disabled={q.isFetching || !valid} onClick={() => void q.refetch()}><RefreshCw className={q.isFetching ? "animate-spin" : ""} /></Button>
           <Button variant="outline" disabled={!rows.length} onClick={exportCsv}><Download />CSV</Button>
+          <Button variant="outline" disabled={!q.data || pdfBusy} onClick={() => void exportWeeklyPdf()} title={t({ en: "PDF of the 7 days ending on the 'to' date", bn: "শেষ তারিখ পর্যন্ত ৭ দিনের PDF" })}><FileText />{t({ en: "Weekly PDF", bn: "সাপ্তাহিক PDF" })}</Button>
         </div>
       </header>
 

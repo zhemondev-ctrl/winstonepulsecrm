@@ -111,7 +111,8 @@
 
 - [x] HQ read-only recovery queue: leads closed without enough verified call attempts (Recovery review tab).
 - [x] Recovery review charts: closures and missing verified-call rate by agent, closure type and date (read-only).
-- [ ] Weekly Recovery review PDF: one-off file + HQ download button.
+- [x] Weekly Recovery review PDF HQ download button.
+- [ ] One-off weekly PDF in Files — needs an HQ session to read real data.
 - [ ] 50 company + 10 self-generated daily cap with daily performance scoring — blocked: confirm scoring formula with owner.
 - [ ] IT live call records page (HQ PIN): each agent's real calls, connection status, AI summary.
 - [ ] Sunday (Nov 15) distribution dry run review.
