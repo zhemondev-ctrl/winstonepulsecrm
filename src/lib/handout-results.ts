@@ -36,3 +36,13 @@ export function handoutHistory(assignments: { to_agent_id: string | null; create
     return { day, counts, total: Object.values(counts).reduce((n, c) => n + c, 0) };
   });
 }
+
+export type ForecastAgent = { id: string; wouldReceive: number };
+/** Compare saved forecast per agent with actual received; agents in either side appear. */
+export function compareForecast(actual: { id: string; name: string; received: number }[], forecast: ForecastAgent[] | null, names: Record<string, string> = {}) {
+  if (!forecast) return null;
+  const f = new Map(forecast.map((r) => [r.id, r.wouldReceive]));
+  const rows = actual.map((r) => ({ id: r.id, name: r.name, forecast: f.get(r.id) ?? 0, received: r.received }));
+  for (const [id, n] of f) if (!actual.some((a) => a.id === id)) rows.push({ id, name: names[id] ?? "Unknown agent", forecast: n, received: 0 });
+  return rows.map((r) => ({ ...r, diff: r.received - r.forecast }));
+}

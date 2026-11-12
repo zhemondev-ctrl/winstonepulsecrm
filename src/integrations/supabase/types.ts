@@ -1740,6 +1740,33 @@ export type Database = {
         }
         Relationships: []
       }
+      distribution_forecast_snapshots: {
+        Row: {
+          blocked: string
+          id: string
+          per_agent: Json
+          taken_at: string
+          target_day: string
+          would_assign: number
+        }
+        Insert: {
+          blocked?: string
+          id?: string
+          per_agent?: Json
+          taken_at?: string
+          target_day: string
+          would_assign?: number
+        }
+        Update: {
+          blocked?: string
+          id?: string
+          per_agent?: Json
+          taken_at?: string
+          target_day?: string
+          would_assign?: number
+        }
+        Relationships: []
+      }
       distribution_preview_views: {
         Row: {
           blocked: string

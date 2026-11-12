@@ -683,6 +683,13 @@ export const previewDailyDistribution = createServerFn({ method: "POST" })
     const wd = new Intl.DateTimeFormat("en-US", { weekday: "short", timeZone: "UTC" }).format(new Date(`${day}T00:00:00Z`));
     const logged = await supabaseAdmin.from("distribution_preview_views").insert({ target_day: day, mode: data.target, weekday: wd, blocked: (result as { block?: string | null }).block ?? "none" });
     if (logged.error) console.error("dry-run usage log failed", logged.error.message);
+    // Date-stamped forecast snapshot (append-only) for later forecast-vs-actual comparison.
+    const snap = await supabaseAdmin.from("distribution_forecast_snapshots").insert({
+      target_day: day, blocked: (result as { block?: string | null }).block ?? "none",
+      would_assign: result.rows.reduce((n, r) => n + r.wouldReceive, 0),
+      per_agent: result.rows.map((r) => ({ id: r.id, name: r.name, wouldReceive: r.wouldReceive })),
+    });
+    if (snap.error) console.error("forecast snapshot failed", snap.error.message);
     return {
       ...result,
       day,
@@ -708,11 +715,14 @@ export const readHandoutResults = createServerFn({ method: "POST" })
     const { groupHandout } = await import("@/lib/handout-results");
     const start = new Date(`${data.date}T00:00:00+06:00`).toISOString();
     const end = new Date(Date.parse(start) + 864e5).toISOString();
-    const [run, agents] = await Promise.all([
+    const [run, agents, snap] = await Promise.all([
       supabaseAdmin.from("lead_distribution_runs").select("work_date,status,trigger,per_agent,moved,duplicates_skipped,actor_label,created_at,updated_at").eq("work_date", data.date).maybeSingle(),
       lp.activeAgents(),
+      // Latest forecast saved before that Dhaka day began (so it is a true forecast).
+      supabaseAdmin.from("distribution_forecast_snapshots").select("taken_at,blocked,would_assign,per_agent").eq("target_day", data.date).lt("taken_at", start).order("taken_at", { ascending: false }).limit(1).maybeSingle(),
     ]);
     if (run.error) throw new Error("Run record unavailable");
+    if (snap.error) throw new Error("Forecast snapshot unavailable");
     const assignments: { to_agent_id: string | null; created_at: string; lead_id: string }[] = [];
     for (let from = 0; ; from += 1000) {
       const page = await supabaseAdmin.from("lead_assignments").select("to_agent_id,created_at,lead_id,id")
@@ -730,7 +740,11 @@ export const readHandoutResults = createServerFn({ method: "POST" })
       for (const r of p.data ?? []) names[r.id] = r.name ?? "Unknown agent";
     }
     const result = groupHandout(agents.map((a) => ({ id: a.id, name: a.name })), assignments, names);
-    return { date: data.date, run: run.data ?? null, ...result, measuredAt: new Date().toISOString() };
+    const { compareForecast } = await import("@/lib/handout-results");
+    const fc = snap.data ? (snap.data.per_agent as { id: string; name: string; wouldReceive: number }[]) : null;
+    const fcNames = Object.fromEntries((fc ?? []).map((r) => [r.id, r.name]));
+    const forecast = snap.data ? { takenAt: snap.data.taken_at, blocked: snap.data.blocked, wouldAssign: snap.data.would_assign, rows: compareForecast(result.rows, fc, fcNames) ?? [] } : null;
+    return { date: data.date, run: run.data ?? null, ...result, forecast, measuredAt: new Date().toISOString() };
   });
 
 /** LeadHub, read-only: hand-out counts per Dhaka day and agent over a range (max 62 days). */

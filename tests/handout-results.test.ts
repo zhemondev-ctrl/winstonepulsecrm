@@ -16,3 +16,10 @@ test("history counts each lead once per day and agent", () => {
   const h = handoutHistory([r("x", "2026-11-10T03:00:00Z"), r("x", "2026-11-10T04:00:00Z"), r("y", "2026-11-11T03:00:00Z")], (s) => s.slice(0, 10));
   expect(h).toEqual([{ day: "2026-11-11", counts: { a: 1 }, total: 1 }, { day: "2026-11-10", counts: { a: 1 }, total: 1 }]);
 });
+
+import { compareForecast } from "@/lib/handout-results";
+test("forecast vs actual shows difference per agent, including forecast-only agents", () => {
+  const r = compareForecast([{ id: "a", name: "A", received: 40 }], [{ id: "a", wouldReceive: 50 }, { id: "b", wouldReceive: 10 }], { b: "B" })!;
+  expect(r).toEqual([{ id: "a", name: "A", forecast: 50, received: 40, diff: -10 }, { id: "b", name: "B", forecast: 10, received: 0, diff: -10 }]);
+  expect(compareForecast([], null)).toBeNull();
+});

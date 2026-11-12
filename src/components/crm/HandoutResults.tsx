@@ -60,6 +60,21 @@ export function HandoutResults() {
             <div className="rounded-lg border p-3"><div className="text-xl font-semibold">{d.total}</div><div className="text-xs text-muted-foreground">{t({ en: "Leads handed out", bn: "মোট লিড দেওয়া" })}</div></div>
             <div className="rounded-lg border p-3"><div className="text-xl font-semibold">{d.receivedCount}</div><div className="text-xs text-muted-foreground">{t({ en: "Agents who received leads", bn: "লিড পেয়েছেন এমন এজেন্ট" })}</div></div>
           </div>
+          <div className="rounded-lg border p-3 text-sm">
+            <h3 className="font-semibold">{t({ en: "Forecast vs actual", bn: "পূর্বাভাস বনাম আসল" })}</h3>
+            {!d.forecast ? (
+              <p className="text-xs text-muted-foreground">{t({ en: "No dry-run forecast was saved for this day before it began. Open the dry run for a future date to save one.", bn: "এই দিন শুরুর আগে কোনো ড্রাই-রান পূর্বাভাস সংরক্ষিত হয়নি। ভবিষ্যৎ তারিখের ড্রাই-রান খুললে সংরক্ষিত হবে।" })}</p>
+            ) : (
+              <>
+                <p className="text-xs text-muted-foreground">{t({ en: `Forecast saved ${new Intl.DateTimeFormat("en-GB", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Dhaka" }).format(new Date(d.forecast.takenAt))} (Dhaka): ${d.forecast.wouldAssign} leads expected, ${d.total} handed out.`, bn: `পূর্বাভাস সংরক্ষণ: ${new Intl.DateTimeFormat("en-GB", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Dhaka" }).format(new Date(d.forecast.takenAt))} — প্রত্যাশিত ${d.forecast.wouldAssign}, দেওয়া ${d.total}।` })}</p>
+                <ul className="mt-2 space-y-1">{d.forecast.rows.map((r) => (
+                  <li key={r.id} className="flex items-center justify-between gap-2">
+                    <span className="min-w-0 truncate">{r.name}</span>
+                    <span className="tabular-nums">{r.forecast} → {r.received} <span className={r.diff === 0 ? "text-muted-foreground" : "font-semibold"}>({r.diff > 0 ? "+" : ""}{r.diff})</span></span>
+                  </li>))}</ul>
+              </>
+            )}
+          </div>
           <ul className="space-y-2 md:hidden">
             {d.rows.map((r) => (
               <li key={r.id} className="flex items-center justify-between rounded-lg border p-3 text-sm">
