@@ -15,13 +15,14 @@ import {
 import { DEVELOPMENT_HOLD_BODY, DEVELOPMENT_HOLD_TITLE } from "@/lib/development-hold";
 import { dhakaTime } from "@/lib/maintenance-rules";
 import { useT } from "@/lib/i18n";
+import { NoticeVideos } from "@/components/crm/NoticeVideos";
 
 /** Full-screen official notice for everyone who is not IT Console / Architect. */
 export function DevelopmentHoldScreen({ startedAt, signIn }: { startedAt: string | null; signIn?: React.ReactNode }) {
   const t = useT();
   return (
-    <div className="fixed inset-0 z-[80] grid place-items-center overflow-y-auto bg-background/95 p-4 backdrop-blur" role="alertdialog" aria-labelledby="dev-hold-title">
-      <div className="card-elevated w-full max-w-md space-y-4 border-warning/50 p-6">
+    <div className="fixed inset-0 z-[80] grid grid-cols-[minmax(0,1fr)] place-items-center overflow-y-auto bg-background/95 p-4 backdrop-blur" role="alertdialog" aria-labelledby="dev-hold-title">
+      <div className="card-elevated my-4 w-full min-w-0 max-w-3xl space-y-4 border-warning/50 p-4 sm:p-6">
         <h1 id="dev-hold-title" className="flex items-start gap-2 text-lg font-bold">
           <Construction className="mt-0.5 size-5 shrink-0 text-warning" />
           <span>{t(DEVELOPMENT_HOLD_TITLE)}</span>
@@ -32,6 +33,7 @@ export function DevelopmentHoldScreen({ startedAt, signIn }: { startedAt: string
             {t({ bn: "নোটিশ শুরু", en: "Notice started" })}: {dhakaTime(startedAt)} ({t({ bn: "ঢাকা", en: "Dhaka" })})
           </p>
         )}
+        <NoticeVideos />
         {signIn}
       </div>
     </div>
