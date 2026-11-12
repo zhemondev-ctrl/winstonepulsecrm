@@ -126,7 +126,7 @@ export function MaintenancePanel() {
           <p className="text-sm font-semibold">Payment submission — {state.period}</p>
           {state.paymentRef && <p className="text-xs text-muted-foreground">Current reference: <b>{state.paymentRef}</b></p>}
           <Label htmlFor="mt-ref">Payment reference</Label>
-          <Input id="mt-ref" value={ref} onChange={(e) => setRef(e.target.value)} placeholder="bKash TrxID / bank receipt" />
+          <Input id="mt-ref" value={ref} onChange={(e) => setRef(e.target.value)} placeholder="Payoneer / Skrill / Wise transaction ID or receipt" />
           <Button className="w-full" disabled={ref.trim().length < 3 || submit.isPending || state.paymentStatus === "verified"} onClick={() => submit.mutate()}>
             Submit for verification
           </Button>

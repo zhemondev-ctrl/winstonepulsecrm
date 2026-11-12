@@ -1,6 +1,8 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
+import { PAYMENT_METHOD_IDS, paymentMethodLabel, paymentRequestDetail } from "@/lib/payment-methods";
+
 /**
  * Monthly architecture charge ($35.29 USD incl. VAT) endpoints. The lock itself is decided in
  * maintenance.server.ts; these functions only read it or move it through the
@@ -52,7 +54,9 @@ export const getMaintenanceStatus = createServerFn({ method: "POST" })
 
 /** Agent / Executive "Payment / Unlock request": only notifies IT Console. */
 export const requestPaymentHelp = createServerFn({ method: "POST" })
-  .inputValidator((input: unknown) => Token.extend({ note: z.string().trim().max(300).optional() }).parse(input))
+  .inputValidator((input: unknown) =>
+    Token.extend({ note: z.string().trim().max(300).optional(), method: z.enum(PAYMENT_METHOD_IDS).optional() }).parse(input),
+  )
   .handler(async ({ data }) => {
     const { resolveCaller } = await import("@/lib/access.server");
     const caller = await resolveCaller(data.adminToken ?? null, { skipMaintenance: true });
@@ -66,14 +70,14 @@ export const requestPaymentHelp = createServerFn({ method: "POST" })
       actorRole: hq ? "executive" : caller.profile?.role ?? "agent",
       action: "payment_help_requested",
       period: state.period,
-      reason: data.note ?? null,
+      reason: data.note ?? (data.method ? `Preferred method: ${paymentMethodLabel(data.method)}` : null),
     });
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     await supabaseAdmin.from("system_alerts").insert({
       code: "maintenance_payment_help",
       severity: "critical",
       title: "Maintenance payment / unlock requested",
-      detail: `${caller.profile?.name ?? "Executive HQ"} asked IT Console to settle the ${state.period} architecture charge ($35.29 USD incl. 15% VAT).`,
+      detail: paymentRequestDetail(caller.profile?.name ?? "Executive HQ", state.period, data.method),
     });
     return { ok: true };
   });
