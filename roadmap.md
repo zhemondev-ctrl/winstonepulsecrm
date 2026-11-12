@@ -1,6 +1,10 @@
 # Roadmap
 
 ## Open tasks
+22. Development notice extras (Nov 12):
+   - [x] Safe preview mode (IT Console + Architect "Preview notice screen"): same screen, simulated controls, no hold writes. Checked 1280/360px.
+   - [x] Bangla captions on all three notice videos (on by default, show when muted). Two from saved scripts; the 17-min one from automatic transcription.
+   - [x] Progress bar, time left and next video name on the notice screen.
 - [x] Desk Contacts lead dashboard: cards are the default on phone and laptop (1/2/3 columns); Cards/Table switch keeps the table optional and remembers the choice. Signed-in 1235/390px checks: no page sideways overflow in either view, choice survives reload; 3 tests pass. Not published.
 - [x] Removed duplicate Desk desktop sidebar and drawer subsections; added Home to the top grid. Signed-in 1548/390px checks confirm no overflow, Today selection and Home return; six navigation tests pass. No business writes or publication.
 - [x] Improved inset gold keyboard focus and Alt+M active-link entry on desktop/phone; verified arrows, Home/End, wrap, Tab/Shift+Tab at 1234/390px, Enter section navigation and phone Escape trigger restoration. Seven regression tests pass; no business writes or publication.
