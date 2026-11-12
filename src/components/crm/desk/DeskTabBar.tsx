@@ -2,6 +2,7 @@ import { CalendarClock, MessagesSquare, Home, List, MessageCircle, PhoneCall, Se
 import { Button } from "@/components/ui/button";
 import { useT } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
+import { Link } from "@tanstack/react-router";
 
 const ITEMS = [
   { tab: "today", label: { bn: "আজ", en: "Today" }, Icon: Home, tone: "text-chart-2 bg-chart-2/10" },
@@ -25,6 +26,12 @@ export function DeskTabBar({ tab, onChange }: { tab: string; onChange: (t: strin
   const t = useT();
   return <nav aria-label={t({ bn: "ডেস্ক সেকশন", en: "Desk sections" })}
     className="grid grid-cols-2 gap-1 border-y border-border bg-background p-1.5 sm:grid-cols-5 lg:grid-cols-7">
+    <Button asChild variant="ghost" className="h-auto min-h-9 min-w-0 justify-start gap-1.5 rounded-md border border-transparent px-1.5 py-1 text-left text-xs">
+      <Link to="/" title={t({ bn: "হোম", en: "Home" })}>
+        <span className="grid size-6 shrink-0 place-items-center rounded-md bg-chart-2/10 text-chart-2"><Home className="size-3.5" /></span>
+        <span className="min-w-0 break-words leading-tight">{t({ bn: "হোম", en: "Home" })}</span>
+      </Link>
+    </Button>
     {ITEMS.map(({ tab: value, label, Icon, tone }) => <Button key={value} variant="ghost" aria-current={tab === value ? "page" : undefined}
       onClick={() => onChange(value)}
       className={cn("h-auto min-h-9 min-w-0 justify-start gap-1.5 rounded-md border px-1.5 py-1 text-left text-xs", tab === value ? "border-ring bg-accent font-bold" : "border-transparent")}>

@@ -143,7 +143,7 @@ function NavContent({
             <nav className="flex flex-col gap-0.5">
               {list.map((item) => {
                 const Icon = NAV_ICONS[item.to] ?? LifeBuoy;
-                const subs = PAGE_SECTIONS[item.to as SectionRoute];
+                const subs = item.to === "/desk" ? undefined : PAGE_SECTIONS[item.to as SectionRoute];
                 return (
                   <div key={item.to}>
                   <Link

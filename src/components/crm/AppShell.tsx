@@ -243,7 +243,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       </header>
 
       <div className="mx-auto flex w-full max-w-[1600px]">
-        <NavSidebar items={nav} />
+        {path !== "/desk" && <NavSidebar items={nav} />}
         <main className="min-w-0 flex-1 animate-rise px-3 py-5 sm:px-6 sm:py-6">
           <OfflineSyncBar />
           {children}

@@ -1,8 +1,12 @@
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { readFileSync } from "node:fs";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { DeskTabBar } from "@/components/crm/desk/DeskTabBar";
+
+vi.mock("@tanstack/react-router", () => ({
+  Link: ({ to, children, ...props }: React.PropsWithChildren<{ to: string }>) => React.createElement("a", { ...props, href: to }, children),
+}));
 
 describe("desk navigation and honest SIM workspace", () => {
   it("keeps all desk sections reachable without horizontal scrolling", () => {
