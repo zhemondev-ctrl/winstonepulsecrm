@@ -6,6 +6,7 @@ vi.mock("@tanstack/react-start/server", () => ({ getRequest: () => undefined }))
 const lock = vi.hoisted(() => ({ locked: false }));
 vi.mock("@/lib/maintenance.server", () => ({
   isLockedForOrdinaryUsers: async () => lock.locked,
+  ordinaryLockMessage: async () => (lock.locked ? "SYSTEM MAINTENANCE LOCKED" : null),
   LOCKED_MESSAGE: "SYSTEM MAINTENANCE LOCKED",
 }));
 

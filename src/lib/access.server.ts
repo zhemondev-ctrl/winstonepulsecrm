@@ -76,7 +76,9 @@ export async function resolveCaller(
   const exempt = caller.scope === "authority" && !caller.readOnly;
   if (!exempt && caller.scope !== "none") {
     const m = await import("@/lib/maintenance.server");
-    if (await m.isLockedForOrdinaryUsers()) throw new Error(m.LOCKED_MESSAGE);
+    // Covers the billing lock and the official development hold; the message says which.
+    const lockMessage = await m.ordinaryLockMessage();
+    if (lockMessage) throw new Error(lockMessage);
   }
   return caller;
 }

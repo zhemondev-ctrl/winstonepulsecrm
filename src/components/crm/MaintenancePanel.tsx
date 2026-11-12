@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { MaintenanceCountdown } from "@/components/crm/MaintenanceNotice";
+import { ItDevelopmentHoldCard } from "@/components/crm/DevelopmentHold";
 import { Loader2, ShieldCheck } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -82,6 +83,8 @@ export function MaintenancePanel() {
           {state.openRequest && <Tone tone="amber">UNLOCK PENDING</Tone>}
         </span>
       </header>
+
+      <ItDevelopmentHoldCard adminToken={adminToken} />
 
       <MaintenanceCountdown />
 

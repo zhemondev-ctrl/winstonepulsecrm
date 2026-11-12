@@ -25,6 +25,15 @@ export const getMaintenanceStatus = createServerFn({ method: "POST" })
     const { maintenanceAccess } = await import("@/lib/maintenance.server");
     const { adminTokenScope } = await import("@/lib/admin-gate.server");
     let exempt = adminTokenScope(data.adminToken ?? null) === "full";
+    let developmentHold: { active: boolean; startedAt: string | null } = { active: false, startedAt: null };
+    try {
+      const { readDevelopmentHold } = await import("@/lib/development-hold.server");
+      const hold = await readDevelopmentHold();
+      developmentHold = { active: hold.active, startedAt: hold.startedAt };
+    } catch (error) {
+      console.error("development hold status failed", error);
+      developmentHold = { active: true, startedAt: null }; // fail closed, same as the server gate
+    }
     try {
       const s = await maintenanceAccess();
       if (!exempt) {
@@ -45,10 +54,11 @@ export const getMaintenanceStatus = createServerFn({ method: "POST" })
         locked: s.locked,
         stage: s.stage,
         exempt,
+        developmentHold,
       };
     } catch (error) {
       console.error("maintenance status failed", error);
-      return { ok: false as const, locked: true, stage: "locked" as const, exempt, feeUsd: 35.29, paymentStatus: "unpaid" as const, unlockStatus: "none" as const, openRequest: false, period: "", dueDate: "", lockAt: "", unlockExpiresAt: null };
+      return { ok: false as const, locked: true, stage: "locked" as const, exempt, feeUsd: 35.29, paymentStatus: "unpaid" as const, unlockStatus: "none" as const, openRequest: false, period: "", dueDate: "", lockAt: "", unlockExpiresAt: null, developmentHold };
     }
   });
 

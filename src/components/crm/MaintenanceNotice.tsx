@@ -13,6 +13,7 @@ import { ARCH_BASE_CENTS, ARCH_PLAN_NAME, ARCH_TOTAL_CENTS, ARCH_VAT_CENTS, MAIN
 import { useLang, useT } from "@/lib/i18n";
 import { PaymentOptions } from "@/components/crm/PaymentOptions";
 import { amberDismissed, dismissAmber, firstRedModalThisSession } from "@/lib/billing-dismiss";
+import { DevelopmentHoldScreen } from "@/components/crm/DevelopmentHold";
 
 export function useMaintenance() {
   const adminToken = useAdminToken();
@@ -232,6 +233,10 @@ export function MaintenanceGate() {
   const [phoneOpen, setPhoneOpen] = useState(false);
   if (!data) return null;
   if (OPEN_PATHS.some((p) => path.startsWith(p))) return null;
+
+  if (data.developmentHold?.active && !data.exempt) {
+    return <DevelopmentHoldScreen startedAt={data.developmentHold.startedAt} signIn={<LockSignInButton />} />;
+  }
 
   if (data.locked && !data.exempt) {
     return (
