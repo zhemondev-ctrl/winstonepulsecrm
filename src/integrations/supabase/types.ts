@@ -1740,6 +1740,33 @@ export type Database = {
         }
         Relationships: []
       }
+      distribution_preview_views: {
+        Row: {
+          blocked: string
+          id: string
+          mode: string
+          target_day: string
+          viewed_at: string
+          weekday: string
+        }
+        Insert: {
+          blocked: string
+          id?: string
+          mode: string
+          target_day: string
+          viewed_at?: string
+          weekday: string
+        }
+        Update: {
+          blocked?: string
+          id?: string
+          mode?: string
+          target_day?: string
+          viewed_at?: string
+          weekday?: string
+        }
+        Relationships: []
+      }
       do_not_contact: {
         Row: {
           added_by: string | null

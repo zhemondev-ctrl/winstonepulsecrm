@@ -679,6 +679,10 @@ export const previewDailyDistribution = createServerFn({ method: "POST" })
       distributionDay: isDistributionDay(day),
       paused: pausedOn(day),
     });
+    // Usage log for the dry-run comparison (counts only, no lead or agent data).
+    const wd = new Intl.DateTimeFormat("en-US", { weekday: "short", timeZone: "UTC" }).format(new Date(`${day}T00:00:00Z`));
+    const logged = await supabaseAdmin.from("distribution_preview_views").insert({ target_day: day, mode: data.target, weekday: wd, blocked: (result as { block?: string | null }).block ?? "none" });
+    if (logged.error) console.error("dry-run usage log failed", logged.error.message);
     return {
       ...result,
       day,
@@ -755,4 +759,18 @@ export const readHandoutHistory = createServerFn({ method: "POST" })
     const days = handoutHistory(rows.data ?? [], dhakaDay);
     const agents = ids.map((id) => ({ id, name: names[id] ?? "Unknown agent" })).sort((a, b) => a.name.localeCompare(b.name));
     return { days, agents, measuredAt: new Date().toISOString() };
+  });
+
+/** LeadHub, read-only: how often the dry run was opened, by chosen date, weekday and blocked state. */
+export const readDryRunUsage = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) => TokenInput.extend({ days: z.number().int().min(1).max(90).default(30) }).parse(input))
+  .handler(async ({ data }) => {
+    await deckReader(data.adminToken);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { pageAllParallel } = await import("@/lib/page-all");
+    const since = new Date(Date.now() - data.days * 864e5).toISOString();
+    const r = await pageAllParallel((a, b) => supabaseAdmin.from("distribution_preview_views").select("id,target_day,mode,weekday,blocked").gte("viewed_at", since).order("id").range(a, b));
+    if (r.error) throw new Error("Dry-run usage unavailable");
+    const { tallyDryRunUsage } = await import("@/lib/dry-run-usage");
+    return { ...tallyDryRunUsage(r.data ?? []), days: data.days };
   });
