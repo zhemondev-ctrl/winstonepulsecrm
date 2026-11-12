@@ -24,7 +24,7 @@ export function HandoutResults() {
     enabled: Boolean(adminToken && date),
   });
   const d = q.data;
-  const exportForecastCsv = () => d?.forecast && downloadCsv(`forecast-vs-actual-${d.date}.csv`, toCsv(["agent", "forecast", "received", "difference"], d.forecast.rows.map((r) => [r.name, r.forecast, r.received, r.diff])));
+  const exportForecastCsv = () => d?.forecast && downloadCsv(`forecast-vs-actual-${d.date}.csv`, toCsv(["agent", "forecast", "received", "difference"], [...d.forecast.rows.map((r) => [r.name, r.forecast, r.received, r.diff]), (() => { const f = d.forecast!.rows.reduce((n, r) => n + r.forecast, 0); const g = d.forecast!.rows.reduce((n, r) => n + r.received, 0); return ["TOTAL", f, g, g - f]; })()]));
   const exportCsv = () => d && downloadCsv(`handout-results-${d.date}.csv`, toCsv(["agent", "leads_received", "first_at_dhaka", "last_at_dhaka"], d.rows.map((r) => [r.name, r.received, time(r.firstAt), time(r.lastAt)])));
 
   return (
