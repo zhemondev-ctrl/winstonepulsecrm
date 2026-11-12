@@ -19,7 +19,8 @@ export default function ClosureRecoveryCharts({ cells, agentNames, from, to, age
   const rate = missingRate(short, checked);
   const nameOf = (id: string) => (id === "none" ? t({ en: "Unknown agent", bn: "অজানা এজেন্ট" }) : agentNames[id] ?? t({ en: "Unknown agent", bn: "অজানা এজেন্ট" }));
   const agents = byAgent(scoped).map(b => ({ ...b, label: nameOf(b.key) }));
-  const kinds = byKind(scoped).map(b => ({ ...b, label: t(kindLabel[b.key as ClosureKind]) }));
+  const SHORT_KIND: Record<ClosureKind, Label> = { unreachable: { en: "Unreachable", bn: "যোগাযোগ হয়নি" }, conversation: { en: "Claimed talk", bn: "কথা দাবি" } };
+  const kinds = byKind(scoped).map(b => ({ ...b, label: t(SHORT_KIND[b.key as ClosureKind]), full: t(kindLabel[b.key as ClosureKind]) }));
   const dates = byDate(scoped, from, to);
   const config: ChartConfig = {
     verified: { label: t({ en: "Enough verified calls", bn: "যথেষ্ট যাচাইকৃত কল" }), color: "var(--chart-3)" },
@@ -78,18 +79,18 @@ export default function ClosureRecoveryCharts({ cells, agentNames, from, to, age
             </BarChart>
           </ChartContainer>
           <ul className="mt-2 space-y-1 text-xs text-muted-foreground">
-            {kinds.map(k => <li key={k.key} className="flex justify-between gap-2"><span className="min-w-0 break-words">{k.label}</span><span className="shrink-0 tabular-nums">{k.short} / {k.checked} · {k.rate === null ? "—" : pct(k.rate)}</span></li>)}
+            {kinds.map(k => <li key={k.key} className="flex justify-between gap-2"><span className="min-w-0 break-words">{k.full}</span><span className="shrink-0 tabular-nums">{k.short} / {k.checked} · {k.rate === null ? "—" : pct(k.rate)}</span></li>)}
           </ul>
         </figure>
 
         <figure className="min-w-0 rounded-lg border border-border p-3 lg:col-span-2">
-          <figcaption className="mb-2 text-sm font-medium"><Bi en="By closing date" bn="বন্ধের তারিখ অনুযায়ী" /> <span className="font-normal text-muted-foreground">· Asia/Dhaka, {period}</span></figcaption>
+          <figcaption className="mb-2 text-sm font-medium"><Bi en="By closing date" bn="বন্ধের তারিখ অনুযায়ী" /><span className="block text-xs font-normal text-muted-foreground">Asia/Dhaka · {period}</span></figcaption>
           <ChartContainer config={config} className="aspect-auto h-64 w-full" aria-label="Closures by date chart">
             <ComposedChart data={dates.points} margin={{ left: -16, right: 0 }}>
               <CartesianGrid vertical={false} />
               <XAxis dataKey="key" tickLine={false} axisLine={false} tickFormatter={(v: string) => v.slice(5)} minTickGap={16} />
               <YAxis yAxisId="n" allowDecimals={false} tickLine={false} axisLine={false} width={40} />
-              <YAxis yAxisId="r" orientation="right" domain={[0, 100]} tickLine={false} axisLine={false} width={40} tickFormatter={(v: number) => `${v}%`} />
+              <YAxis yAxisId="r" orientation="right" domain={[0, 100]} tickLine={false} axisLine={false} width={46} tickFormatter={(v: number) => `${v}%`} />
               <ChartTooltip content={tooltip} />
               <ChartLegend content={<ChartLegendContent className="flex-wrap" />} />
               <Bar yAxisId="n" dataKey="verified" stackId="c" fill="var(--color-verified)" />
