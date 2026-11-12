@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { ClipboardCheck, Download, RefreshCw } from "lucide-react";
+import { AlertTriangle, ClipboardCheck, Download, RefreshCw } from "lucide-react";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -63,7 +63,7 @@ export function HandoutResults() {
           <div className="rounded-lg border p-3 text-sm">
             <h3 className="font-semibold">{t({ en: "Forecast vs actual", bn: "পূর্বাভাস বনাম আসল" })}</h3>
             {!d.forecast ? (
-              <p className="text-xs text-muted-foreground">{t({ en: "No dry-run forecast was saved for this day before it began. Open the dry run for a future date to save one.", bn: "এই দিন শুরুর আগে কোনো ড্রাই-রান পূর্বাভাস সংরক্ষিত হয়নি। ভবিষ্যৎ তারিখের ড্রাই-রান খুললে সংরক্ষিত হবে।" })}</p>
+              <p role="alert" className="mt-2 flex items-start gap-2 rounded-md border border-warning bg-warning/10 p-2 text-sm font-medium text-warning"><AlertTriangle className="mt-0.5 size-4 shrink-0" />{t({ en: "No forecast to compare: no dry-run snapshot was saved for this date before the day began (Dhaka). Next time, open the dry run for this date ahead of time.", bn: "তুলনার পূর্বাভাস নেই: এই দিন শুরুর আগে (ঢাকা) কোনো ড্রাই-রান স্ন্যাপশট সংরক্ষিত হয়নি। পরের বার আগেই এই তারিখের ড্রাই-রান খুলুন।" })} bn: "এই দিন শুরুর আগে কোনো ড্রাই-রান পূর্বাভাস সংরক্ষিত হয়নি। ভবিষ্যৎ তারিখের ড্রাই-রান খুললে সংরক্ষিত হবে।" })}</p>
             ) : (
               <>
                 <p className="text-xs text-muted-foreground">{t({ en: `Forecast saved ${new Intl.DateTimeFormat("en-GB", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Dhaka" }).format(new Date(d.forecast.takenAt))} (Dhaka): ${d.forecast.wouldAssign} leads expected, ${d.total} handed out.`, bn: `পূর্বাভাস সংরক্ষণ: ${new Intl.DateTimeFormat("en-GB", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Dhaka" }).format(new Date(d.forecast.takenAt))} — প্রত্যাশিত ${d.forecast.wouldAssign}, দেওয়া ${d.total}।` })}</p>
