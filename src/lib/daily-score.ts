@@ -15,6 +15,8 @@ export type ScoreInput = {
   calls: (Row & CallEvidenceRow)[];
   reports: Row[];
   visits: Row[];
+  /** Visits whose visit_at falls on the day, with status. */
+  visitsHeld: (Row & { status: string | null })[];
   followUps: (Row & { scheduled_at: string | null; completed_at: string | null })[];
   bookings: Row[];
 };
@@ -29,6 +31,8 @@ export function metricCounts(input: ScoreInput, agentId: string, includeSelf: bo
     reports_submitted: reports.length,
     company_leads_worked: new Set(reports.filter((r) => r.lead_id && !input.selfLeadIds.has(r.lead_id)).map((r) => r.lead_id)).size,
     site_visits: input.visits.filter(ok).length,
+    appointments_set: input.visits.filter(ok).length,
+    visits_completed: input.visitsHeld.filter(ok).filter((v) => v.status === "completed").length,
     follow_ups_on_time: input.followUps.filter(ok).filter((f) => f.scheduled_at && f.completed_at && dhakaDay(f.completed_at) <= dhakaDay(f.scheduled_at)).length,
     bookings_approved: input.bookings.filter(ok).length,
   };

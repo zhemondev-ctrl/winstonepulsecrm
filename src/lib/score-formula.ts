@@ -13,6 +13,8 @@ export const SCORE_METRICS = {
   reports_submitted: { en: "Call reports submitted", bn: "জমা দেওয়া কল রিপোর্ট" },
   call_attempts: { en: "Phone-recorded call attempts", bn: "ফোনে রেকর্ড হওয়া কল চেষ্টা" },
   site_visits: { en: "Saved site visits", bn: "সংরক্ষিত সাইট ভিজিট" },
+  appointments_set: { en: "Site-visit appointments set", bn: "নির্ধারিত সাইট ভিজিট অ্যাপয়েন্টমেন্ট" },
+  visits_completed: { en: "Site visits completed", bn: "সম্পন্ন সাইট ভিজিট" },
   follow_ups_on_time: { en: "Follow-ups done on time", bn: "সময়মতো ফলো-আপ" },
   company_leads_worked: { en: "Company leads worked (of 50)", bn: "কাজ করা কোম্পানি লিড (৫০-এর মধ্যে)" },
   bookings_approved: { en: "Approved bookings", bn: "অনুমোদিত বুকিং" },

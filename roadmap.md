@@ -124,4 +124,4 @@
 - [x] Scoring settings form (HQ KPIs tab); scores not yet computed from it.
 - [x] Verify latest publish live (score settings, hand-out results)
 - [ ] Dry-run preview comparison dashboard
-- [ ] Save C/R/A/V/F formula (waiting on owner's values)
+- [x] Save C/R/A/V/F formula

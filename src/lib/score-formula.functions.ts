@@ -56,22 +56,23 @@ export const readDailyScores = createServerFn({ method: "POST" })
     const parsed = scoreFormulaSchema.safeParse((cfg.data?.data as { current?: unknown } | null)?.current);
     if (!parsed.success) return { formula: null, rows: [], day: data.day, generatedAt: new Date().toISOString() };
     const { startIso: s, endIso: e } = dhakaRangeToUtc(data.day, data.day);
-    const [agents, calls, reports, visits, followUps, bookings] = await Promise.all([
+    const [agents, calls, reports, visits, followUps, bookings, visitsHeld] = await Promise.all([
       pageAllParallel((a, b) => db.from("profiles").select("id,name").in("role", ["agent", "team_leader"]).order("id").range(a, b)),
       pageAllParallel((a, b) => db.from("call_recordings").select("id,agent_id,lead_id,call_status,duration_seconds,call_source,external_call_id,talk_time_source").gte("started_at", s).lt("started_at", e).order("id").range(a, b)),
       pageAllParallel((a, b) => db.from("call_reports").select("id,agent_id,lead_id").eq("status", "submitted").gte("submitted_at", s).lt("submitted_at", e).order("id").range(a, b)),
       pageAllParallel((a, b) => db.from("site_visits").select("id,agent_id,lead_id").neq("status", "cancelled").gte("created_at", s).lt("created_at", e).order("id").range(a, b)),
       pageAllParallel((a, b) => db.from("follow_up_events").select("id,agent_id,lead_id,scheduled_at,completed_at").gte("completed_at", s).lt("completed_at", e).order("id").range(a, b)),
       pageAllParallel((a, b) => db.from("bookings").select("id,agent_id,lead_id").eq("approval_status", "approved").gte("reviewed_at", s).lt("reviewed_at", e).order("id").range(a, b)),
+      pageAllParallel((a, b) => db.from("site_visits").select("id,agent_id,lead_id,status").gte("visit_at", s).lt("visit_at", e).order("id").range(a, b)),
     ]);
-    if ([agents, calls, reports, visits, followUps, bookings].some((r) => r.error)) throw new Error("Score evidence unavailable. Please refresh.");
-    const leadIds = [...new Set([calls, reports, visits, followUps, bookings].flatMap((r) => (r.data ?? []).map((x: { lead_id: string | null }) => x.lead_id).filter(Boolean) as string[]))];
+    if ([agents, calls, reports, visits, followUps, bookings, visitsHeld].some((r) => r.error)) throw new Error("Score evidence unavailable. Please refresh.");
+    const leadIds = [...new Set([calls, reports, visits, followUps, bookings, visitsHeld].flatMap((r) => (r.data ?? []).map((x: { lead_id: string | null }) => x.lead_id).filter(Boolean) as string[]))];
     const selfLeadIds = new Set<string>();
     for (let i = 0; i < leadIds.length; i += 200) {
       const r = await db.from("leads").select("id").in("id", leadIds.slice(i, i + 200)).eq("assignment_source", "self");
       if (r.error) throw new Error("Score evidence unavailable. Please refresh.");
       for (const l of r.data ?? []) selfLeadIds.add(l.id);
     }
-    const rows = dailyScores(parsed.data, { agents: agents.data ?? [], selfLeadIds, calls: calls.data ?? [], reports: reports.data ?? [], visits: visits.data ?? [], followUps: followUps.data ?? [], bookings: bookings.data ?? [] });
+    const rows = dailyScores(parsed.data, { agents: agents.data ?? [], selfLeadIds, calls: calls.data ?? [], reports: reports.data ?? [], visits: visits.data ?? [], followUps: followUps.data ?? [], bookings: bookings.data ?? [], visitsHeld: visitsHeld.data ?? [] });
     return { formula: parsed.data, rows, day: data.day, generatedAt: new Date().toISOString() };
   });
