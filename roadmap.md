@@ -1,6 +1,7 @@
 # Roadmap
 
 ## Open tasks
+26. [x] Operations manual (v1.7.0, PDF rebuilt, manual:check in sync): document same-day missed-call cadence, Net-50 limit, Saturday 14 Nov pause and demerit rules; rebuild PDF and pass manual:check.
 24. Account clean-up for a fresh Sunday start (12 Nov): return company leads to the LeadHub Nexus pool — waiting on scope (never-worked / no follow-up / all), same-agent rule and timing.
 25. "Full production readiness" request (12 Nov, citing HQ approval 11 Nov):
    - [ ] #1 Live Android sync inside Call Sandbox — conflicts with standing rule (sandbox stays offline, no live writes); real phone sync already goes through the existing call paths. Waiting on owner choice.

@@ -1,9 +1,9 @@
 # Winstone Pulse — CRM Operations Manual
 
-<!-- manual-version: 1.6.0 -->
-<!-- manual-updated: 2026-10-23 -->
+<!-- manual-version: 1.7.0 -->
+<!-- manual-updated: 2026-11-12 -->
 
-> Canonical source for the /manual page and the downloadable PDF. Edit this file, then run `npm run manual:pdf`. Version 1.6.0 · 2026-10-23.
+> Canonical source for the /manual page and the downloadable PDF. Edit this file, then run `npm run manual:pdf`. Version 1.7.0 · 2026-11-12.
 
 ## 1. System architecture — Introduction {#purpose}
 
@@ -35,6 +35,10 @@
 - Daily lead quota: exactly 50 unique leads per agent per Asia/Dhaka calendar day. The database itself refuses the 51st assignment on every path (LeadHub run, import, manual/bulk, retries) and serialises concurrent assignments; re-assigning the same lead to the same agent on the same day does not count twice. LeadHub can lower a day's quantity but no path can exceed 50. Older 25/day and 15/day-per-account rules are superseded.
 - Assignment takes the oldest eligible unassigned leads first. A phone number that was ever assigned or worked is never re-assigned as a fresh lead. Every assignment change is recorded permanently in lead history.
 - LeadHub is the only way a pool lead reaches an agent. Agent self-claim of unassigned leads is retired and rejected by the server; imports always land unassigned. The only exception is a new number an agent adds themself (e.g. an incoming caller), which is logged as agent-added.
+- Self-collected leads (owner decision 2026-11-12): a lead an agent collects and adds themself is unlimited, does not count toward the 50 company leads and is not part of the daily accountability workload. Duplicate phones are still refused.
+- Net-50 backlog limit (MD approval report 2026-11-11, proposal 3): each morning a desk receives at most 50 − its older pending company leads, never below 0. Example: 39 older pending → up to 11 new; 232 older pending → 0 new until the backlog is cleared. Leads already received today are not backlog, so a second run only fills real gaps. Self-collected leads are never backlog. The rule applies to the automatic morning run and to manual LeadHub distribution.
+- Backlog clearance pause (proposal 4): the automatic morning distribution does not run on Saturday 2026-11-14 so desks can clear older work (12 Nov had already been distributed and 13 Nov is a Friday). LeadHub can still assign manually that day; Net-50 and the 50 cap still apply. IT can change the pause days in a saved setting.
+- Daily agent audit (HQ and IT, view only) shows for today why each desk received its count: received, allowed now, and the reason (HQ review lock, pause, backlog ≥ 50, 50 − backlog, or full quota).
 
 ## 5. Agent daily workflow {#agent}
 
@@ -43,7 +47,10 @@
 ## 6. Call, report and follow-up workflow {#report}
 
 - After every call a report popup opens and the next call is blocked until it is submitted. Connected calls answer six yes/no questions; the server calculates score (max 90) and category: 0–20 Cold, 21–50 Warm, 51–90 Hot.
-- Not-connected calls need no category; the lead returns to the retry queue.
+- Not-connected calls (no answer, busy or failed) need no category and follow the missed-call cadence below. The old automatic +2 / +3 day follow-ups are retired.
+- Missed-call cadence (MD approval report 2026-11-11, proposal 2), counted per lead — 1st missed call: the lead returns to today's list 2 hours later for a same-day second try. If that is after 17:00 Asia/Dhaka, or today is a Friday/holiday, it returns the next open morning.
+- Missed-call cadence — 2nd missed call: the agent chooses the next try — +1 working day, +2 working days or a custom date/time — but never later than 2 working days and never in the past. Older Android builds that send "+3 days" are capped at 2 working days.
+- Missed-call cadence — 3rd missed call: the lead moves to the Unresponsive Pool and is reactivated after 7 days. Fridays and office holidays always shift to the next open day.
 - A follow-up needs a date/time and one structured reason. Rescheduling keeps the original time; every create, reschedule, completion, cancellation and status change is stored permanently with who, when and the old and new values. Follow-ups can never be deleted.
 
 ## 7. Mandatory reasons {#reasons}
@@ -89,6 +96,8 @@
 
 - "Call blocked" — an unfinished report or unacknowledged briefing; finish it first.
 - "Queue locked" — pending work exceeded 10% of yesterday's workload; HQ must review and unlock.
+- Workload for the 10% check = company leads assigned that day + follow-ups due that day + call reports started that day and still unsubmitted when the day ended. An unfinished report on a lead that is already pending is not counted twice. Every new report keeps a saved call start time that cannot be changed (older reports use the time the report opened).
+- Demerit points (proposal 5): every system block (an accountability review) is one permanent demerit point in that agent's annual record. Only Executive HQ, with the HQ PIN, can cancel a point and must give a reason; the cancellation is stored permanently next to the point and the point itself is never deleted. HQ › Daily agent audit shows the yearly totals.
 - Numbers look low — the agent sees only their own assigned leads; HQ sees all.
 - PIN screen reappears — the PIN session expired; enter the PIN again.
 
@@ -136,7 +145,7 @@
 
 ## 16E. Known limitations and pending decisions {#known}
 
-- Daily lead cap: 50 per agent per Dhaka day is a hard database limit (owner decision 2026-10-23). LeadHub extra-lead grants above 50 are now refused. Leads deduplicated as separate records (aliases) are blocked at import by phone keys, not by the cap.
+- Daily lead cap: 50 company leads per agent per Dhaka day is a hard database limit (owner decision 2026-10-23); self-collected leads are exempt (2026-11-12). LeadHub extra-lead grants above 50 are now refused. Leads deduplicated as separate records (aliases) are blocked at import by phone keys, not by the cap.
 - Billing: $35.29 USD/month with VAT included is the owner's decision of 2026-10-23; the VAT-included reading was chosen because no contract states otherwise.
 - Call recordings: the web app cannot prove a phone recorded or uploaded audio; Android/OEM recording limits apply. WhatsApp call duration is agent-typed because phones do not log it.
 - Preview and live share one database, so live-data tests are read-only; write tests use isolated data or a separate staging backend.
@@ -151,6 +160,7 @@
 
 ## 18. Version and changelog {#changelog}
 
+- 1.7.0 (2026-11-12): Missed-call cadence (same-day 2nd try, 2nd miss within 2 working days, 3rd → Unresponsive Pool), Net-50 backlog limit, Saturday 2026-11-14 auto-distribution pause, demerit points with HQ-only cancellation, unfinished reports in the 10% workload, saved call start time, unlimited self-collected leads.
 - 1.6.0 (2026-10-23): This Markdown file is now the single source for /manual and the downloadable PDF (npm run manual:pdf / manual:check, hash-checked in CI). Paid-through rule documented; new monthly bills are created safely for each month.
 - 1.5.0 (2026-10-23): Owner decisions applied — hard 50 leads/agent/Dhaka day in the database; Winstone AI command actions can no longer assign or distribute leads; monthly architecture charge $35.29 USD incl. 15% VAT; invoice statuses ISSUED/APPROVED/PAID/LOCKED; payment must be verified before the 15th 00:00 Asia/Dhaka; approval is not payment; late verified payment restores access.
 - 1.4.0 (2026-10-23): Role definitions clarified (Executive Headquarters (HQ) = performance review; LeadHub Nexus = canonical leads and assignment; IT Console = technical administration). Winstone AI can no longer assign leads and is shown only to IT Console. Unit inventory storage, JSON backup/restore, billing formulas and known limitations documented.

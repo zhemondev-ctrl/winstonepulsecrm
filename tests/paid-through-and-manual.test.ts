@@ -38,7 +38,7 @@ describe("manual single source", () => {
   const md = readFileSync("docs/CRM_OPERATIONS_MANUAL.md", "utf8");
   it("/manual sections come from the Markdown file", () => {
     expect(MANUAL_SECTIONS).toEqual(parseManual(md).sections);
-    expect(MANUAL_VERSION).toBe("1.6.0");
+    expect(MANUAL_VERSION).toBe("1.7.0");
   });
   it("PDF metadata matches the Markdown hash and version", () => {
     const meta = JSON.parse(readFileSync("public/winstone-system-manual.json", "utf8"));
