@@ -15,3 +15,18 @@ export function tallyDryRunUsage(rows: UsageRow[]) {
     byMode: count(rows, (r) => r.mode).sort((a, b) => b.n - a.n),
   };
 }
+
+const cell = (v: string | number) => {
+  let s = String(v);
+  if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`;
+  return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+};
+/** CSV of the displayed tallies: one row per (section, label, count). */
+export function dryRunUsageCsv(t: ReturnType<typeof tallyDryRunUsage>, statusLabel: (s: string) => string = (s) => s) {
+  const rows: (string | number)[][] = [["section", "label", "previews"]];
+  for (const r of t.byDate) rows.push(["date", r.label, r.n]);
+  for (const r of t.byWeekday) rows.push(["weekday", r.label, r.n]);
+  for (const r of t.byStatus) rows.push(["status", statusLabel(r.label), r.n]);
+  rows.push(["total", "all", t.total]);
+  return rows.map((r) => r.map(cell).join(",")).join("\r\n") + "\r\n";
+}

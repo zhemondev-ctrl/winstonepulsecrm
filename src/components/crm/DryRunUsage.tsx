@@ -1,6 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { BarChart3 } from "lucide-react";
+import { BarChart3, Download } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { dryRunUsageCsv } from "@/lib/dry-run-usage";
 import { useState } from "react";
 
 import { readDryRunUsage } from "@/lib/lead-pool.functions";
@@ -47,9 +49,18 @@ export function DryRunUsage() {
             <p className="text-sm text-muted-foreground">{t({ en: "How often the dry run was opened, counted from when this was added.", bn: "ড্রাই-রান কতবার খোলা হয়েছে — এটি যোগ হওয়ার পর থেকে গণনা।" })}{d ? ` ${t({ en: `Total: ${d.total}`, bn: `মোট: ${d.total}` })}` : ""}</p>
           </div>
         </div>
+        <div className="flex flex-wrap gap-2">
+        <Button type="button" variant="outline" size="sm" className="h-10" disabled={!d} onClick={() => {
+          if (!d) return;
+          const blob = new Blob(["\uFEFF" + dryRunUsageCsv(d, (s) => STATUS[s]?.en ?? s)], { type: "text/csv;charset=utf-8" });
+          const url = URL.createObjectURL(blob); const a = document.createElement("a");
+          a.href = url; a.download = `dry-run-usage-last-${days}-days.csv`; document.body.appendChild(a); a.click(); a.remove();
+          setTimeout(() => URL.revokeObjectURL(url), 30_000);
+        }}><Download className="size-4" />CSV</Button>
         <select aria-label="Range" className="h-10 rounded-md border border-input bg-background px-3 text-sm" value={days} onChange={(e) => setDays(Number(e.target.value))}>
           {[7, 30, 90].map((n) => <option key={n} value={n}>{t({ en: `Last ${n} days`, bn: `শেষ ${n} দিন` })}</option>)}
         </select>
+        </div>
       </header>
       {q.isLoading ? <p className="text-sm text-muted-foreground">{t({ en: "Loading…", bn: "লোড হচ্ছে…" })}</p>
         : q.isError ? <p className="text-sm text-destructive">{q.error instanceof Error ? q.error.message : "Unavailable"}</p>
