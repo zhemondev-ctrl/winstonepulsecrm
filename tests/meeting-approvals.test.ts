@@ -23,8 +23,8 @@ vi.mock("@/integrations/supabase/client.server", () => ({
   },
 }));
 
-import { canFinalize, decisionNeedsComment, meetingApprovalPath, validMdDecisionDate, dhakaDecisionToday } from "@/lib/meeting-approvals";
-import { createMeetingApproval, decideMeetingItem, finalizeMeetingApproval, listMeetingApprovals, withdrawMeetingApproval } from "@/lib/meeting-approvals.functions";
+import { canFinalize, canMarkImplemented, decisionNeedsComment, meetingApprovalPath, trackerStage, validMdDecisionDate, dhakaDecisionToday } from "@/lib/meeting-approvals";
+import { createMeetingApproval, decideMeetingItem, finalizeMeetingApproval, listMeetingApprovals, listMeetingDecisions, markMeetingItemImplemented, withdrawMeetingApproval } from "@/lib/meeting-approvals.functions";
 
 type Fn = (a: { data: unknown }) => Promise<unknown>;
 const id = "00000000-0000-4000-8000-000000000001";
@@ -91,6 +91,40 @@ describe("meeting approval access", () => {
   it("agents cannot read approvals", async () => {
     state.callerScope = "agent"; state.reads = 0;
     await expect(list({ data: { adminToken: null } })).rejects.toThrow("Executive HQ or IT access required");
+    expect(state.reads).toBe(0);
+    state.callerScope = "authority";
+  });
+});
+
+describe("decision tracker: no rule change before MD's final approval", () => {
+  const notStarted = "not_started" as const;
+  it("a new meeting decision is awaiting MD approval", () => {
+    expect(trackerStage({ decision: "pending", implementation_status: notStarted }, "awaiting")).toBe("awaiting_md");
+  });
+  it("an approved item stays locked until HQ submits the final decision", () => {
+    expect(canMarkImplemented({ decision: "approved", implementation_status: notStarted }, "awaiting")).toBe(false);
+  });
+  it("approved or approved-with-changes items can be implemented after the final decision", () => {
+    expect(canMarkImplemented({ decision: "approved", implementation_status: notStarted }, "decided")).toBe(true);
+    expect(canMarkImplemented({ decision: "approved_with_changes", implementation_status: notStarted }, "decided")).toBe(true);
+  });
+  it("rejected items can never be implemented", () => {
+    expect(canMarkImplemented({ decision: "rejected", implementation_status: notStarted }, "decided")).toBe(false);
+  });
+  it("withdrawn requests never allow implementation", () => {
+    expect(canMarkImplemented({ decision: "approved", implementation_status: notStarted }, "withdrawn")).toBe(false);
+  });
+  it("an implemented item cannot be implemented twice", () => {
+    expect(canMarkImplemented({ decision: "approved", implementation_status: "implemented" }, "decided")).toBe(false);
+  });
+  it.each(["hq", "leadhub", null])("only IT Console marks implemented (refuses %s before writing)", async (scope) => {
+    state.scope = scope; state.writes = 0;
+    await expect((markMeetingItemImplemented as unknown as Fn)({ data: { adminToken: "t", itemId: id, note: "Changed the rule" } })).rejects.toThrow("Only the IT Console");
+    expect(state.writes).toBe(0);
+  });
+  it("agents cannot read the tracker", async () => {
+    state.callerScope = "agent"; state.reads = 0;
+    await expect((listMeetingDecisions as unknown as Fn)({ data: { adminToken: null } })).rejects.toThrow("Executive HQ or IT access required");
     expect(state.reads).toBe(0);
     state.callerScope = "authority";
   });

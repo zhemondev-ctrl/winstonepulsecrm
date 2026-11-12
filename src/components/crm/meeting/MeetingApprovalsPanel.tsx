@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { MeetingDecisionTracker } from "@/components/crm/meeting/MeetingDecisionTracker";
 import { useT } from "@/lib/i18n";
 import { useAdminToken } from "@/lib/local-session";
 import {
@@ -55,6 +56,7 @@ const EVENT: Record<string, { en: string; bn: string }> = {
   item_decided: { en: "Item decided", bn: "বিষয়ে সিদ্ধান্ত" },
   finalized: { en: "Final decision submitted", bn: "চূড়ান্ত সিদ্ধান্ত জমা" },
   withdrawn: { en: "Withdrawn by IT", bn: "IT প্রত্যাহার করেছে" },
+  implemented: { en: "Implemented by IT", bn: "IT চালু করেছে" },
 };
 
 function fmt(iso: string | null | undefined) {
@@ -83,10 +85,13 @@ export function MeetingApprovalsPanel({ surface }: { surface: Surface }) {
       return typeof v === "string" ? v : null;
     },
   });
+  const tracker = useRouterState({ select: (s) => (s.location.search as Record<string, unknown>)["view"] === "tracker" });
   const navigate = useNavigate();
   const route = surface === "hq" ? "/hq" : "/system";
   const open = (id: string | null) =>
     void navigate({ to: route, search: id ? { s: "approvals", approval: id } : { s: "approvals" } } as never);
+  const showTracker = (on: boolean) =>
+    void navigate({ to: route, search: on ? { s: "approvals", view: "tracker" } : { s: "approvals" } } as never);
 
   return (
     <section className="space-y-4">
@@ -101,7 +106,13 @@ export function MeetingApprovalsPanel({ surface }: { surface: Surface }) {
           </p>
         </div>
       </div>
-      {selected ? <Detail id={selected} surface={surface} onBack={() => open(null)} /> : <List surface={surface} onOpen={open} />}
+      {!selected && (
+        <div className="flex flex-wrap gap-2" role="tablist" aria-label={t({ en: "Approval views", bn: "অনুমোদনের ভিউ" })}>
+          <Button size="sm" role="tab" aria-selected={!tracker} variant={tracker ? "outline" : "default"} onClick={() => showTracker(false)}>{t({ en: "By meeting", bn: "মিটিং অনুযায়ী" })}</Button>
+          <Button size="sm" role="tab" aria-selected={tracker} variant={tracker ? "default" : "outline"} onClick={() => showTracker(true)}>{t({ en: "Decision tracker", bn: "সিদ্ধান্ত ট্র্যাকার" })}</Button>
+        </div>
+      )}
+      {selected ? <Detail id={selected} surface={surface} onBack={() => open(null)} /> : tracker ? <MeetingDecisionTracker onOpenMeeting={(id) => open(id)} /> : <List surface={surface} onOpen={open} />}
     </section>
   );
 }
@@ -189,6 +200,7 @@ function CreateForm({ onDone }: { onDone: (id: string | null) => void }) {
     onSuccess: (r) => {
       toast.success(t({ en: "Approval request created — now share the link", bn: "অনুরোধ তৈরি হয়েছে — এখন লিংক পাঠান" }));
       qc.invalidateQueries({ queryKey: ["meeting-approvals"] });
+      qc.invalidateQueries({ queryKey: ["meeting-decisions"] });
       onDone(r.id);
     },
     onError: (e) => toast.error(errMsg(e)),
@@ -416,6 +428,7 @@ function ItemCard({ item, canDecide, requestId, meetingDate }: { item: Item; can
       toast.success(t({ en: "Decision saved", bn: "সিদ্ধান্ত সংরক্ষিত" }));
       qc.invalidateQueries({ queryKey: ["meeting-approval", requestId] });
       qc.invalidateQueries({ queryKey: ["meeting-approvals"] });
+      qc.invalidateQueries({ queryKey: ["meeting-decisions"] });
     },
     onError: (e) => toast.error(errMsg(e)),
   });
@@ -476,6 +489,7 @@ function FinalizeBox({ id, ready }: { id: string; ready: boolean }) {
       toast.success(t({ en: "Final decision submitted — IT can now see it", bn: "চূড়ান্ত সিদ্ধান্ত জমা হয়েছে — IT এখন দেখতে পাবে" }));
       qc.invalidateQueries({ queryKey: ["meeting-approval", id] });
       qc.invalidateQueries({ queryKey: ["meeting-approvals"] });
+      qc.invalidateQueries({ queryKey: ["meeting-decisions"] });
     },
     onError: (e) => toast.error(errMsg(e)),
   });
@@ -505,6 +519,7 @@ function WithdrawBox({ id }: { id: string }) {
       toast.success(t({ en: "Request withdrawn", bn: "অনুরোধ প্রত্যাহার হয়েছে" }));
       qc.invalidateQueries({ queryKey: ["meeting-approval", id] });
       qc.invalidateQueries({ queryKey: ["meeting-approvals"] });
+      qc.invalidateQueries({ queryKey: ["meeting-decisions"] });
     },
     onError: (e) => toast.error(errMsg(e)),
   });

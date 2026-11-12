@@ -3700,6 +3700,10 @@ export type Database = {
           decision_comment: string | null
           detail: string | null
           id: string
+          implementation_note: string | null
+          implementation_status: string
+          implemented_at: string | null
+          implemented_by: string | null
           md_decision_date: string | null
           position: number
           request_id: string
@@ -3713,6 +3717,10 @@ export type Database = {
           decision_comment?: string | null
           detail?: string | null
           id?: string
+          implementation_note?: string | null
+          implementation_status?: string
+          implemented_at?: string | null
+          implemented_by?: string | null
           md_decision_date?: string | null
           position: number
           request_id: string
@@ -3726,6 +3734,10 @@ export type Database = {
           decision_comment?: string | null
           detail?: string | null
           id?: string
+          implementation_note?: string | null
+          implementation_status?: string
+          implemented_at?: string | null
+          implemented_by?: string | null
           md_decision_date?: string | null
           position?: number
           request_id?: string

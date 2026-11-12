@@ -36,3 +36,20 @@ export function decisionCounts(items: { decision: MeetingItemDecision }[]) {
 export function meetingApprovalPath(id: string) {
   return `/hq?s=approvals&approval=${encodeURIComponent(id)}`;
 }
+
+export type ImplementationStatus = "not_started" | "implemented";
+/** Where one meeting decision stands on the way to a CRM rule change. */
+export type TrackerStage = "awaiting_md" | "ready" | "implemented" | "rejected" | "withdrawn";
+
+export function trackerStage(item: { decision: MeetingItemDecision; implementation_status: ImplementationStatus }, requestStatus: MeetingStatus): TrackerStage {
+  if (requestStatus === "withdrawn") return "withdrawn";
+  if (item.implementation_status === "implemented") return "implemented";
+  if (requestStatus !== "decided" || item.decision === "pending") return "awaiting_md";
+  if (item.decision === "rejected") return "rejected";
+  return "ready";
+}
+
+/** A rule may change only after HQ submitted the MD's final written decision and the item was approved. */
+export function canMarkImplemented(item: { decision: MeetingItemDecision; implementation_status: ImplementationStatus }, requestStatus: MeetingStatus) {
+  return trackerStage(item, requestStatus) === "ready";
+}

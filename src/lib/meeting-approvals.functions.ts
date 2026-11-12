@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
-import { MAX_MEETING_ITEMS, MEETING_DECISIONS, canFinalize, decisionNeedsComment, validMdDecisionDate } from "@/lib/meeting-approvals";
+import { MAX_MEETING_ITEMS, MEETING_DECISIONS, canFinalize, canMarkImplemented, decisionNeedsComment, trackerStage, validMdDecisionDate, type ImplementationStatus, type MeetingItemDecision, type MeetingStatus } from "@/lib/meeting-approvals";
 
 const Token = z.object({ adminToken: z.string().nullable().optional() });
 const Id = z.string().uuid();
@@ -184,5 +184,72 @@ export const withdrawMeetingApproval = createServerFn({ method: "POST" })
       .select("id");
     if (error || !done?.length) throw new Error("Only an open approval can be withdrawn");
     await addEvent({ request_id: data.id, action: "withdrawn", actor: "IT Console", note: data.reason });
+    return { ok: true };
+  });
+
+/** Every meeting decision across all meetings, with where it stands before any CRM rule change. */
+export const listMeetingDecisions = createServerFn({ method: "POST" })
+  .inputValidator((v: unknown) => Token.parse(v))
+  .handler(async ({ data }) => {
+    const scope = await requireReader(data.adminToken);
+    const sb = await db();
+    const { data: requests, error } = await sb
+      .from("meeting_approval_requests")
+      .select("id, title, meeting_date, status, final_signer, finalized_at")
+      .order("meeting_date", { ascending: false })
+      .limit(200);
+    if (error) throw new Error("Meeting decisions unavailable");
+    const byId = new Map((requests ?? []).map((r) => [r.id, r]));
+    const ids = [...byId.keys()];
+    const { data: items, error: itemErr } = ids.length
+      ? await sb
+          .from("meeting_approval_items")
+          .select("id, request_id, position, title, detail, decision, decision_comment, md_decision_date, decided_at, implementation_status, implemented_at, implemented_by, implementation_note")
+          .in("request_id", ids)
+          .order("position")
+          .limit(6000)
+      : { data: [], error: null };
+    if (itemErr) throw new Error("Meeting decisions unavailable");
+    const rows = (items ?? []).flatMap((i) => {
+      const r = byId.get(i.request_id);
+      if (!r) return [];
+      const status = r.status as MeetingStatus;
+      const item = { decision: i.decision as MeetingItemDecision, implementation_status: i.implementation_status as ImplementationStatus };
+      return [{
+        ...i,
+        meeting_title: r.title,
+        meeting_date: r.meeting_date,
+        request_status: status,
+        final_signer: r.final_signer,
+        finalized_at: r.finalized_at,
+        stage: trackerStage(item, status),
+      }];
+    });
+    rows.sort((a, b) => (a.meeting_date === b.meeting_date ? a.position - b.position : a.meeting_date < b.meeting_date ? 1 : -1));
+    return { canImplement: scope === "full", rows };
+  });
+
+export const markMeetingItemImplemented = createServerFn({ method: "POST" })
+  .inputValidator((v: unknown) => Token.extend({ itemId: Id, note: z.string().trim().min(5).max(2000) }).parse(v))
+  .handler(async ({ data }) => {
+    await requireIt(data.adminToken);
+    const sb = await db();
+    const { data: item, error } = await sb.from("meeting_approval_items").select("id, request_id, decision, implementation_status").eq("id", data.itemId).maybeSingle();
+    if (error || !item) throw new Error("Decision not found");
+    const { data: parent, error: pErr } = await sb.from("meeting_approval_requests").select("status").eq("id", item.request_id).maybeSingle();
+    if (pErr || !parent) throw new Error("Decision not found");
+    const ok = canMarkImplemented(
+      { decision: item.decision as MeetingItemDecision, implementation_status: item.implementation_status as ImplementationStatus },
+      parent.status as MeetingStatus,
+    );
+    if (!ok) throw new Error("Only a decision the MD finally approved can be marked implemented");
+    const { data: done, error: upErr } = await sb
+      .from("meeting_approval_items")
+      .update({ implementation_status: "implemented", implemented_at: new Date().toISOString(), implemented_by: "IT Console", implementation_note: data.note })
+      .eq("id", item.id)
+      .eq("implementation_status", "not_started")
+      .select("id");
+    if (upErr || !done?.length) throw new Error("Could not record the implementation");
+    await addEvent({ request_id: item.request_id, item_id: item.id, action: "implemented", actor: "IT Console", note: data.note });
     return { ok: true };
   });
