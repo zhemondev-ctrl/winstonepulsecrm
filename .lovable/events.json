@@ -173,6 +173,49 @@
         }
       }
     },
+    "project.distribution_dry_run_viewed": {
+      "event_schema_version": 1,
+      "description": "A LeadHub user loaded a distribution dry-run result for a chosen run day.",
+      "privacy": {
+        "contains_pii": false,
+        "purpose": "product_analytics"
+      },
+      "properties_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "mode",
+          "days_ahead",
+          "weekday",
+          "blocked"
+        ],
+        "properties": {
+          "mode": {
+            "type": "string",
+            "enum": [
+              "auto",
+              "today",
+              "next",
+              "date"
+            ]
+          },
+          "days_ahead": {
+            "type": "number"
+          },
+          "weekday": {
+            "type": "string"
+          },
+          "blocked": {
+            "type": "string",
+            "enum": [
+              "none",
+              "paused",
+              "not_distribution_day"
+            ]
+          }
+        }
+      }
+    },
     "project.lead_allocation_completed": {
       "event_schema_version": 1,
       "description": "A LeadHub allocation was confirmed and saved; counts of leads assigned/requested and agents receiving leads only.",

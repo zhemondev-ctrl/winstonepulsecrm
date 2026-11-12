@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { FlaskConical, RefreshCw } from "lucide-react";
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
 import type { PreviewFlag } from "@/lib/distribution-preview";
@@ -31,6 +31,20 @@ export function DistributionDryRun() {
     queryFn: () => previewFn({ data: { adminToken, target, ...(target === "date" ? { date: pickedDate } : {}) } }),
     enabled: Boolean(adminToken) && (target !== "date" || Boolean(pickedDate)),
   });
+
+  useEffect(() => {
+    const d = q.data;
+    if (!d) return;
+    const daysAhead = Math.round((Date.parse(`${d.day}T00:00:00Z`) - Date.parse(`${d.today}T00:00:00Z`)) / 864e5);
+    window.__lovableEvents?.track?.("project.distribution_dry_run_viewed", {
+      mode: target,
+      days_ahead: daysAhead,
+      weekday: new Date(`${d.day}T00:00:00Z`).toLocaleDateString("en-US", { weekday: "short", timeZone: "UTC" }),
+      blocked: d.block ?? "none",
+    });
+    // Fire once per successful result, not on every render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [q.dataUpdatedAt]);
 
   const flagLabel = (f: PreviewFlag, backlog: number) =>
     f === "review_lock" ? t({ en: "HQ review lock → 0", bn: "HQ রিভিউ লক → ০" })
