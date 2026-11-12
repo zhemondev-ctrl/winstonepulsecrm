@@ -65,11 +65,8 @@
 - Rejections use shared defaults; mobile UI tests mock all writes — why: no invented facts or live test data.
 - HQ forecasts never allocate; version choices grant no access; call-sandbox and the sandbox APK's SyncFailureDrill stay offline (liveWrites 0) — why: facts are not authority.
 - Extra Google tags use RootShell head; keep original — why: router dedupes.
-- HQ Claude briefing: on-demand, HQ/IT-gated, aggregate-only, native /v1/messages streamed server-side — why: no customer data or background AI cost.
-- The Firebase grpc-js advisory (daily) watch uses managed cron auth, diff against system_settings and write system_alerts; failed checks never mean revocation — why: no false alarms.
 - Lead `is_verified` only via ingest/outcome + `lead-verification.ts`: own completed call_recordings row (same call_uid/agent/lead) with `hasProvenTalkTime` (`android_sim` needs `talk_time_source='call_log'`); device `connected` is a claim. Late call-log entries reconcile the unique same-agent live row via `call-log-reconcile.server.ts` (`call_log_id` once, pending reports only), never merge ambiguous calls — why: app 2.21 counted ringing as talk.
 - Phone call history uses `lead-events-once.server.ts` (key `lead_event:<id>:<kind>`); phone-identity SQL uses only indexed lead_phone_keys + lead_phone_legacy_aliases, never per-row extract_bd_phones scans — why: no duplicate history or sync timeouts.
-- Android sync failures: app `SyncFailureLog` → POST /api/public/agent/sync-failures → sync_events `android_sync_failure` (per device+report id, technical fields only) → authority-only read-only `/sync-failures` — why: IT sees phone failures without customer data.
 - `bun run scan:sensitive` is the read-only scan for signing keys/secrets in tracked files and public downloads (ZIPs opened); it prints file + rule only, never values — why: one check, no leaked matches.
 - No GitHub logic in the CRM app (panels, API calls, cron, issues); Git only runs Android CI (`.github/workflows/android-*.yml`, see android/AGENTS.md); APKs reach agents only via IT's PIN-gated `android-apk` links — why: no runtime Git dependency.
 
