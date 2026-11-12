@@ -108,3 +108,5 @@
 - [x] HQ/IT-only download button for the MD report in CRM
 
 - [x] Own-lead view: show qualified own leads as success; company 50 stays mandatory (owner 2026-11-12)
+
+- [x] HQ read-only recovery queue: leads closed without enough verified call attempts (Recovery review tab).

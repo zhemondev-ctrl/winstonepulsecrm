@@ -7,7 +7,7 @@ export const PAGE_SECTIONS = {
     { key: "overview", label: "সারকথো", en: "Summary" },
     { key: "kpis", label: "এজেন্ট KPI ড্যাশবোর্ড", en: "Agent KPI dashboard" },
     { key: "lead360", label: "লিডের পুরো নথি", en: "Lead details" },
-    { key: "recovery", label: "VIP পুনরুদ্ধার তালিকা", en: "VIP recovery queue" },
+    { key: "recovery", label: "পুনরুদ্ধার পর্যালোচনা", en: "Recovery review" },
     { key: "followups", label: "ফলো-আপ ও রিপোর্ট", en: "Follow-ups & reports" },
     { key: "performance", label: "এজেন্টেদের কাজ", en: "Agent work" },
     { key: "audit", label: "দৈনিক এজেন্ট নিরীক্ষা", en: "Daily agent audit" },

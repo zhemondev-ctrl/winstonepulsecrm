@@ -53,6 +53,7 @@ import { WhatsappAgentSummary } from "@/components/crm/hq/WhatsappAgentSummary";
 import { buildAgentStats, buildTimeline, useSnapshot } from "@/lib/crm-data";
 
 const HQ_TABS = PAGE_SECTIONS["/hq"];
+const ClosureRecoveryQueue = lazy(() => import("@/components/crm/hq/ClosureRecoveryQueue").then(m => ({ default: m.ClosureRecoveryQueue })));
 const VipRecoveryQueue = lazy(() => import("@/components/crm/hq/VipRecoveryQueue").then(m => ({ default: m.VipRecoveryQueue })));
 const DailyAgentAudit = lazy(() => import("@/components/crm/hq/DailyAgentAudit").then(m => ({ default: m.DailyAgentAudit })));
 const SiteVisitAlerts = lazy(() => import("@/components/crm/hq/SiteVisitAlerts").then(m => ({ default: m.SiteVisitAlerts })));
@@ -315,7 +316,7 @@ function ControlBoard() {
             {tab === "lead360" && <Lead360Workspace />}
             {tab === "approvals" && <MeetingApprovalsPanel surface="hq" />}
             {tab === "audit" && <Suspense fallback={<SnapshotSkeleton />}><DailyAgentAudit /></Suspense>}
-            {tab === "recovery" && <Suspense fallback={<SnapshotSkeleton />}><VipRecoveryQueue onOpenLead={setOpenLeadId} /></Suspense>}
+            {tab === "recovery" && <Suspense fallback={<SnapshotSkeleton />}><div className="space-y-6"><ClosureRecoveryQueue onOpenLead={setOpenLeadId} /><VipRecoveryQueue onOpenLead={setOpenLeadId} /></div></Suspense>}
 
             {tab === "tools" && (
               <div className="space-y-8">
