@@ -22,12 +22,14 @@ export type ScoreMetric = keyof typeof SCORE_METRICS;
 
 const metricKeys = Object.keys(SCORE_METRICS) as [ScoreMetric, ...ScoreMetric[]];
 
+const letter = (l: string) => z.object({
+  label: z.string().trim().min(1, `${l}: name required`).max(60),
+  metric: z.enum(metricKeys),
+  points: z.number().int().min(0).max(100),
+});
+
 export const scoreFormulaSchema = z.object({
-  letters: z.object(Object.fromEntries(SCORE_LETTERS.map((l) => [l, z.object({
-    label: z.string().trim().min(1, `${l}: name required`).max(60),
-    metric: z.enum(metricKeys),
-    points: z.number().int().min(0).max(100),
-  })])) as Record<ScoreLetter, z.ZodObject<{ label: z.ZodString; metric: z.ZodEnum<typeof metricKeys>; points: z.ZodNumber }>>),
+  letters: z.object({ C: letter("C"), R: letter("R"), A: letter("A"), V: letter("V"), F: letter("F") }),
   includeSelfLeads: z.boolean(),
 }).superRefine((v, ctx) => {
   const total = SCORE_LETTERS.reduce((n, l) => n + v.letters[l].points, 0);
