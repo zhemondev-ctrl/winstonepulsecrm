@@ -2,6 +2,7 @@
 import { supabaseAdmin as db } from "@/integrations/supabase/client.server";
 import { pageAllParallel } from "./page-all";
 import { dhakaRangeToUtc } from "./import-funnel";
+import type { ClosureCell } from "./closure-recovery-charts";
 import { closingReportOf, isOutOfScope, measureClosure, type CallRow, type ClosingReport } from "./closure-attempts";
 
 const fail = () => new Error("Closure evidence unavailable. Nothing is shown as complete — refresh to retry.");
@@ -66,6 +67,8 @@ export async function readClosureQueue(from: string, to: string) {
   const rows: Row[] = [];
   let checked = 0;
   let outOfScope = 0;
+  // Chart cells cover every checked closure (short or not) so rates have a real denominator.
+  const cells = new Map<string, ClosureCell>();
   for (const lead of leads) {
     const list = byLead.get(lead.id) ?? [];
     const closing = closingReportOf(list, (r) => r.follow_up_at === null);
@@ -74,8 +77,14 @@ export async function readClosureQueue(from: string, to: string) {
     checked += 1;
     const before = list.filter(r => String(r.submitted_at ?? "") <= closing.submitted_at!);
     const gap = measureClosure({ closing, reportsBefore: before.length, calls: callsByLead.get(lead.id) ?? [], verifiedReports: before.filter(r => r.connection_verified === true) });
-    if (!gap.short) continue;
     if (closing.agent_id) agentIds.add(closing.agent_id);
+    const day = new Date(Date.parse(closing.submitted_at) + 6 * 3_600_000).toISOString().slice(0, 10);
+    const cellKey = `${closing.agent_id ?? "none"}|${gap.kind}|${day}`;
+    const cell = cells.get(cellKey) ?? { agentId: closing.agent_id, kind: gap.kind, day, checked: 0, short: 0 };
+    cell.checked += 1;
+    if (gap.short) cell.short += 1;
+    cells.set(cellKey, cell);
+    if (!gap.short) continue;
     rows.push({ leadId: lead.id, name: lead.name ?? "—", source: lead.source ?? "unknown", agentId: closing.agent_id, closedAt: closing.submitted_at,
       reason: closing.no_follow_up_reason, category: closing.category, connectedClaim: Boolean(closing.connected), ...gap });
   }
@@ -95,5 +104,7 @@ export async function readClosureQueue(from: string, to: string) {
       conversation: rows.filter(r => r.kind === "conversation").length,
     },
     rows: rows.map(r => ({ ...r, agentName: r.agentId ? names.get(r.agentId) ?? "Unknown agent" : "Unknown agent" })),
+    cells: [...cells.values()],
+    agentNames: Object.fromEntries(names),
   };
 }

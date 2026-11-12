@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { lazy, Suspense, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Download, PhoneOff, RefreshCw, Search } from "lucide-react";
@@ -12,6 +12,7 @@ import { downloadCsv, toCsv } from "@/lib/crm-reports";
 import { readClosureRecoveryQueue } from "@/lib/closure-recovery.functions";
 import type { ClosureKind } from "@/lib/closure-attempts";
 
+const ClosureRecoveryCharts = lazy(() => import("./ClosureRecoveryCharts"));
 const PAGE = 25;
 const KIND: Record<ClosureKind, { en: string; bn: string }> = {
   unreachable: { en: "Closed as unreachable", bn: "যোগাযোগ হয়নি বলে বন্ধ" },
@@ -46,7 +47,11 @@ export function ClosureRecoveryQueue({ onOpenLead }: { onOpenLead: (id: string) 
   const valid = Boolean(from && to && from <= to && Date.parse(to) - Date.parse(from) < 92 * 864e5);
   const q = useQuery({ queryKey: ["closure-recovery", token ?? "session", from, to], queryFn: () => read({ data: { adminToken: token, from, to } }), enabled: valid, staleTime: 60_000 });
   const all = q.data?.rows ?? [];
-  const agents = useMemo(() => [...new Map(all.map(r => [r.agentId ?? "none", r.agentName])).entries()].sort((a, b) => a[1].localeCompare(b[1])), [all]);
+  const agents = useMemo(() => {
+    const m = new Map(all.map(r => [r.agentId ?? "none", r.agentName]));
+    for (const c of q.data?.cells ?? []) { const id = c.agentId ?? "none"; if (!m.has(id)) m.set(id, (c.agentId && q.data?.agentNames[c.agentId]) || "Unknown agent"); }
+    return [...m.entries()].sort((a, b) => a[1].localeCompare(b[1]));
+  }, [all, q.data]);
   const s = search.trim().toLowerCase();
   const rows = all.filter(r => (agent === "all" || (r.agentId ?? "none") === agent) && (kind === "all" || r.kind === kind) && (!s || `${r.name} ${r.agentName}`.toLowerCase().includes(s)));
   const pages = Math.max(1, Math.ceil(rows.length / PAGE));
@@ -103,6 +108,10 @@ export function ClosureRecoveryQueue({ onOpenLead }: { onOpenLead: (id: string) 
           ].map(x => <div key={x.l.en}><div className="text-xs text-muted-foreground">{t(x.l)}</div><div className="mt-1 text-2xl font-semibold tabular-nums">{x.v}</div></div>)}
         </div>
         <p className="text-xs text-muted-foreground">{t({ en: "Sales and duplicate closures are not checked", bn: "বিক্রি ও ডুপ্লিকেট হিসেবে বন্ধ লিড যাচাইয়ের বাইরে" })} ({q.data.totals.outOfScope}). {t({ en: "Reports filed are the agent's own entries; only calls the phone recorded count as verified. A short count is a reason to review, not proof of fault.", bn: "রিপোর্ট এজেন্টের নিজের লেখা; শুধু ফোনে রেকর্ড হওয়া কলই যাচাইকৃত। কম সংখ্যা পর্যালোচনার কারণ, দোষের প্রমাণ নয়।" })} · {t({ en: "Read", bn: "পড়া হয়েছে" })} {when(q.data.readAt)}</p>
+
+        <Suspense fallback={<p role="status" className="text-sm text-muted-foreground">{t({ en: "Loading charts…", bn: "চার্ট লোড হচ্ছে…" })}</p>}>
+          <ClosureRecoveryCharts cells={q.data.cells} agentNames={q.data.agentNames} from={from} to={to} agent={agent} kind={kind} kindLabel={KIND} />
+        </Suspense>
 
         <ul className="space-y-3 md:hidden">
           {shown.map(r => <li key={r.leadId} className="rounded-lg border border-border p-3">
