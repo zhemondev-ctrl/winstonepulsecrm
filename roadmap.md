@@ -128,3 +128,4 @@
 - [x] Leads/day with call-log-confirmed connected call
 - [x] IT call records page (HQ PIN)
 - [ ] Dry-run comparison dashboard
+- [x] Hand-out history by date and agent (LeadHub)

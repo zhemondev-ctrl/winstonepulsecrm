@@ -9,3 +9,10 @@ test("counts unique leads per agent and lists agents who got none", () => {
   expect(r.rows).toEqual([{ id: "a", name: "A", received: 2, firstAt: "2026-11-15T03:00:00Z", lastAt: "2026-11-15T03:02:00Z" }, { id: "b", name: "B", received: 0, firstAt: null, lastAt: null }]);
   expect(r.total).toBe(2); expect(r.receivedCount).toBe(1);
 });
+
+import { handoutHistory } from "@/lib/handout-results";
+test("history counts each lead once per day and agent", () => {
+  const r = (lead: string, at: string) => ({ to_agent_id: "a", created_at: at, lead_id: lead });
+  const h = handoutHistory([r("x", "2026-11-10T03:00:00Z"), r("x", "2026-11-10T04:00:00Z"), r("y", "2026-11-11T03:00:00Z")], (s) => s.slice(0, 10));
+  expect(h).toEqual([{ day: "2026-11-11", counts: { a: 1 }, total: 1 }, { day: "2026-11-10", counts: { a: 1 }, total: 1 }]);
+});

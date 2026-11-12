@@ -728,3 +728,31 @@ export const readHandoutResults = createServerFn({ method: "POST" })
     const result = groupHandout(agents.map((a) => ({ id: a.id, name: a.name })), assignments, names);
     return { date: data.date, run: run.data ?? null, ...result, measuredAt: new Date().toISOString() };
   });
+
+/** LeadHub, read-only: hand-out counts per Dhaka day and agent over a range (max 62 days). */
+export const readHandoutHistory = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) => TokenInput.extend({ from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/), to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/) })
+    .refine((v) => v.from <= v.to, "Start date must be on or before end date")
+    .refine((v) => Date.parse(v.to) - Date.parse(v.from) < 62 * 864e5, "Choose at most 62 days").parse(input))
+  .handler(async ({ data }) => {
+    await deckReader(data.adminToken);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { handoutHistory } = await import("@/lib/handout-results");
+    const { pageAllParallel } = await import("@/lib/page-all");
+    const { dhakaDay } = await import("@/lib/lead-groups");
+    const start = new Date(`${data.from}T00:00:00+06:00`).toISOString();
+    const end = new Date(Date.parse(`${data.to}T00:00:00+06:00`) + 864e5).toISOString();
+    const rows = await pageAllParallel((a, b) => supabaseAdmin.from("lead_assignments").select("id,to_agent_id,created_at,lead_id")
+      .eq("source", "lead_database").gte("created_at", start).lt("created_at", end).order("id").range(a, b));
+    if (rows.error) throw new Error("Assignment records unavailable");
+    const ids = [...new Set((rows.data ?? []).map((r) => r.to_agent_id).filter((x): x is string => !!x))];
+    const names: Record<string, string> = {};
+    if (ids.length) {
+      const p = await supabaseAdmin.from("profiles").select("id,name").in("id", ids);
+      if (p.error) throw new Error("Agent names unavailable");
+      for (const r of p.data ?? []) names[r.id] = r.name ?? "Unknown agent";
+    }
+    const days = handoutHistory(rows.data ?? [], dhakaDay);
+    const agents = ids.map((id) => ({ id, name: names[id] ?? "Unknown agent" })).sort((a, b) => a.name.localeCompare(b.name));
+    return { days, agents, measuredAt: new Date().toISOString() };
+  });

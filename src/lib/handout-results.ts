@@ -20,3 +20,19 @@ export function groupHandout(agents: HandoutAgent[], assignments: { to_agent_id:
   const list = [...rows.values()].sort((a, b) => b.received - a.received || a.name.localeCompare(b.name));
   return { rows: list, total: list.reduce((n, r) => n + r.received, 0), receivedCount: list.filter((r) => r.received > 0).length };
 }
+
+/** History: unique leads per Dhaka day per agent from saved assignment rows. */
+export function handoutHistory(assignments: { to_agent_id: string | null; created_at: string; lead_id: string }[], dayOf: (iso: string) => string) {
+  const m = new Map<string, Map<string, Set<string>>>();
+  for (const a of assignments) {
+    if (!a.to_agent_id) continue;
+    const d = dayOf(a.created_at);
+    const byAgent = m.get(d) ?? new Map<string, Set<string>>();
+    const s = byAgent.get(a.to_agent_id) ?? new Set<string>();
+    s.add(a.lead_id); byAgent.set(a.to_agent_id, s); m.set(d, byAgent);
+  }
+  return [...m].sort(([a], [b]) => b.localeCompare(a)).map(([day, byAgent]) => {
+    const counts = Object.fromEntries([...byAgent].map(([id, s]) => [id, s.size]));
+    return { day, counts, total: Object.values(counts).reduce((n, c) => n + c, 0) };
+  });
+}
