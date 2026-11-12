@@ -120,5 +120,5 @@
 - [x] Dry-run preview date picker.
 - [ ] Sunday hand-out recipients — blocked: only runs Sunday morning.
 - [ ] Database performance + run-cost optimization (measure, queries/indexes, fix top drivers).
-- [ ] Hand-out results report (who actually received leads per run day).
-- [ ] Scoring settings form (define C/R/A/V/F, points /100, self-lead toggle).
+- [x] Hand-out results report (LeadHub).
+- [x] Scoring settings form (HQ KPIs tab); scores not yet computed from it.

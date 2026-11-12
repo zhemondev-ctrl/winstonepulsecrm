@@ -4,6 +4,7 @@ import { LeadPoolNotice } from "@/components/crm/hq/LeadPoolNotice";
 import { AgentTargetPanel } from "@/components/crm/hq/AgentTargetPanel";
 import { AgentKpiDashboard } from "@/components/crm/hq/AgentKpiDashboard";
 import { AgentSalesScorecards } from "@/components/crm/hq/AgentSalesScorecards";
+import { ScoreFormulaSettings } from "@/components/crm/hq/ScoreFormulaSettings";
 import { AgentSelfLeadsPanel } from "@/components/crm/hq/AgentSelfLeadsPanel";
 import { MdApprovalReportButton } from "@/components/crm/hq/MdApprovalReportButton";
 import { MeetingApprovalsPanel } from "@/components/crm/meeting/MeetingApprovalsPanel";
@@ -224,7 +225,7 @@ function ControlBoard() {
             <MaintenanceProfileNotice />
             <Suspense fallback={null}><SiteVisitAlerts /></Suspense>
             {tab === "overview" && <div className="mb-6"><MdApprovalReportButton /></div>}
-            {tab === "kpis" && <div className="space-y-6"><AgentSalesScorecards /><AgentSelfLeadsPanel /><AgentKpiDashboard /></div>}
+            {tab === "kpis" && <div className="space-y-6"><ScoreFormulaSettings /><AgentSalesScorecards /><AgentSelfLeadsPanel /><AgentKpiDashboard /></div>}
             {tab === "overview" && (
               <div className="space-y-8">
                 <HqSmartSummary
