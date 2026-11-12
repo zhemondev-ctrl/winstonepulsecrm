@@ -7695,6 +7695,10 @@ export type Database = {
       capture_db_performance_snapshot: { Args: never; Returns: string }
       claim_sheet_lead_intake: { Args: { _slot: string }; Returns: string }
       clean_person_name: { Args: { _raw: string }; Returns: string }
+      company_reset_return_untouched: {
+        Args: { _business_date: string; _not_before: string; _reason: string }
+        Returns: Json
+      }
       create_report_follow_up_atomic: {
         Args: { _agent: string; _patch: Json; _reason: string; _report: string }
         Returns: string

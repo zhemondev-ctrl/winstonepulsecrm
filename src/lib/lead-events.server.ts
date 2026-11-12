@@ -21,7 +21,8 @@ export type LeadEventKind =
   | "workday_moved"
   | "evaluation_recorded"
   | "neglect_warning"
-  | "neglect_recalled";
+  | "neglect_recalled"
+  | "company_reset_returned";
 
 export async function logLeadEvent(input: {
   leadId: string | null;

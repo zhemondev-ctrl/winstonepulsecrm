@@ -3,7 +3,7 @@
 ## Open tasks
 27. [x] Dry-run preview (LeadHub › Assign, read-only; skips paused days) of the morning distribution: per-agent allocation with Net-50, review lock, pause and pool flags; no writes.
 26. [x] Operations manual (v1.7.0, PDF rebuilt, manual:check in sync): document same-day missed-call cadence, Net-50 limit, Saturday 14 Nov pause and demerit rules; rebuild PDF and pass manual:check.
-24. Account clean-up for a fresh Sunday start (12 Nov): owner chose 'everything open' (1,527 company leads). Blocked: the database refuses to re-assign any lead that was ever worked or assigned, so worked leads would be stranded — waiting on owner choice of reset rule + timing.
+24. [x] Account clean-up: owner chose never-worked company leads only, effective Saturday. One-time database job set for Sat 14 Nov 00:05 Dhaka (717 leads today); worked/follow-up/closed/self leads stay; recall rows block the same agent. [ ] Verify the run on Saturday. [ ] Old published app still runs the 09:10 hand-out without the pause/Net-50 — needs publishing or a Saturday hold (owner choice).
 25. "Full production readiness" request (12 Nov, citing HQ approval 11 Nov):
    - [ ] #1 Live mode in Call Sandbox — owner chose to add it (12 Nov). Needs scope details before building.
    - [ ] #2 50 company + 10 personal leads/day — owner chose this (supersedes unlimited). Score formula 2C+2R+A+4V+1.5F: letter meanings needed before building.

@@ -8,7 +8,7 @@
 import { dhakaDateOf } from "@/lib/business-day";
 import { NEGLECT_RECALL_REASON, neglectStage, nextNeglectAction } from "@/lib/lead-neglect";
 
-const IGNORED_EVENT_KINDS = new Set(["workday_moved", "neglect_warning", "neglect_recalled"]);
+const IGNORED_EVENT_KINDS = new Set(["workday_moved", "neglect_warning", "neglect_recalled", "company_reset_returned"]);
 
 function chunks<T>(items: T[], size = 200): T[][] {
   const out: T[][] = [];
