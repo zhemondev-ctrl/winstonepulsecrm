@@ -125,3 +125,6 @@
 - [x] Verify latest publish live (score settings, hand-out results)
 - [ ] Dry-run preview comparison dashboard
 - [x] Save C/R/A/V/F formula
+- [x] Leads/day with call-log-confirmed connected call
+- [x] IT call records page (HQ PIN)
+- [ ] Dry-run comparison dashboard

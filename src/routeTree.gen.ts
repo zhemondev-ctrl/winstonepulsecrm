@@ -15,6 +15,7 @@ import { Route as AuditLogRouteImport } from './routes/audit-log'
 import { Route as AuditReportRouteImport } from './routes/audit-report'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as BookingReviewRouteImport } from './routes/booking-review'
+import { Route as CallRecordsRouteImport } from './routes/call-records'
 import { Route as CallSandboxRouteImport } from './routes/call-sandbox'
 import { Route as CoachRouteImport } from './routes/coach'
 import { Route as ContributionsRouteImport } from './routes/contributions'
@@ -168,6 +169,11 @@ const AuthRoute = AuthRouteImport.update({
 const BookingReviewRoute = BookingReviewRouteImport.update({
   id: '/booking-review',
   path: '/booking-review',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CallRecordsRoute = CallRecordsRouteImport.update({
+  id: '/call-records',
+  path: '/call-records',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CallSandboxRoute = CallSandboxRouteImport.update({
@@ -827,6 +833,7 @@ export interface FileRoutesByFullPath {
   '/audit-report': typeof AuditReportRoute
   '/auth': typeof AuthRoute
   '/booking-review': typeof BookingReviewRoute
+  '/call-records': typeof CallRecordsRoute
   '/call-sandbox': typeof CallSandboxRoute
   '/coach': typeof CoachRoute
   '/contributions': typeof ContributionsRoute
@@ -959,6 +966,7 @@ export interface FileRoutesByTo {
   '/audit-report': typeof AuditReportRoute
   '/auth': typeof AuthRoute
   '/booking-review': typeof BookingReviewRoute
+  '/call-records': typeof CallRecordsRoute
   '/call-sandbox': typeof CallSandboxRoute
   '/coach': typeof CoachRoute
   '/contributions': typeof ContributionsRoute
@@ -1092,6 +1100,7 @@ export interface FileRoutesById {
   '/audit-report': typeof AuditReportRoute
   '/auth': typeof AuthRoute
   '/booking-review': typeof BookingReviewRoute
+  '/call-records': typeof CallRecordsRoute
   '/call-sandbox': typeof CallSandboxRoute
   '/coach': typeof CoachRoute
   '/contributions': typeof ContributionsRoute
@@ -1226,6 +1235,7 @@ export interface FileRouteTypes {
     | '/audit-report'
     | '/auth'
     | '/booking-review'
+    | '/call-records'
     | '/call-sandbox'
     | '/coach'
     | '/contributions'
@@ -1358,6 +1368,7 @@ export interface FileRouteTypes {
     | '/audit-report'
     | '/auth'
     | '/booking-review'
+    | '/call-records'
     | '/call-sandbox'
     | '/coach'
     | '/contributions'
@@ -1490,6 +1501,7 @@ export interface FileRouteTypes {
     | '/audit-report'
     | '/auth'
     | '/booking-review'
+    | '/call-records'
     | '/call-sandbox'
     | '/coach'
     | '/contributions'
@@ -1623,6 +1635,7 @@ export interface RootRouteChildren {
   AuditReportRoute: typeof AuditReportRoute
   AuthRoute: typeof AuthRoute
   BookingReviewRoute: typeof BookingReviewRoute
+  CallRecordsRoute: typeof CallRecordsRoute
   CallSandboxRoute: typeof CallSandboxRoute
   CoachRoute: typeof CoachRoute
   ContributionsRoute: typeof ContributionsRoute
@@ -1791,6 +1804,13 @@ declare module '@tanstack/react-router' {
       path: '/booking-review'
       fullPath: '/booking-review'
       preLoaderRoute: typeof BookingReviewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/call-records': {
+      id: '/call-records'
+      path: '/call-records'
+      fullPath: '/call-records'
+      preLoaderRoute: typeof CallRecordsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/call-sandbox': {
@@ -2671,6 +2691,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuditReportRoute: AuditReportRoute,
   AuthRoute: AuthRoute,
   BookingReviewRoute: BookingReviewRoute,
+  CallRecordsRoute: CallRecordsRoute,
   CallSandboxRoute: CallSandboxRoute,
   CoachRoute: CoachRoute,
   ContributionsRoute: ContributionsRoute,

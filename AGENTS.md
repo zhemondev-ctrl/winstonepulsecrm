@@ -73,3 +73,4 @@
 - `bun run scan:sensitive` is the read-only scan for signing keys/secrets in tracked files and public downloads (ZIPs opened); it prints file + rule only, never values — why: one check, no leaked matches.
 - No GitHub logic in the CRM app (panels, API calls, cron, issues); Git only runs Android CI (`.github/workflows/android-*.yml`, see android/AGENTS.md); APKs reach agents only via IT's PIN-gated `android-apk` links — why: no runtime Git dependency.
 
+- Answered/connected counts (score R, call records, leads-reached) use call-log-confirmed.ts only (talk_time_source call_log + talk time) — why: device flags and timers counted ringing.

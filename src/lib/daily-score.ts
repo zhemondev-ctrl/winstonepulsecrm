@@ -4,7 +4,8 @@
  * server already scoped to one Dhaka day; self-collected lead work is dropped
  * unless the formula includes it. Recordings never affect the score.
  */
-import { hasProvenTalkTime, type CallEvidenceRow } from "@/lib/lead-verification";
+import type { CallEvidenceRow } from "@/lib/lead-verification";
+import { isCallLogConfirmed } from "@/lib/call-log-confirmed";
 import { dhakaDay } from "@/lib/lead-groups";
 import { SCORE_LETTERS, type ScoreFormula, type ScoreMetric } from "@/lib/score-formula";
 
@@ -27,7 +28,7 @@ export function metricCounts(input: ScoreInput, agentId: string, includeSelf: bo
   const reports = input.reports.filter(ok);
   return {
     call_attempts: calls.length,
-    connected_calls: calls.filter((c) => hasProvenTalkTime(c)).length,
+    connected_calls: calls.filter((c) => isCallLogConfirmed(c)).length,
     reports_submitted: reports.length,
     company_leads_worked: new Set(reports.filter((r) => r.lead_id && !input.selfLeadIds.has(r.lead_id)).map((r) => r.lead_id)).size,
     site_visits: input.visits.filter(ok).length,

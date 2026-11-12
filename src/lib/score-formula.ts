@@ -9,7 +9,7 @@ export const SCORE_LETTERS = ["C", "R", "A", "V", "F"] as const;
 export type ScoreLetter = (typeof SCORE_LETTERS)[number];
 
 export const SCORE_METRICS = {
-  connected_calls: { en: "Phone-proven connected calls", bn: "ফোনে প্রমাণিত সংযুক্ত কল" },
+  connected_calls: { en: "Answered calls confirmed by phone call log", bn: "ফোনের কল লগে নিশ্চিত উত্তর দেওয়া কল" },
   reports_submitted: { en: "Call reports submitted", bn: "জমা দেওয়া কল রিপোর্ট" },
   call_attempts: { en: "Phone-recorded call attempts", bn: "ফোনে রেকর্ড হওয়া কল চেষ্টা" },
   site_visits: { en: "Saved site visits", bn: "সংরক্ষিত সাইট ভিজিট" },
