@@ -135,6 +135,10 @@ function Body({ data, t, Flags }: { data: Preview; t: ReturnType<typeof useT>; F
             : t({ en: "Friday — no distribution on this day.", bn: "শুক্রবার — এই দিনে বণ্টন নেই।" })}
         </p>
       )}
+      <p className="text-xs text-muted-foreground">
+        {t({ en: "Backlog counted live", bn: "বকেয়া সরাসরি গণনা" })}: <span className="font-semibold text-foreground">{fmtDay(data.today)} {fmtTime(data.measuredAt)}</span>
+        {" · "}{t({ en: "HQ review locks last changed", bn: "HQ রিভিউ লক শেষ পরিবর্তন" })}: <span className="font-semibold text-foreground">{data.locksUpdatedAt ? `${new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", timeZone: "Asia/Dhaka" }).format(new Date(data.locksUpdatedAt))} ${fmtTime(data.locksUpdatedAt)}` : t({ en: "no active locks", bn: "কোনো সক্রিয় লক নেই" })}</span>
+      </p>
       {data.target === "next" && (
         <p className="rounded-lg border border-border bg-muted px-3 py-2 text-xs text-muted-foreground">
           {t({

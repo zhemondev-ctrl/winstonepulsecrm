@@ -659,7 +659,7 @@ export const previewDailyDistribution = createServerFn({ method: "POST" })
       lp.usablePoolCount(),
       supabaseAdmin.from("app_config").select("data").eq("id", BACKLOG_CAP_CONFIG_ID).maybeSingle(),
       ids.length
-        ? supabaseAdmin.from("agent_accountability_reviews").select("agent_id").in("agent_id", ids).neq("status", "approved").lte("unlock_for_date", day)
+        ? supabaseAdmin.from("agent_accountability_reviews").select("agent_id,updated_at").in("agent_id", ids).neq("status", "approved").lte("unlock_for_date", day)
         : Promise.resolve({ data: [], error: null }),
     ]);
     if (capRow.error || locks.error) throw new Error("Distribution settings unavailable");
@@ -689,6 +689,8 @@ export const previewDailyDistribution = createServerFn({ method: "POST" })
       cap,
       alreadyRanToday: plan.lastRunDate === today,
       measuredAt: new Date().toISOString(),
+      // Backlog is counted live at measuredAt; review locks carry their own last change time.
+      locksUpdatedAt: (locks.data ?? []).reduce<string | null>((m, r) => { const u = (r as { updated_at?: string | null }).updated_at ?? null; return u && (!m || u > m) ? u : m; }, null),
     };
   });
 
