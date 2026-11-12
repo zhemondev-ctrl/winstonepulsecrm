@@ -39,7 +39,7 @@ export const getDailyAgentAudit = createServerFn({ method: "POST" })
         ? db.from("agent_accountability_reviews").select("agent_id, status").in("agent_id", ids).eq("business_date", data.day)
         : none,
       ids.length
-        ? db.from("agent_accountability_reviews").select("agent_id").in("agent_id", ids).eq("unlock_for_date", data.day).neq("status", "approved")
+        ? db.from("agent_accountability_reviews").select("agent_id").in("agent_id", ids).lte("unlock_for_date", data.day).neq("status", "approved")
         : none,
       ids.length
         ? db.from("lead_daily_assignment_ledger").select("agent_id").in("agent_id", ids).eq("work_date", data.day).limit(10000)

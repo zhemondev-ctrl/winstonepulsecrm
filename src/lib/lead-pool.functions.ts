@@ -609,3 +609,78 @@ export const importHistory = createServerFn({ method: "GET" })
       };
     });
   });
+
+/**
+ * LeadHub, read-only: what the next automatic distribution would hand each desk
+ * if it ran now. Nothing is assigned, parked or saved.
+ */
+export const previewDailyDistribution = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) => TokenInput.extend({ target: z.enum(["auto", "today", "next"]).default("auto") }).parse(input))
+  .handler(async ({ data }) => {
+    await deckReader(data.adminToken);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const lp = await import("@/lib/lead-pool.server");
+    const { isDistributionDay, nextBusinessDay } = await import("@/lib/business-day");
+    const { BACKLOG_CAP_CONFIG_ID, AUTO_PAUSE_CONFIG_ID, readBacklogCap, isAutoDistributionPaused } = await import("@/lib/backlog-cap");
+    const { quotaFor } = await import("@/lib/lead-quota");
+    const { planDistributionPreview } = await import("@/lib/distribution-preview");
+
+    const today = lp.dhakaToday();
+    const plan = await lp.dailyPlan();
+    const pauseSetting = await supabaseAdmin.from("app_config").select("data").eq("id", AUTO_PAUSE_CONFIG_ID).maybeSingle();
+    if (pauseSetting.error) throw new Error("Distribution settings unavailable");
+    const pausedOn = (d: string) => isAutoDistributionPaused(d, pauseSetting.data?.data ?? null);
+    // "auto" = the morning run that will actually hand out leads next: today if it
+    // has not run yet, else the next open day that is not paused.
+    let target: "today" | "next" = data.target === "today" ? "today" : "next";
+    let day = target === "today" ? today : nextBusinessDay(today);
+    if (data.target === "auto") {
+      if (plan.lastRunDate !== today && isDistributionDay(today) && !pausedOn(today)) {
+        target = "today";
+        day = today;
+      } else {
+        for (let i = 0; i < 14 && pausedOn(day); i++) day = nextBusinessDay(day);
+      }
+    }
+    const skippedPaused = data.target === "auto" && target === "next" && day !== nextBusinessDay(today);
+    const agents = await lp.activeAgents();
+    const ids = agents.map((a) => a.id);
+    const [targets, held, backlog, pool, capRow, locks] = await Promise.all([
+      lp.agentDailyTargets(day),
+      lp.assignedTodayByAgent(day),
+      ids.length ? lp.pendingBacklogByAgent(ids, day) : Promise.resolve(new Map<string, number>()),
+      lp.usablePoolCount(),
+      supabaseAdmin.from("app_config").select("data").eq("id", BACKLOG_CAP_CONFIG_ID).maybeSingle(),
+      ids.length
+        ? supabaseAdmin.from("agent_accountability_reviews").select("agent_id").in("agent_id", ids).neq("status", "approved").lte("unlock_for_date", day)
+        : Promise.resolve({ data: [], error: null }),
+    ]);
+    if (capRow.error || locks.error) throw new Error("Distribution settings unavailable");
+    const cap = readBacklogCap(capRow.data?.data);
+    const lockedIds = new Set((locks.data ?? []).map((r) => r.agent_id));
+    const result = planDistributionPreview({
+      agents: agents.map((a) => ({
+        id: a.id,
+        name: a.name,
+        quota: Math.min(MAX_DAILY_LEADS_PER_AGENT, targets.get(a.id) ?? quotaFor(a.employee_id, plan.perAgent)),
+        held: held.get(a.id) ?? 0,
+        backlog: backlog.get(a.id) ?? 0,
+        locked: lockedIds.has(a.id),
+      })),
+      cap,
+      pool,
+      distributionDay: isDistributionDay(day),
+      paused: pausedOn(day),
+    });
+    return {
+      ...result,
+      day,
+      today,
+      target,
+      skippedPaused,
+      perAgent: plan.perAgent,
+      cap,
+      alreadyRanToday: plan.lastRunDate === today,
+      measuredAt: new Date().toISOString(),
+    };
+  });
