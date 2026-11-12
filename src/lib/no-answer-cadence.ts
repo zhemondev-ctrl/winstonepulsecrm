@@ -2,9 +2,11 @@
  * "Did not receive" cadence (Asia/Dhaka, UTC+6, no DST). Pure rules shared by
  * the call-report form and the server, so both always agree.
  *
- *   attempt 1 → snooze (default +2 days)
- *   attempt 2 → snooze (default +3 days) + a soft message draft
+ *   attempt 1 → same-day 2nd try: back on today's list after 2 hours
+ *               (after 17:00 Dhaka it moves to the next open day's morning)
+ *   attempt 2 → the agent picks a date within 2 working days + a soft message draft
  *   attempt 3 → Unresponsive Pool, back in the Reactivation Queue after 7 days
+ * (MD approval report, 11 Nov 2026, proposal 2.)
  *
  * Office days are Saturday–Thursday; Friday, configured holidays and closed
  * days move a slot to the next open day at the same time.
@@ -12,7 +14,8 @@
 import { dhakaDateOf, isFriday } from "@/lib/business-day";
 
 export type RetrySlot = "morning" | "afternoon" | "evening" | "custom";
-export type RetryMode = "plus2" | "plus3" | "custom";
+/** "plus3" is kept only so older app builds still submit; it is capped at 2 working days. */
+export type RetryMode = "plus1" | "plus2" | "plus3" | "custom";
 export type RetryPlanInput = { mode: RetryMode; slot: RetrySlot; time?: string | null | undefined; customAt?: string | null | undefined };
 export type CadenceStage = "snooze" | "snooze_soft" | "unresponsive";
 
@@ -22,6 +25,10 @@ export const SLOT_TIME: Record<Exclude<RetrySlot, "custom">, string> = {
   evening: "18:00",
 };
 export const REACTIVATION_DAYS = 7;
+export const SAME_DAY_RETRY_MINUTES = 120;
+/** Latest Dhaka time a same-day retry may land; later moves to the next open morning. */
+export const SAME_DAY_LAST_RETRY = "17:00";
+export const SECOND_RETRY_MAX_WORKING_DAYS = 2;
 export const PARKED_STATES = ["snoozed", "unresponsive"] as const;
 export function usesRetryCadence(status: string | null | undefined) {
   return status === "no_answer" || status === "busy" || status === "failed";
@@ -70,6 +77,15 @@ export class RetryPlanError extends Error {}
  * Next contact time for a missed call. `attempt` is the count INCLUDING this
  * call. Past custom times are refused; closed days move forward.
  */
+export function addWorkingDays(day: string, n: number, holidays: readonly string[] = []) {
+  let d = day;
+  for (let added = 0, guard = 0; added < n && guard < 60; guard++) {
+    d = shiftDay(d, 1);
+    if (isOfficeOpen(d, holidays)) added += 1;
+  }
+  return d;
+}
+
 export function planNoAnswer(
   attempt: number,
   plan: RetryPlanInput | null,
@@ -78,22 +94,37 @@ export function planNoAnswer(
 ): { attempt: number; stage: CadenceStage; retryAt: string; moved: boolean } {
   const stage = stageForAttempt(attempt);
   const today = dhakaDateOf(now);
-  let raw: string;
   if (stage === "unresponsive") {
-    raw = dhakaSlotIso(shiftDay(today, REACTIVATION_DAYS), SLOT_TIME.morning);
-  } else if (plan?.mode === "custom") {
+    const { at, moved } = nextOpenSlot(dhakaSlotIso(shiftDay(today, REACTIVATION_DAYS), SLOT_TIME.morning), holidays);
+    return { attempt, stage, retryAt: at, moved };
+  }
+  if (stage === "snooze") {
+    // Same-day second try; the agent's pick does not apply to the first miss.
+    const later = new Date(now + SAME_DAY_RETRY_MINUTES * 60_000).toISOString();
+    if (isOfficeOpen(today, holidays) && dhakaDateOf(Date.parse(later)) === today && dhakaHhmm(later) <= SAME_DAY_LAST_RETRY) {
+      return { attempt, stage, retryAt: later, moved: false };
+    }
+    let day = shiftDay(today, 1);
+    for (let i = 0; i < 30 && !isOfficeOpen(day, holidays); i++) day = shiftDay(day, 1);
+    return { attempt, stage, retryAt: dhakaSlotIso(day, SLOT_TIME.morning), moved: true };
+  }
+  // Second miss: the agent chooses, but never later than 2 working days.
+  const latestDay = addWorkingDays(today, SECOND_RETRY_MAX_WORKING_DAYS, holidays);
+  let raw: string;
+  if (plan?.mode === "custom") {
     if (!plan.customAt || Number.isNaN(Date.parse(plan.customAt))) {
       throw new RetryPlanError("Pick a custom date and time");
     }
     raw = new Date(plan.customAt).toISOString();
+    if (Date.parse(raw) <= now) throw new RetryPlanError("The follow-up time cannot be in the past");
+    if (raw > dhakaSlotIso(latestDay, "23:59")) throw new RetryPlanError("Choose a date within 2 working days");
   } else {
-    const days = plan?.mode === "plus3" ? 3 : plan?.mode === "plus2" ? 2 : stage === "snooze" ? 2 : 3;
+    const days = plan?.mode === "plus1" ? 1 : SECOND_RETRY_MAX_WORKING_DAYS;
     const slot = plan?.slot ?? "morning";
     const time =
       slot === "custom" ? (/^\d{2}:\d{2}$/.test(plan?.time ?? "") ? plan!.time! : SLOT_TIME.morning) : SLOT_TIME[slot];
-    raw = dhakaSlotIso(shiftDay(today, days), time);
+    raw = dhakaSlotIso(addWorkingDays(today, days, holidays), time);
   }
-  if (Date.parse(raw) <= now) throw new RetryPlanError("The follow-up time cannot be in the past");
   const { at, moved } = nextOpenSlot(raw, holidays);
   return { attempt, stage, retryAt: at, moved };
 }

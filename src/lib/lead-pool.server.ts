@@ -106,6 +106,8 @@ export type DistributionResult = {
   alreadyComplete: boolean;
   /** Desks that were topped up to their quota by this run. */
   toppedUp: { agentId: string; name: string; quota: number; had: number; given: number }[];
+  /** Desks whose quota was reduced by the Net-50 backlog cap. */
+  backlogCapped?: { agentId: string; name: string; backlog: number; quota: number }[];
 };
 
 /** Today's run ledger row — the idempotency record and allocation cursor. */
@@ -162,6 +164,30 @@ export async function assignedTodayByAgent(workDate: string): Promise<Map<string
 }
 
 /**
+ * Older pending company leads per desk: pending leads it owns, minus the ones
+ * it received today. Self-collected and parked-duplicate rows never count.
+ */
+export async function pendingBacklogByAgent(agentIds: string[], workDate: string): Promise<Map<string, number>> {
+  const supabaseAdmin = await admin();
+  const { readAllocationReceipts } = await import("@/lib/allocation-ledger.server");
+  const todays = new Set((await readAllocationReceipts(workDate)).map((r) => r.lead_id));
+  const out = new Map<string, number>();
+  await Promise.all(agentIds.map(async (id) => {
+    const { data, error } = await supabaseAdmin
+      .from("leads")
+      .select("id")
+      .eq("assigned_to", id)
+      .eq("status", "pending")
+      .or("assignment_source.is.null,assignment_source.not.in.(self,duplicate_skipped)")
+      .limit(5000);
+    if (error) throw new Error("Backlog evidence unavailable");
+    if ((data ?? []).length >= 5000) throw new Error("Backlog evidence truncated");
+    out.set(id, (data ?? []).filter((l) => !todays.has(l.id)).length);
+  }));
+  return out;
+}
+
+/**
  * Hands `perAgent` database leads to every active agent for today.
  * Safe to call twice — a lead already taken is never taken again.
  */
@@ -206,6 +232,21 @@ export async function distributeDailyLeads(options: {
   // Idempotency: what each desk already holds for today is subtracted from its
   // quota, so a second run (cron retry, double click) only fills real gaps.
   const held = await assignedTodayByAgent(today);
+
+  // Net 50: older pending company backlog reduces today's new leads.
+  const { BACKLOG_CAP_CONFIG_ID, cappedQuota, readBacklogCap } = await import("@/lib/backlog-cap");
+  const { data: capRow, error: capError } = await supabaseAdmin.from("app_config").select("data").eq("id", BACKLOG_CAP_CONFIG_ID).maybeSingle();
+  if (capError) throw new Error("Backlog cap setting unavailable");
+  const cap = readBacklogCap(capRow?.data);
+  const backlog = cap.enabled ? await pendingBacklogByAgent(agents.map((a) => a.id), today) : new Map<string, number>();
+  const backlogCapped: DistributionResult["backlogCapped"] = [];
+  for (const a of agents) {
+    const before = quotas.get(a.id) ?? options.perAgent;
+    const b = backlog.get(a.id) ?? 0;
+    const after = cappedQuota(before, b, cap);
+    if (after < before) backlogCapped.push({ agentId: a.id, name: a.name, backlog: b, quota: after });
+    quotas.set(a.id, after);
+  }
   const shortfallByAgent = new Map<string, number>();
   for (const agent of agents) {
     const quota = quotas.get(agent.id) ?? options.perAgent;
@@ -228,6 +269,7 @@ export async function distributeDailyLeads(options: {
       workDate: today,
       alreadyComplete: true,
       toppedUp: [],
+      backlogCapped,
     };
   }
 
@@ -428,6 +470,7 @@ export async function distributeDailyLeads(options: {
     workDate: today,
     alreadyComplete: false,
     toppedUp,
+    backlogCapped,
   };
 }
 

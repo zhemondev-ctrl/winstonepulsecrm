@@ -3,11 +3,21 @@ import { z } from "zod";
 
 /**
  * Site visit records linked to canonical leads. Server-only table: every
- * read/write goes through the server-resolved caller. HQ/IT sees and edits
- * all; agents only visits on leads assigned to them. Never deleted.
+ * read/write goes through the server-resolved caller. HQ reads all (view-only),
+ * IT edits all; agents see visits on their own leads but may change only the
+ * visits they entered themselves (site-visit-lock.ts). Never deleted.
  */
 export const SITE_VISIT_STATUSES = ["scheduled", "completed", "cancelled", "no_show"] as const;
 const Token = z.string().nullable().optional();
+
+export const VISIT_NOT_YOURS = "শুধু যিনি ভিজিটটি এন্ট্রি করেছেন তিনিই এটি বদলাতে পারবেন";
+
+async function assertAgentEntered(db: Awaited<typeof import("@/integrations/supabase/client.server")>["supabaseAdmin"], id: string, agentId: string, agentName: string) {
+  const { agentEnteredVisit } = await import("@/lib/site-visit-lock");
+  const { data: v, error } = await db.from("site_visits").select("agent_id, created_by, created_by_profile_id").eq("id", id).maybeSingle();
+  if (error || !v) throw new Error("ভিজিট পাওয়া যায়নি বা আপনার অনুমতি নেই");
+  if (!agentEnteredVisit(v, { id: agentId, name: agentName })) throw new Error(VISIT_NOT_YOURS);
+}
 
 export const listSiteVisits = createServerFn({ method: "POST" })
   .inputValidator((i: unknown) => z.object({ adminToken: Token }).parse(i ?? {}))
@@ -17,9 +27,9 @@ export const listSiteVisits = createServerFn({ method: "POST" })
     const c = await siCaller(data.adminToken).catch(() => null);
     if (!c) return [];
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const out: Array<{ id: string; lead_id: string; agent_id: string | null; project: string | null; visit_at: string; status: string; notes: string | null; created_by: string; updated_by: string | null; team_calendar_event_id: string | null; team_calendar_added_at: string | null }> = [];
+    const out: Array<{ id: string; lead_id: string; agent_id: string | null; project: string | null; visit_at: string; status: string; notes: string | null; created_by: string; created_by_profile_id: string | null; updated_by: string | null; team_calendar_event_id: string | null; team_calendar_added_at: string | null }> = [];
     for (let a = 0; ; a += 1000) {
-      let q = supabaseAdmin.from("site_visits").select("id, lead_id, agent_id, project, visit_at, status, notes, created_by, updated_by, team_calendar_event_id, team_calendar_added_at");
+      let q = supabaseAdmin.from("site_visits").select("id, lead_id, agent_id, project, visit_at, status, notes, created_by, created_by_profile_id, updated_by, team_calendar_event_id, team_calendar_added_at");
       if (c.scope === "agent") q = q.eq("agent_id", c.agentId!);
       const { data: rows, error } = await q.order("visit_at", { ascending: false }).order("id").range(a, a + 999);
       if (error) throw new Error("সাইট ভিজিট পড়া যায়নি");
@@ -52,6 +62,7 @@ export const createSiteVisit = createServerFn({ method: "POST" })
       project: data.project || null,
       notes: data.notes || null,
       created_by: c.actor,
+      created_by_profile_id: c.agentId,
     });
     if (error) throw new Error("সাইট ভিজিট সংরক্ষণ হয়নি");
     return { ok: true };
@@ -66,6 +77,7 @@ export const setSiteVisitStatus = createServerFn({ method: "POST" })
     const c = await siCaller(data.adminToken);
     if (c.readOnly) throw new Error("Executive HQ is view-only");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    if (c.scope === "agent") await assertAgentEntered(supabaseAdmin, data.id, c.agentId!, c.actor);
     let q = supabaseAdmin.from("site_visits").update({ status: data.status, updated_by: c.actor }).eq("id", data.id);
     if (c.scope === "agent") q = q.eq("agent_id", c.agentId!);
     const { data: rows, error } = await q.select("id");
@@ -85,6 +97,7 @@ export const addSiteVisitToTeamCalendar = createServerFn({ method: "POST" })
     const c = await siCaller(data.adminToken);
     if (c.readOnly) throw new Error("Executive HQ is view-only");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    if (c.scope === "agent") await assertAgentEntered(supabaseAdmin, data.id, c.agentId!, c.actor);
     let q = supabaseAdmin.from("site_visits").select("id, lead_id, agent_id, project, visit_at, status, team_calendar_event_id").eq("id", data.id);
     if (c.scope === "agent") q = q.eq("agent_id", c.agentId!);
     const { data: v } = await q.maybeSingle();

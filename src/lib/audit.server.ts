@@ -84,6 +84,7 @@ export type AuditAction =
   | "pin_revealed"
   | "follow_up_rescheduled"
   | "accountability_flagged"
+  | "demerit_cancelled"
   | "accountability_reviewed"
   | "migration_export"
   | "it_notice_published"

@@ -1,6 +1,14 @@
 # Roadmap
 
 ## Open tasks
+22. MD report 11 Nov "direct build" (owner Zahid Hasan, 12 Nov):
+   - [ ] #1 50+10 policy — not built: conflicts with owner's later decision (12 Nov) that self-collected leads are unlimited. Waiting on owner choice.
+   - [x] #2 Same-day 2nd attempt: 1st miss → retry later today; 2nd miss → agent date within 2 working days; 3rd → Unresponsive Pool.
+   - [x] #3 Backlog cap (Net-50): daily distribution gives at most 50 − pending backlog.
+   - [x] #4 3-day clearance: pause morning auto-distribution on configured days (14 Nov).
+   - [x] #5 Demerit log: one point per system block, permanent; HQ cancels with reason.
+   - [x] #6 Site-visit edit lock: only the entering agent can change it (IT unchanged); HQ remains view-only — widening HQ write access awaits owner choice.
+   - [ ] Publish so the morning cron uses the new rules before Sat 14 Nov (not authorized yet). Operations manual/PDF still describes the old +2/+3 cadence.
 - [x] Desk Contacts lead dashboard: cards are the default on phone and laptop (1/2/3 columns); Cards/Table switch keeps the table optional and remembers the choice. Signed-in 1235/390px checks: no page sideways overflow in either view, choice survives reload; 3 tests pass. Not published.
 - [x] Removed duplicate Desk desktop sidebar and drawer subsections; added Home to the top grid. Signed-in 1548/390px checks confirm no overflow, Today selection and Home return; six navigation tests pass. No business writes or publication.
 - [x] Improved inset gold keyboard focus and Alt+M active-link entry on desktop/phone; verified arrows, Home/End, wrap, Tab/Shift+Tab at 1234/390px, Enter section navigation and phone Escape trigger restoration. Seven regression tests pass; no business writes or publication.

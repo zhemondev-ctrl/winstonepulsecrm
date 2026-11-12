@@ -140,6 +140,7 @@ export async function decideVisitRequest(c: SiCaller, input: { id: string; actio
     const { data: v, error } = await db.from("site_visits").insert({
       lead_id: req.lead_id, agent_id: agentId, visit_at: input.visitAt, project: req.project?.slice(0, 120) ?? null,
       notes: `ওয়েবসাইট অনুরোধ থেকে নিশ্চিত${req.notes ? ` — ${req.notes}` : ""}`.slice(0, 500), created_by: c.actor,
+      created_by_profile_id: c.scope === "agent" ? c.agentId : null,
     }).select("id").single();
     if (error) throw new Error("সাইট ভিজিট সংরক্ষণ হয়নি");
     siteVisitId = v.id;

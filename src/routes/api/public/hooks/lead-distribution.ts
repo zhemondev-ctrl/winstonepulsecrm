@@ -53,6 +53,14 @@ export const Route = createFileRoute("/api/public/hooks/lead-distribution")({
           if (!isDistributionDay(today)) {
             return Response.json({ ok: true, skipped: "friday_no_distribution", today, rolledOver });
           }
+          // 3-day backlog clearance: configured days get no morning auto-distribution.
+          const { AUTO_PAUSE_CONFIG_ID, isAutoDistributionPaused } = await import("@/lib/backlog-cap");
+          const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+          const { data: pauseRow, error: pauseError } = await supabaseAdmin.from("app_config").select("data").eq("id", AUTO_PAUSE_CONFIG_ID).maybeSingle();
+          if (pauseError) throw new Error("Auto-distribution pause setting unavailable");
+          if (isAutoDistributionPaused(today, pauseRow?.data)) {
+            return Response.json({ ok: true, skipped: "paused_for_backlog_clearance", today, rolledOver });
+          }
           stage = "plan";
           const plan = await dailyPlan();
           if (plan.lastRunDate === today) {

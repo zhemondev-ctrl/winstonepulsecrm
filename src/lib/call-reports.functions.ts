@@ -362,7 +362,7 @@ export const submitMyReport = createServerFn({ method: "POST" })
       evaluationAnswers: z.record(z.string(), z.boolean()).nullable().optional(),
       retryPlan: z
         .object({
-          mode: z.enum(["plus2", "plus3", "custom"]),
+          mode: z.enum(["plus1", "plus2", "plus3", "custom"]),
           slot: z.enum(["morning", "afternoon", "evening", "custom"]),
           time: z.string().regex(/^\d{2}:\d{2}$/).nullable().optional(),
           customAt: z.string().max(40).nullable().optional(),

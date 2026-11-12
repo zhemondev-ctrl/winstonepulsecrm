@@ -241,6 +241,38 @@ export type Database = {
           },
         ]
       }
+      agent_demerit_cancellations: {
+        Row: {
+          cancelled_by: string
+          created_at: string
+          id: string
+          reason: string
+          review_id: string
+        }
+        Insert: {
+          cancelled_by?: string
+          created_at?: string
+          id?: string
+          reason: string
+          review_id: string
+        }
+        Update: {
+          cancelled_by?: string
+          created_at?: string
+          id?: string
+          reason?: string
+          review_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_demerit_cancellations_review_id_fkey"
+            columns: ["review_id"]
+            isOneToOne: true
+            referencedRelation: "agent_accountability_reviews"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       agent_devices: {
         Row: {
           android_version: string | null
@@ -5638,6 +5670,7 @@ export type Database = {
           agent_id: string | null
           created_at: string
           created_by: string
+          created_by_profile_id: string | null
           id: string
           lead_id: string
           notes: string | null
@@ -5658,6 +5691,7 @@ export type Database = {
           agent_id?: string | null
           created_at?: string
           created_by: string
+          created_by_profile_id?: string | null
           id?: string
           lead_id: string
           notes?: string | null
@@ -5678,6 +5712,7 @@ export type Database = {
           agent_id?: string | null
           created_at?: string
           created_by?: string
+          created_by_profile_id?: string | null
           id?: string
           lead_id?: string
           notes?: string | null

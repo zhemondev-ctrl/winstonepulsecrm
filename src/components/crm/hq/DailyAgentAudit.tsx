@@ -3,6 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { ClipboardList, Download } from "lucide-react";
 import { useState } from "react";
 
+import { DemeritLog } from "@/components/crm/hq/DemeritLog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { dhakaDate } from "@/lib/accountability";
@@ -68,6 +69,7 @@ export function DailyAgentAudit() {
       ) : (
         <AuditBody data={q.data} t={t} />
       )}
+      <div className="border-t border-border pt-4"><DemeritLog /></div>
     </section>
   );
 }
