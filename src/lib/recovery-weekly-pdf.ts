@@ -52,7 +52,7 @@ export async function buildWeeklyRecoveryPdf(input: {
     for (const r of data) {
       need(14);
       r.forEach((v, i) => {
-        const c = cols[i]; const s = pdfSafe(v);
+        const c = cols[i]; if (!c) return; const s = pdfSafe(v);
         const f = i === 0 ? bold : font;
         const w = f.widthOfTextAtSize(s, 9);
         page.drawText(s, { x: c.right ? c.x - w : c.x, y, size: 9, font: f, color: i === warnCol && v !== "0" && v !== "-" ? warn : ink });
