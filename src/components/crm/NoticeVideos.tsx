@@ -3,20 +3,19 @@ import { useEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-import { NOTICE_VIDEOS, noticeVideosToday } from "@/lib/notice-videos";
+import { NOTICE_VIDEOS } from "@/lib/notice-videos";
 import { useT } from "@/lib/i18n";
 
-/** Today's notice videos, auto-playing in order for signed-in staff only. */
+/** Notice videos: auto-play in a loop for signed-in staff while the development notice is on. */
 export function NoticeVideos() {
   const t = useT();
   const ref = useRef<HTMLVideoElement>(null);
   const [signedIn, setSignedIn] = useState<boolean | null>(null);
-  const [today, setToday] = useState(false);
+  const today = true; // plays for as long as the development notice is on
   const [index, setIndex] = useState(0);
   const [muted, setMuted] = useState(false);
 
   useEffect(() => {
-    setToday(noticeVideosToday());
     void supabase.auth.getSession().then(({ data }) => setSignedIn(Boolean(data.session)));
     const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => setSignedIn(Boolean(s)));
     return () => sub.subscription.unsubscribe();
@@ -60,7 +59,7 @@ export function NoticeVideos() {
           preload="auto"
           className="aspect-video w-full max-w-full"
           onVolumeChange={(e) => setMuted(e.currentTarget.muted)}
-          onEnded={() => setIndex((i) => (i + 1 < NOTICE_VIDEOS.length ? i + 1 : i))}
+          onEnded={() => setIndex((i) => (i + 1) % NOTICE_VIDEOS.length)}
         />
         {muted && (
           <Button
