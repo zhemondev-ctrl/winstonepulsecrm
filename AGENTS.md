@@ -19,7 +19,7 @@
 - Staging E2E (tests/staging) is opt-in and refuses the live project ref — why: preview and live share one DB.
 - Read src/lib/AGENTS.md and android/AGENTS.md for scoped rules. HQ grants stay read-only; resolveWorkCaller prefers verified session to PIN for own work — why: no PIN impersonation or blocked agent work.
 - Copilot drafts locally; PIN attempts use atomic account/surface guards — why: no hidden AI cost or shared-IP lockout.
-- Dense CRM data views use compact cards below `md` and full tables at `md+`, except the Desk lead dashboard, which defaults to cards on every size with a saved opt-in table; wide tables scroll only inside `.table-scroll` — why: phone usability without losing the comparison view.
+- Dense data views: cards below `md`, tables at `md+` (Desk leads: cards default, saved opt-in table); wide tables scroll in `.table-scroll` — why: phone usability, keep comparison.
 - Winstone OS inbound events only via POST /api/public/os/events (HMAC + idempotency in server-only os_event_receipts); mapping never invents entities — why: one verified, replay-safe bridge.
 - Lead neglect: zero-work leads get 2 business-day notices (recall on the 3rd) then recall to the pool via `lead-neglect.server.ts`; recalls are append-only disputes, DB blocks re-assigning to the same agent and call-start refuses them — why: leads must not rot and the rule can't be bypassed from the UI.
 - UI: i18n English default, saved choice wins, Bi headings; sign-in reuses topPerformerToday reveal/ranking, aggregates only — why: one score, no customer disclosure.
