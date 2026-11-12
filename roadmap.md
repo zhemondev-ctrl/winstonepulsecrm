@@ -115,7 +115,7 @@
 - [ ] 50 company + 10 self-generated daily cap with daily performance scoring — blocked: confirm scoring formula with owner.
 - [ ] IT live call records page (HQ PIN): each agent's real calls, connection status, AI summary.
 - [ ] Sunday (Nov 15) distribution dry run review.
-- [ ] Confirm live release markers + Saturday pause visible on LeadHub.
-- [ ] Dry-run preview date picker.
+- [x] Confirm live release markers + Saturday pause visible on LeadHub.
+- [x] Dry-run preview date picker.
 - [ ] Sunday hand-out recipients — blocked: only runs Sunday morning.
 - [ ] Database performance + run-cost optimization (measure, queries/indexes, fix top drivers).

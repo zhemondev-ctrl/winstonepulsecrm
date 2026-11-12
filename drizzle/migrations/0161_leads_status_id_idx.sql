@@ -1,0 +1,1 @@
+CREATE INDEX IF NOT EXISTS leads_status_id_idx ON public.leads USING btree (status, id);
