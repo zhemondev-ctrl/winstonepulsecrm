@@ -24,6 +24,7 @@ export function HandoutResults() {
     enabled: Boolean(adminToken && date),
   });
   const d = q.data;
+  const exportForecastCsv = () => d?.forecast && downloadCsv(`forecast-vs-actual-${d.date}.csv`, toCsv(["agent", "forecast", "received", "difference"], d.forecast.rows.map((r) => [r.name, r.forecast, r.received, r.diff])));
   const exportCsv = () => d && downloadCsv(`handout-results-${d.date}.csv`, toCsv(["agent", "leads_received", "first_at_dhaka", "last_at_dhaka"], d.rows.map((r) => [r.name, r.received, time(r.firstAt), time(r.lastAt)])));
 
   return (
@@ -61,7 +62,7 @@ export function HandoutResults() {
             <div className="rounded-lg border p-3"><div className="text-xl font-semibold">{d.receivedCount}</div><div className="text-xs text-muted-foreground">{t({ en: "Agents who received leads", bn: "লিড পেয়েছেন এমন এজেন্ট" })}</div></div>
           </div>
           <div className="rounded-lg border p-3 text-sm">
-            <h3 className="font-semibold">{t({ en: "Forecast vs actual", bn: "পূর্বাভাস বনাম আসল" })}</h3>
+            <div className="flex items-center justify-between gap-2"><h3 className="font-semibold">{t({ en: "Forecast vs actual", bn: "পূর্বাভাস বনাম আসল" })}</h3><Button variant="outline" size="sm" onClick={exportForecastCsv} disabled={!d.forecast}><Download className="mr-2 size-4" />CSV</Button></div>
             {!d.forecast ? (
               <p role="alert" className="mt-2 flex items-start gap-2 rounded-md border border-warning bg-warning/10 p-2 text-sm font-medium text-warning"><AlertTriangle className="mt-0.5 size-4 shrink-0" />{t({ en: "No forecast to compare: no dry-run snapshot was saved for this date before the day began (Dhaka). Next time, open the dry run for this date ahead of time.", bn: "তুলনার পূর্বাভাস নেই: এই দিন শুরুর আগে (ঢাকা) কোনো ড্রাই-রান স্ন্যাপশট সংরক্ষিত হয়নি। পরের বার আগেই এই তারিখের ড্রাই-রান খুলুন।" })}</p>
             ) : (
