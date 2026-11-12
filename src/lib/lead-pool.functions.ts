@@ -615,7 +615,7 @@ export const importHistory = createServerFn({ method: "GET" })
  * if it ran now. Nothing is assigned, parked or saved.
  */
 export const previewDailyDistribution = createServerFn({ method: "POST" })
-  .inputValidator((input: unknown) => TokenInput.extend({ target: z.enum(["auto", "today", "next"]).default("auto") }).parse(input))
+  .inputValidator((input: unknown) => TokenInput.extend({ target: z.enum(["auto", "today", "next", "date"]).default("auto"), date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional() }).parse(input))
   .handler(async ({ data }) => {
     await deckReader(data.adminToken);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -641,6 +641,13 @@ export const previewDailyDistribution = createServerFn({ method: "POST" })
       } else {
         for (let i = 0; i < 14 && pausedOn(day); i++) day = nextBusinessDay(day);
       }
+    }
+    if (data.target === "date") {
+      if (!data.date || data.date < today) throw new Error("Pick today or a future date");
+      const limit = new Date(`${today}T00:00:00Z`); limit.setUTCDate(limit.getUTCDate() + 30);
+      if (data.date > limit.toISOString().slice(0, 10)) throw new Error("Pick a date within 30 days");
+      day = data.date;
+      target = data.date === today ? "today" : "next";
     }
     const skippedPaused = data.target === "auto" && target === "next" && day !== nextBusinessDay(today);
     const agents = await lp.activeAgents();

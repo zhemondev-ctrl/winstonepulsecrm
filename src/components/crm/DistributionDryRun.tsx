@@ -9,7 +9,7 @@ import { previewDailyDistribution } from "@/lib/lead-pool.functions";
 import { useT } from "@/lib/i18n";
 import { useAdminToken } from "@/lib/local-session";
 
-type Target = "auto" | "today" | "next";
+type Target = "auto" | "today" | "next" | "date";
 type Preview = Awaited<ReturnType<typeof previewDailyDistribution>>;
 
 function fmtDay(day: string) {
@@ -25,10 +25,11 @@ export function DistributionDryRun() {
   const adminToken = useAdminToken();
   const previewFn = useServerFn(previewDailyDistribution);
   const [target, setTarget] = useState<Target>("auto");
+  const [pickedDate, setPickedDate] = useState("");
   const q = useQuery({
-    queryKey: ["distribution-dry-run", target, adminToken],
-    queryFn: () => previewFn({ data: { adminToken, target } }),
-    enabled: Boolean(adminToken),
+    queryKey: ["distribution-dry-run", target, pickedDate, adminToken],
+    queryFn: () => previewFn({ data: { adminToken, target, ...(target === "date" ? { date: pickedDate } : {}) } }),
+    enabled: Boolean(adminToken) && (target !== "date" || Boolean(pickedDate)),
   });
 
   const flagLabel = (f: PreviewFlag, backlog: number) =>
@@ -70,7 +71,14 @@ export function DistributionDryRun() {
             <option value="auto">{t({ en: "Next run", bn: "পরের বণ্টন" })}</option>
             <option value="today">{t({ en: "Today", bn: "আজ" })}</option>
             <option value="next">{t({ en: "Next open day", bn: "পরের কর্মদিবস" })}</option>
+            <option value="date">{t({ en: "Pick a date", bn: "তারিখ বাছুন" })}</option>
           </select>
+          {target === "date" && (
+            <>
+              <label className="sr-only" htmlFor="dry-run-date">{t({ en: "Date", bn: "তারিখ" })}</label>
+              <input id="dry-run-date" type="date" value={pickedDate} onChange={(e) => setPickedDate(e.target.value)} className="h-9 rounded-md border border-input bg-background px-2 text-sm" />
+            </>
+          )}
           <Button variant="outline" size="sm" onClick={() => void q.refetch()} disabled={q.isFetching}>
             <RefreshCw className={`mr-2 size-4 ${q.isFetching ? "animate-spin" : ""}`} />{t({ en: "Refresh", bn: "রিফ্রেশ" })}
           </Button>
@@ -81,6 +89,8 @@ export function DistributionDryRun() {
         <p className="text-sm text-muted-foreground">{t({ en: "Unlock LeadHub with its PIN to see the dry run.", bn: "ড্রাই রান দেখতে LeadHub পিন দিয়ে খুলুন।" })}</p>
       ) : q.isError ? (
         <p className="text-sm text-destructive">{q.error instanceof Error ? q.error.message : "Unavailable"}</p>
+      ) : target === "date" && !pickedDate ? (
+        <p className="text-sm text-muted-foreground">{t({ en: "Pick a date to see that morning's run.", bn: "সেই সকালের বণ্টন দেখতে একটি তারিখ বাছুন।" })}</p>
       ) : q.isPending ? (
         <p className="text-sm text-muted-foreground">{t({ en: "Calculating…", bn: "হিসাব হচ্ছে…" })}</p>
       ) : (
