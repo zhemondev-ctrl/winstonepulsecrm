@@ -1,6 +1,7 @@
 # Roadmap
 
 ## Open tasks
+- [x] Desk Contacts lead dashboard: cards are the default on phone and laptop (1/2/3 columns); Cards/Table switch keeps the table optional and remembers the choice. Signed-in 1235/390px checks: no page sideways overflow in either view, choice survives reload; 3 tests pass. Not published.
 - [x] Removed duplicate Desk desktop sidebar and drawer subsections; added Home to the top grid. Signed-in 1548/390px checks confirm no overflow, Today selection and Home return; six navigation tests pass. No business writes or publication.
 - [x] Improved inset gold keyboard focus and Alt+M active-link entry on desktop/phone; verified arrows, Home/End, wrap, Tab/Shift+Tab at 1234/390px, Enter section navigation and phone Escape trigger restoration. Seven regression tests pass; no business writes or publication.
 - [x] Track permitted web dial handoff (not connected proof), blocked/request-failed start and online-saved failed outcome; reuse call_captured for saved call end without a duplicate. 24 isolated tests pass, nine-event catalog validates against HEAD; no customer fields, live calls or publication. Actual collector arrival unverified; verified CallLog connected-lead daily goal remains uninstrumented.

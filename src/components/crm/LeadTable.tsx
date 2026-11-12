@@ -1,7 +1,7 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { CheckCircle2, ChevronDown, MapPin, Search, X } from "lucide-react";
+import { ChevronDown, LayoutGrid, MapPin, Search, Table2, X } from "lucide-react";
 import { useT, useLang } from "@/lib/i18n";
 
 import { CallbackLogButton } from "@/components/crm/CallbackLogButton";
@@ -26,6 +26,12 @@ import { relativeTime, shortDate } from "@/lib/crm-format";
 import { cn } from "@/lib/utils";
 import { myLeadExtras } from "@/lib/call-reports.functions";
 import { useAdminToken } from "@/lib/local-session";
+import {
+  DEFAULT_LEAD_VIEW_MODE,
+  readLeadViewMode,
+  saveLeadViewMode,
+  type LeadViewMode,
+} from "@/lib/lead-view-mode";
 import {
   DESK_BUCKET_LABEL,
   DESK_BUCKET_LABEL_EN,
@@ -119,6 +125,13 @@ export function LeadTable() {
   const [bucket, setBucket] = useState<DeskBucket>("all");
   const [groupBy, setGroupBy] = useState<GroupKey>("none");
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+  // Cards first everywhere; the saved choice is read after hydration.
+  const [view, setView] = useState<LeadViewMode>(DEFAULT_LEAD_VIEW_MODE);
+  useEffect(() => setView(readLeadViewMode()), []);
+  const chooseView = (next: LeadViewMode) => {
+    setView(next);
+    saveLeadViewMode(next);
+  };
   const adminToken = useAdminToken();
   const fetchExtras = useServerFn(myLeadExtras);
   const extrasQuery = useQuery({
@@ -210,6 +223,33 @@ export function LeadTable() {
             })}
           </p>
         </div>
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+          <div
+            role="group"
+            aria-label={t({ bn: "দেখার ধরন", en: "View" })}
+            className="inline-flex shrink-0 self-start rounded-lg border border-border bg-card p-0.5"
+          >
+            {([
+              { key: "cards", icon: LayoutGrid, label: { bn: "কার্ড", en: "Cards" } },
+              { key: "table", icon: Table2, label: { bn: "টেবিল", en: "Table" } },
+            ] as const).map(({ key, icon: Icon, label }) => (
+              <button
+                key={key}
+                type="button"
+                aria-pressed={view === key}
+                onClick={() => chooseView(key)}
+                className={cn(
+                  "inline-flex min-h-9 items-center gap-1.5 rounded-md px-3 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                  view === key
+                    ? "bg-foreground text-background"
+                    : "text-muted-foreground hover:bg-surface-2 hover:text-foreground",
+                )}
+              >
+                <Icon className="size-4 shrink-0" aria-hidden />
+                {t(label)}
+              </button>
+            ))}
+          </div>
         <div className="relative w-full sm:w-64">
           <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
@@ -218,6 +258,7 @@ export function LeadTable() {
             placeholder={t({ bn: "নাম, নম্বর, রেফারেন্স, কোম্পানি", en: "Name, number, reference, company" })}
             className="pl-9"
           />
+        </div>
         </div>
       </div>
 
@@ -321,6 +362,7 @@ export function LeadTable() {
             )}
             {isOpen && (
               <LeadRows
+                view={view}
                 rows={group.items}
                 extras={extras}
                 onOpen={setOpenLeadId}
@@ -349,10 +391,12 @@ export function LeadTable() {
 type Row = ReturnType<typeof useSnapshot>["leads"][number];
 
 function LeadRows({
+  view,
   rows,
   extras,
   onOpen,
 }: {
+  view: LeadViewMode;
   rows: Row[];
   extras: Map<string, DeskExtras>;
   onOpen: (id: string) => void;
@@ -361,10 +405,11 @@ function LeadRows({
   const setOpenLeadId = onOpen;
   return (
     <>
-      {/* Mobile: cards, no horizontal scrolling. Same rows, same data. */}
-      <ul className="space-y-3 md:hidden">
+      {/* Primary view on phone and laptop: cards, no sideways scrolling. */}
+      {view === "cards" && (
+      <ul className="grid grid-cols-1 gap-3 md:grid-cols-2 2xl:grid-cols-3">
         {rows.map((lead, index) => (
-          <li key={lead.id} className="card-elevated w-full max-w-full overflow-hidden p-3">
+          <li key={lead.id} className="card-elevated flex w-full min-w-0 max-w-full flex-col overflow-hidden p-3">
             <button
               type="button"
               className="block w-full min-w-0 text-left"
@@ -423,12 +468,12 @@ function LeadRows({
                 <p className="mt-1 rounded-lg bg-surface-2 p-2 leading-relaxed">{lead.address}</p>
               </details>
             )}
-            <div className="mt-3 flex items-center gap-2">
+            <div className="mt-auto flex items-center gap-2 pt-3">
               <WebCallButton
                 leadId={lead.id}
                 phone={lead.phone_number}
                 label={t({ bn: "কল", en: "Call" })}
-                className="h-11 flex-1 text-base"
+                className="h-11 min-w-0 flex-1 text-base"
               />
               <WhatsAppAction phone={lead.phone_number} leadId={lead.id} label="" />
               <CallbackLogButton leadId={lead.id} label="" />
@@ -436,13 +481,16 @@ function LeadRows({
           </li>
         ))}
         {rows.length === 0 && (
-          <li role="status" className="rounded-xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
+          <li role="status" className="rounded-xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground md:col-span-2 2xl:col-span-3">
             {t({ bn: "এই তালিকায় এখন কোনো লিড নেই", en: "No leads in this list right now" })}
           </li>
         )}
       </ul>
+      )}
 
-      <div className="card-elevated hidden overflow-x-auto md:block">
+      {/* Optional comparison view; scrolls inside its own box on small screens. */}
+      {view === "table" && (
+      <div className="card-elevated table-scroll">
         <table className="w-full min-w-[960px] text-sm">
           <thead>
             <tr className="border-b border-border text-left text-xs text-muted-foreground">
@@ -525,7 +573,7 @@ function LeadRows({
           </tbody>
         </table>
       </div>
-
+      )}
     </>
   );
 }
