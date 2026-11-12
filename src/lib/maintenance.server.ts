@@ -212,33 +212,14 @@ export async function maintenanceAccess(now: Date = new Date()): Promise<Mainten
 export const LOCKED_MESSAGE =
   "SYSTEM MAINTENANCE LOCKED — monthly maintenance payment ($35.29 USD incl. 15% VAT) is not verified. Contact IT Console.";
 
-/**
- * The message that blocks ordinary staff, or null when the CRM is open.
- * Covers the official development hold and the billing lock; fails closed.
- */
-export async function ordinaryLockMessage(): Promise<string | null> {
-  const { lockMessageFor } = await import("@/lib/development-hold");
-  let holdActive: boolean | "unknown" = "unknown";
-  try {
-    const { readDevelopmentHold } = await import("@/lib/development-hold.server");
-    holdActive = (await readDevelopmentHold()).active;
-  } catch (error) {
-    console.error("development hold check failed — failing closed for ordinary users", error);
-  }
-  let billingLocked: boolean | "unknown" = "unknown";
-  if (holdActive !== true) {
-    try {
-      billingLocked = (await maintenanceAccess()).locked;
-    } catch (error) {
-      console.error("maintenance check failed — failing closed for ordinary users", error);
-    }
-  }
-  return lockMessageFor({ holdActive, billingLocked, billingMessage: LOCKED_MESSAGE });
-}
-
 /** Fail closed: an unexpected error counts as locked for ordinary callers. */
 export async function isLockedForOrdinaryUsers(): Promise<boolean> {
-  return (await ordinaryLockMessage()) !== null;
+  try {
+    return (await maintenanceAccess()).locked;
+  } catch (error) {
+    console.error("maintenance check failed — failing closed for ordinary users", error);
+    return true;
+  }
 }
 
 /* ---------------- Notifications (system_alerts, deduped per code) ---------------- */

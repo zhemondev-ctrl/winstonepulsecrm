@@ -59,9 +59,8 @@ export async function deviceLockResponse(request: Request): Promise<Response | n
   if (!path.startsWith("/api/public/agent/") && !path.startsWith("/api/public/ingest/")) return null;
   if (DEVICE_OPEN.some((open) => path.startsWith(open))) return null;
   const m = await import("./lib/maintenance.server");
-  const message = await m.ordinaryLockMessage();
-  if (!message) return null;
-  return new Response(JSON.stringify({ error: message, code: "maintenance_locked" }), {
+  if (!(await m.isLockedForOrdinaryUsers())) return null;
+  return new Response(JSON.stringify({ error: m.LOCKED_MESSAGE, code: "maintenance_locked" }), {
     status: 423,
     headers: { "content-type": "application/json", "cache-control": "no-store" },
   });

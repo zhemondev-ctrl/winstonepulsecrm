@@ -1,6 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { MaintenanceCountdown } from "@/components/crm/MaintenanceNotice";
-import { ItDevelopmentHoldCard } from "@/components/crm/DevelopmentHold";
 import { Loader2, ShieldCheck } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -84,8 +83,6 @@ export function MaintenancePanel() {
         </span>
       </header>
 
-      <ItDevelopmentHoldCard adminToken={adminToken} />
-
       <MaintenanceCountdown />
 
       <dl className="grid gap-2 text-sm sm:grid-cols-3">
@@ -129,7 +126,7 @@ export function MaintenancePanel() {
           <p className="text-sm font-semibold">Payment submission — {state.period}</p>
           {state.paymentRef && <p className="text-xs text-muted-foreground">Current reference: <b>{state.paymentRef}</b></p>}
           <Label htmlFor="mt-ref">Payment reference</Label>
-          <Input id="mt-ref" value={ref} onChange={(e) => setRef(e.target.value)} placeholder="Payoneer / Skrill / Wise transaction ID or receipt" />
+          <Input id="mt-ref" value={ref} onChange={(e) => setRef(e.target.value)} placeholder="bKash TrxID / bank receipt" />
           <Button className="w-full" disabled={ref.trim().length < 3 || submit.isPending || state.paymentStatus === "verified"} onClick={() => submit.mutate()}>
             Submit for verification
           </Button>

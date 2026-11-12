@@ -23,13 +23,8 @@ export const Route = createFileRoute("/api/public/config/maintenance")({
         const maintenance = saved && typeof saved === "object"
           ? (saved as Record<string, unknown>)
           : {};
-        const { ordinaryLockMessage, LOCKED_MESSAGE } = await import("@/lib/maintenance.server");
-        const lockMessage = await ordinaryLockMessage();
-        if (lockMessage && lockMessage !== LOCKED_MESSAGE) {
-          const { DEVELOPMENT_HOLD_BODY, DEVELOPMENT_HOLD_TITLE } = await import("@/lib/development-hold");
-          return json({ active: true, title: `🛠️ ${DEVELOPMENT_HOLD_TITLE.bn}`, detail: DEVELOPMENT_HOLD_BODY.bn });
-        }
-        if (lockMessage) {
+        const { isLockedForOrdinaryUsers } = await import("@/lib/maintenance.server");
+        if (await isLockedForOrdinaryUsers()) {
           return json({
             active: true,
             title: "🔒 SYSTEM MAINTENANCE LOCKED",

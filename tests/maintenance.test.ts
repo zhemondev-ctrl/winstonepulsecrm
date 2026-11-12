@@ -71,7 +71,7 @@ describe("maintenance wiring", () => {
     }
   });
   it("resolveCaller and device requests enforce the lock", () => {
-    expect(readFileSync("src/lib/access.server.ts", "utf8")).toMatch(/ordinaryLockMessage/);
+    expect(readFileSync("src/lib/access.server.ts", "utf8")).toMatch(/isLockedForOrdinaryUsers/);
     expect(readFileSync("src/server.ts", "utf8")).toMatch(/status: 423/);
   });
   it("audit is append-only and unlock requests are unique per period", () => {

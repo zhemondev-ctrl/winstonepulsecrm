@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { useRouterState } from "@tanstack/react-router";
 import { Lock, LogIn, ShieldAlert } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -8,12 +8,10 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { lovable } from "@/integrations/lovable";
 import { useAdminToken } from "@/lib/local-session";
-import { getMaintenanceStatus } from "@/lib/maintenance.functions";
-import { ARCH_BASE_CENTS, ARCH_PLAN_NAME, ARCH_TOTAL_CENTS, ARCH_VAT_CENTS, MAINTENANCE_FEE_LABEL, dhakaMonthName, dhakaTime, isAmberWindow, isRedWindow, nextRenewalDueAt, paymentDueLabel, usd } from "@/lib/maintenance-rules";
+import { getMaintenanceStatus, requestPaymentHelp } from "@/lib/maintenance.functions";
+import { ARCH_PLAN_NAME, ARCH_TOTAL_CENTS, MAINTENANCE_FEE_LABEL, dhakaMonthName, dhakaTime, isAmberWindow, isRedWindow, nextRenewalDueAt, paymentDueLabel, usd } from "@/lib/maintenance-rules";
 import { useLang, useT } from "@/lib/i18n";
-import { PaymentOptions } from "@/components/crm/PaymentOptions";
 import { amberDismissed, dismissAmber, firstRedModalThisSession } from "@/lib/billing-dismiss";
-import { DevelopmentHoldScreen } from "@/components/crm/DevelopmentHold";
 
 export function useMaintenance() {
   const adminToken = useAdminToken();
@@ -38,6 +36,20 @@ function statusLabel(s: Status) {
 /** Whether any maintenance notice should be visible at all. */
 function needsNotice(s: Status) {
   return s.stage === "upcoming" || s.stage === "soon" || s.stage === "due_today" || s.stage === "locked";
+}
+
+function RequestButton() {
+  const adminToken = useAdminToken();
+  const send = useMutation({
+    mutationFn: () => requestPaymentHelp({ data: { adminToken } }),
+    onSuccess: () => toast.success("IT Console has been notified."),
+    onError: (e: Error) => toast.error(e.message),
+  });
+  return (
+    <Button variant="destructive" className="w-full" disabled={send.isPending || send.isSuccess} onClick={() => send.mutate()}>
+      {send.isSuccess ? "REQUEST SENT TO IT CONSOLE" : "PAYMENT / UNLOCK REQUEST"}
+    </Button>
+  );
 }
 
 /** Direct Google sign-in for IT Console / System Architect from the lock screen. */
@@ -84,7 +96,7 @@ function NoticeBody({ s }: { s: Status }) {
       <p className="text-muted-foreground">
         Please contact IT Console / authorized team to complete payment and request system unlock.
       </p>
-      <PaymentOptions />
+      <RequestButton />
     </div>
   );
 }
@@ -116,9 +128,9 @@ export function MaintenanceBadge() {
         {data.openRequest && !data.locked && <span>UNLOCK PENDING</span>}
       </button>
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-h-[90dvh] max-w-md overflow-y-auto">
+        <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 pr-6 text-destructive">
+            <DialogTitle className="flex items-center gap-2 text-destructive">
               <ShieldAlert className="size-5" /> SYSTEM MAINTENANCE NOTICE
             </DialogTitle>
           </DialogHeader>
@@ -223,8 +235,7 @@ function PhonePill({ open, setOpen, tone }: { open: boolean; setOpen: (v: boolea
   );
 }
 
-// IT sign-in and new-operator password setup stay reachable; their server checks still apply.
-const OPEN_PATHS = ["/system", "/tech", "/it-access", "/it-setup", "/auth", "/service-bill-alert", "/service-bill-unlock"];
+const OPEN_PATHS = ["/system", "/tech", "/auth", "/service-bill-alert", "/service-bill-unlock"];
 
 /** CRM-wide banner before the lock, full lock screen after it. */
 export function MaintenanceGate() {
@@ -234,10 +245,6 @@ export function MaintenanceGate() {
   const [phoneOpen, setPhoneOpen] = useState(false);
   if (!data) return null;
   if (OPEN_PATHS.some((p) => path.startsWith(p))) return null;
-
-  if (data.developmentHold?.active && !data.exempt) {
-    return <DevelopmentHoldScreen startedAt={data.developmentHold.startedAt} signIn={<LockSignInButton />} />;
-  }
 
   if (data.locked && !data.exempt) {
     return (
@@ -296,18 +303,19 @@ function InvoiceDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (v
   const { data } = useMaintenance();
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90dvh] max-w-md overflow-y-auto">
+      <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle className="pr-6">{ARCH_PLAN_NAME} — Invoice</DialogTitle>
+          <DialogTitle>{ARCH_PLAN_NAME} — Invoice</DialogTitle>
         </DialogHeader>
         <dl className="grid grid-cols-2 gap-2 rounded-lg border border-border p-3 text-sm">
-          <dt className="text-muted-foreground">Base monthly fee</dt><dd className="font-semibold">{usd(ARCH_BASE_CENTS)} USD</dd>
-          <dt className="text-muted-foreground">VAT (15%)</dt><dd className="font-semibold">{usd(ARCH_VAT_CENTS)} USD</dd>
+          <dt className="text-muted-foreground">Base monthly fee</dt><dd className="font-semibold">$15.79 USD</dd>
+          <dt className="text-muted-foreground">VAT (15%)</dt><dd className="font-semibold">$2.37 USD</dd>
           <dt className="text-muted-foreground">Total due</dt><dd className="font-semibold">{usd(ARCH_TOTAL_CENTS)} USD</dd>
           <dt className="text-muted-foreground">Verify payment before</dt><dd className="font-semibold">15 {dhakaMonthName()} 00:00 Asia/Dhaka</dd>
           <dt className="text-muted-foreground">Lock deadline</dt><dd className="font-semibold">15th 00:00 (Dhaka)</dd>
         </dl>
-        {data && <PaymentOptions />}
+        <p className="text-xs text-muted-foreground">Payment is completed by IT Console / authorized team and verified by the System Architect.</p>
+        {data && <RequestButton />}
       </DialogContent>
     </Dialog>
   );
@@ -389,7 +397,7 @@ function UrgentRenewal({ period, admin, paymentStatus }: { period: string; admin
           </ul>
           <p className="text-sm text-muted-foreground">Complete payment and ensure verification before the deadline.</p>
           <div className="grid gap-2 sm:grid-cols-2">
-            <Button onClick={() => { setModal(false); setInvoice(true); }}>Payment options</Button>
+            <Button onClick={() => { setModal(false); setInvoice(true); }}>Pay Online</Button>
             <Button variant="outline" asChild>
               <a href="/system">Submit Transfer Receipt</a>
             </Button>

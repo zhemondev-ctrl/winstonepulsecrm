@@ -21,7 +21,6 @@ export type AuditAction =
   | "project_photos_viewed"
   | "account_approved"
   | "account_rejected"
-  | "it_officer_invited"
   | "role_changed"
   | "lead_created"
   | "lead_imported"

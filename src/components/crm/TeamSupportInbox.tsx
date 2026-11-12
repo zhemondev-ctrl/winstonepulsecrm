@@ -23,7 +23,6 @@ import {
   supportInbox,
 } from "@/lib/team-support.functions";
 import { getAdminToken } from "@/lib/local-session";
-import { isTransientRequestError, transientRetryDelay } from "@/lib/transient-retry";
 import { PUSH_MESSAGES, requestWebPushToken } from "@/lib/web-push";
 
 type Filter = "unread" | "open" | "high" | "critical" | "resolved" | "all";
@@ -61,9 +60,7 @@ export function TeamSupportInbox() {
       return res;
     },
     refetchInterval: 15_000,
-    // Startup/temporary failures retry with back-off; access errors do not.
-    retry: (count, error) => count < 3 && isTransientRequestError(error),
-    retryDelay: (attempt) => transientRetryDelay(attempt),
+    retry: 1,
   });
   const staleNotice = query.isError && !!query.data;
 

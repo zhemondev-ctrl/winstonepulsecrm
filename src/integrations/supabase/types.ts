@@ -7758,20 +7758,6 @@ export type Database = {
         }
         Returns: Json
       }
-      set_development_hold_atomic: {
-        Args: {
-          _action: string
-          _actor: string
-          _actor_role: string
-          _expect_active: boolean
-          _hold: Json
-          _metadata: Json
-          _next: string
-          _previous: string
-          _reason: string
-        }
-        Returns: Json
-      }
       transition_follow_up_atomic: {
         Args: {
           _action?: string

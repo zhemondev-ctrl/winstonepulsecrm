@@ -1,8 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
-import { PAYMENT_METHOD_IDS, paymentMethodLabel, paymentRequestDetail } from "@/lib/payment-methods";
-
 /**
  * Monthly architecture charge ($35.29 USD incl. VAT) endpoints. The lock itself is decided in
  * maintenance.server.ts; these functions only read it or move it through the
@@ -25,15 +23,6 @@ export const getMaintenanceStatus = createServerFn({ method: "POST" })
     const { maintenanceAccess } = await import("@/lib/maintenance.server");
     const { adminTokenScope } = await import("@/lib/admin-gate.server");
     let exempt = adminTokenScope(data.adminToken ?? null) === "full";
-    let developmentHold: { active: boolean; startedAt: string | null } = { active: false, startedAt: null };
-    try {
-      const { readDevelopmentHold } = await import("@/lib/development-hold.server");
-      const hold = await readDevelopmentHold();
-      developmentHold = { active: hold.active, startedAt: hold.startedAt };
-    } catch (error) {
-      console.error("development hold status failed", error);
-      developmentHold = { active: true, startedAt: null }; // fail closed, same as the server gate
-    }
     try {
       const s = await maintenanceAccess();
       if (!exempt) {
@@ -54,19 +43,16 @@ export const getMaintenanceStatus = createServerFn({ method: "POST" })
         locked: s.locked,
         stage: s.stage,
         exempt,
-        developmentHold,
       };
     } catch (error) {
       console.error("maintenance status failed", error);
-      return { ok: false as const, locked: true, stage: "locked" as const, exempt, feeUsd: 35.29, paymentStatus: "unpaid" as const, unlockStatus: "none" as const, openRequest: false, period: "", dueDate: "", lockAt: "", unlockExpiresAt: null, developmentHold };
+      return { ok: false as const, locked: true, stage: "locked" as const, exempt, feeUsd: 35.29, paymentStatus: "unpaid" as const, unlockStatus: "none" as const, openRequest: false, period: "", dueDate: "", lockAt: "", unlockExpiresAt: null };
     }
   });
 
 /** Agent / Executive "Payment / Unlock request": only notifies IT Console. */
 export const requestPaymentHelp = createServerFn({ method: "POST" })
-  .inputValidator((input: unknown) =>
-    Token.extend({ note: z.string().trim().max(300).optional(), method: z.enum(PAYMENT_METHOD_IDS).optional() }).parse(input),
-  )
+  .inputValidator((input: unknown) => Token.extend({ note: z.string().trim().max(300).optional() }).parse(input))
   .handler(async ({ data }) => {
     const { resolveCaller } = await import("@/lib/access.server");
     const caller = await resolveCaller(data.adminToken ?? null, { skipMaintenance: true });
@@ -80,14 +66,14 @@ export const requestPaymentHelp = createServerFn({ method: "POST" })
       actorRole: hq ? "executive" : caller.profile?.role ?? "agent",
       action: "payment_help_requested",
       period: state.period,
-      reason: data.note ?? (data.method ? `Preferred method: ${paymentMethodLabel(data.method)}` : null),
+      reason: data.note ?? null,
     });
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     await supabaseAdmin.from("system_alerts").insert({
       code: "maintenance_payment_help",
       severity: "critical",
       title: "Maintenance payment / unlock requested",
-      detail: paymentRequestDetail(caller.profile?.name ?? "Executive HQ", state.period, data.method),
+      detail: `${caller.profile?.name ?? "Executive HQ"} asked IT Console to settle the ${state.period} architecture charge ($35.29 USD incl. 15% VAT).`,
     });
     return { ok: true };
   });

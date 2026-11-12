@@ -17,7 +17,6 @@ import {
 } from "@/lib/maintenance.functions";
 import { MAINTENANCE_FEE_LABEL, UNLOCK_PRESET_HOURS, dhakaTime } from "@/lib/maintenance-rules";
 import { requestArchitectReturnFocus } from "@/lib/access-focus";
-import { ArchitectDevelopmentHoldCard } from "@/components/crm/DevelopmentHold";
 
 export const Route = createFileRoute("/tech")({
   ssr: false,
@@ -142,7 +141,6 @@ function Dashboard({ session, onExpired }: { session: string; onExpired: () => v
         </div>
         <p className="text-sm font-medium">Payment: {state.paymentStatus.toUpperCase()}</p>
       </div>
-      <ArchitectDevelopmentHoldCard session={session} />
       <section className="space-y-3" aria-labelledby="payment-heading">
         <h2 id="payment-heading" className="text-base font-semibold">Payment verification</h2>
         <PaymentReview session={session} status={state.paymentStatus} paymentRef={state.paymentRef} period={state.period} onDone={() => void qc.invalidateQueries({ queryKey: ["architect-overview"] })} />
