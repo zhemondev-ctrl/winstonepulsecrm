@@ -81,6 +81,7 @@ function boot(opts: { server: Server; session: ReturnType<typeof memoryStorage>;
     noticeShown: () => Boolean(nodes["deploy-notice"]),
     safariPreloadError: () => emit("vite:preloadError", { payload: { message: SAFARI }, preventDefault: () => {} }),
     scriptLoadFailed: (src: string) => emit("error", { target: { tagName: "SCRIPT", type: "module", src } }),
+    missingFactory: () => emit("error", { message: "No factory registered for module src/components/crm/PostCallReportGate.tsx" }),
     booted: () => (window.__clearDeployReloadFlag as () => void)(),
   };
 }
@@ -95,6 +96,13 @@ beforeEach(() => vi.useFakeTimers());
 afterEach(() => vi.useRealTimers());
 
 describe("deploy recovery: Safari 'Importing a module script failed.'", () => {
+  it("recovers a missing hot-update module factory with one coalesced reload", async () => {
+    const tab = boot({ server: server(), session: memoryStorage(), local: memoryStorage(), dev: true });
+    tab.missingFactory();
+    tab.missingFactory();
+    await vi.advanceTimersByTimeAsync(1_000);
+    expect(tab.location.reload).toHaveBeenCalledTimes(1);
+  });
   it("does not reload while a referenced chunk of the new deployment is still missing, then reloads once it exists", async () => {
     const s = server({ assets: new Set(["/assets/index-NEW.js"]) });
     const tab = boot({ server: s, session: memoryStorage(), local: memoryStorage() });

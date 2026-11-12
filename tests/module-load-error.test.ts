@@ -2,6 +2,10 @@ import { describe, expect, it } from "vitest";
 import { isModuleLoadError } from "../src/lib/module-load-error";
 
 describe("caught route import recovery", () => {
+  it("recognizes missing lazy module factories after a preview hot update", () => {
+    expect(isModuleLoadError(new Error("No factory registered for module src/components/crm/PostCallReportGate.tsx"))).toBe(true);
+    expect(isModuleLoadError(new Error("No factory registered for module src/components/crm/AgentBriefingGate.tsx"))).toBe(true);
+  });
   it("recognizes the reported home split-module failure", () => {
     expect(isModuleLoadError(new TypeError("Failed to fetch dynamically imported module: /src/routes/index.tsx?tsr-split=component"))).toBe(true);
   });
