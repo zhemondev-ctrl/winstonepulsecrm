@@ -14,6 +14,7 @@ import { useMemo, useState } from "react";
 import { useT } from "@/lib/i18n";
 
 import { AccountApprovals } from "@/components/crm/AccountApprovals";
+import { ItOfficerOnboardingPanel } from "@/components/crm/ItOfficerOnboardingPanel";
 import { ApkInstallCard } from "@/components/crm/ApkInstallCard";
 import { PhoneAcceptanceChecklist } from "@/components/crm/PhoneAcceptanceChecklist";
 import { AppReleasePanel } from "@/components/crm/AppReleasePanel";
@@ -233,6 +234,7 @@ function SystemBoard() {
           <FinosAccessLogPanel />
           <AccountabilityReviewPanel surface="it" />
           <StaffAccountsTable />
+          <ItOfficerOnboardingPanel />
           <AccountApprovals />
           <SystemCustomizer />
         </div>

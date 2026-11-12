@@ -223,7 +223,8 @@ function PhonePill({ open, setOpen, tone }: { open: boolean; setOpen: (v: boolea
   );
 }
 
-const OPEN_PATHS = ["/system", "/tech", "/auth", "/service-bill-alert", "/service-bill-unlock"];
+// IT sign-in and new-operator password setup stay reachable; their server checks still apply.
+const OPEN_PATHS = ["/system", "/tech", "/it-access", "/it-setup", "/auth", "/service-bill-alert", "/service-bill-unlock"];
 
 /** CRM-wide banner before the lock, full lock screen after it. */
 export function MaintenanceGate() {

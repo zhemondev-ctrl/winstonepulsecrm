@@ -237,7 +237,9 @@ export const listAccountRequests = createServerFn({ method: "POST" })
       .order("created_at", { ascending: false })
       .limit(200);
     if (error) throw new Error(error.message);
-    return { accounts: rows ?? [] };
+    // New IT Operators are approved through their own onboarding, never as agents.
+    const officers = await (await import("@/lib/it-onboarding.server")).officerProfileIds();
+    return { accounts: (rows ?? []).filter((row) => !officers.has(row.id)) };
   });
 
 /** Approve as agent or reject. Coordinator accounts are retired. */
@@ -260,6 +262,8 @@ export const decideAccount = createServerFn({ method: "POST" })
       requireWrite(decider);
     }
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const officers = await (await import("@/lib/it-onboarding.server")).officerProfileIds();
+    if (officers.has(data.profileId)) throw new Error("এটি নতুন IT অপারেটরের অ্যাকাউন্ট — IT অপারেটর অংশ থেকে অনুমোদন দিন");
 
     const patch =
       data.decision === "reject"
