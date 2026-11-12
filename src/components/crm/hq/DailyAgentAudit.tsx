@@ -3,6 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { ClipboardList, Download } from "lucide-react";
 import { useState } from "react";
 
+import { DailyAuditCompare } from "@/components/crm/hq/DailyAuditCompare";
 import { DemeritLog } from "@/components/crm/hq/DemeritLog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -33,8 +34,8 @@ export function DailyAgentAudit() {
 
   const exportCsv = () => {
     if (!q.data) return;
-    const headers = ["Agent", "Employee ID", "Assigned leads", "Leads actioned", "Follow-ups due", "Overdue follow-ups", "Incomplete reports", "Calls logged", "Reports submitted", "Pending", "Workload", "Pending %", "Over 10%", "Review status"];
-    const rows = q.data.rows.map((r) => [r.name, r.employeeId ?? "", r.assigned, r.assigned - (r.pending - r.overdueFollowUps), r.dueFollowUps, r.overdueFollowUps, r.missedReports, r.callsLogged, r.reportsSubmitted, r.pending, r.eligible, r.pendingPercent, r.flagged ? "Yes" : "No", r.reviewStatus ?? ""]);
+    const headers = ["Agent", "Employee ID", "Company leads assigned", "Received today (ledger)", "Active backlog now (older + today)", "Older pending backlog (now)", "Allowed today (Net-50)", "Follow-ups due", "Overdue follow-ups", "Calls logged", "Leads called", "Reports submitted", "Closed after answered call", "Converted", "Closed on unanswered call", "Incomplete reports", "Incomplete reports added to workload", "Pending", "Workload", "Pending %", "Over 10%", "Review status"];
+    const rows = q.data.rows.map((r) => [r.name, r.employeeId ?? "", r.assigned, r.receivedToday, r.olderBacklog === null ? "" : r.olderBacklog + r.todayPendingLeads, r.olderBacklog ?? "", r.assignment?.allowed ?? "", r.dueFollowUps, r.overdueFollowUps, r.callsLogged, r.leadsCalled, r.reportsSubmitted, r.closedAnswered, r.converted, r.closedUnanswered, r.missedReports, r.incompleteReportsCounted, r.pending, r.eligible, r.pendingPercent, r.flagged ? "Yes" : "No", r.reviewStatus ?? ""]);
     downloadCsv(`daily-agent-audit-${q.data.day}.csv`, toCsv(headers, rows));
   };
 
@@ -47,8 +48,8 @@ export function DailyAgentAudit() {
             <h2 className="text-lg font-semibold">{t({ en: "Daily agent audit", bn: "দৈনিক এজেন্ট নিরীক্ষা" })}</h2>
             <p className="text-sm text-muted-foreground">
               {t({
-                en: `Each agent's assigned leads, calls, follow-ups and overdue work for one Dhaka day. Pending % = work not done by end of day ÷ (company leads assigned + follow-ups due). Above ${PENDING_THRESHOLD_PERCENT}% means an HQ review. View only — this page changes nothing.`,
-                bn: `ঢাকা সময়ের একটি দিনে প্রতিটি এজেন্টের দেওয়া লিড, কল, ফলো-আপ ও বকেয়া কাজ। বাকি % = দিনশেষে না-করা কাজ ÷ (দেওয়া কোম্পানি লিড + নির্ধারিত ফলো-আপ)। ${PENDING_THRESHOLD_PERCENT}%-এর বেশি হলে HQ রিভিউ। শুধু দেখা — এই পাতা কিছু বদলায় না।`,
+                en: `Each agent's assigned leads, calls, follow-ups and overdue work for one Dhaka day. Pending % = work not done by end of day ÷ (company leads assigned + follow-ups due + call reports left unfinished). Above ${PENDING_THRESHOLD_PERCENT}% means an HQ review. View only — this page changes nothing.`,
+                bn: `ঢাকা সময়ের একটি দিনে প্রতিটি এজেন্টের দেওয়া লিড, কল, ফলো-আপ ও বকেয়া কাজ। বাকি % = দিনশেষে না-করা কাজ ÷ (দেওয়া কোম্পানি লিড + নির্ধারিত ফলো-আপ + অসম্পূর্ণ কল রিপোর্ট)। ${PENDING_THRESHOLD_PERCENT}%-এর বেশি হলে HQ রিভিউ। শুধু দেখা — এই পাতা কিছু বদলায় না।`,
               })}
             </p>
           </div>
@@ -69,6 +70,7 @@ export function DailyAgentAudit() {
       ) : (
         <AuditBody data={q.data} t={t} />
       )}
+      <div className="border-t border-border pt-4"><DailyAuditCompare /></div>
       <div className="border-t border-border pt-4"><DemeritLog /></div>
     </section>
   );
@@ -104,13 +106,16 @@ function AuditBody({ data, t }: { data: Awaited<ReturnType<typeof getDailyAgentA
                   <p className="min-w-0 font-semibold break-words">{r.name}</p>
                   <Badge row={r} t={t} />
                 </div>
+                <AssignmentLine row={r} t={t} />
                 <dl className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
-                  <dt className="text-muted-foreground">{t({ en: "Assigned leads", bn: "দেওয়া লিড" })}</dt><dd className="tabular-nums">{r.assigned}</dd>
-                  <dt className="text-muted-foreground">{t({ en: "Calls / reports", bn: "কল / রিপোর্ট" })}</dt><dd className="tabular-nums">{r.callsLogged} / {r.reportsSubmitted}</dd>
-                  <dt className="text-muted-foreground">{t({ en: "Follow-ups due", bn: "নির্ধারিত ফলো-আপ" })}</dt><dd className="tabular-nums">{r.dueFollowUps}</dd>
-                  <dt className="text-muted-foreground">{t({ en: "Overdue", bn: "বকেয়া" })}</dt><dd className="tabular-nums">{r.overdueFollowUps}</dd>
+                  <dt className="text-muted-foreground">{t({ en: "Assigned today", bn: "আজ দেওয়া লিড" })}</dt><dd className="tabular-nums">{r.assigned}</dd>
+                  <dt className="text-muted-foreground">{t({ en: "Active backlog (now)", bn: "মোট বকেয়া লিড (এখন)" })}</dt><dd className="tabular-nums"><BacklogValue row={r} /></dd>
+                  <dt className="text-muted-foreground">{t({ en: "Follow-ups due / overdue", bn: "ফলো-আপ নির্ধারিত / বকেয়া" })}</dt><dd className="tabular-nums">{r.dueFollowUps} / {r.overdueFollowUps}</dd>
+                  <dt className="text-muted-foreground">{t({ en: "Leads called / reports", bn: "কল করা লিড / রিপোর্ট" })}</dt><dd className="tabular-nums">{r.leadsCalled} / {r.reportsSubmitted}</dd>
+                  <dt className="text-muted-foreground">{t({ en: "Closed (answered) / converted", bn: "বন্ধ (কথা হয়েছে) / রূপান্তর" })}</dt><dd className="tabular-nums">{r.closedAnswered} / {r.converted}</dd>
+                  <dt className="text-muted-foreground">{t({ en: "Closed on unanswered call", bn: "কথা না হয়ে বন্ধ" })}</dt><dd className={`tabular-nums ${r.closedUnanswered ? "text-destructive" : ""}`}>{r.closedUnanswered}</dd>
                   <dt className="text-muted-foreground">{t({ en: "Incomplete reports", bn: "অসম্পূর্ণ রিপোর্ট" })}</dt><dd className="tabular-nums">{r.missedReports}</dd>
-                  <dt className="text-muted-foreground">{t({ en: "Older backlog", bn: "পুরোনো বকেয়া" })}</dt><dd className="tabular-nums">{r.backlogFollowUps}</dd>
+                  <dt className="text-muted-foreground">{t({ en: "Older follow-up backlog", bn: "পুরোনো বকেয়া ফলো-আপ" })}</dt><dd className="tabular-nums">{r.backlogFollowUps}</dd>
                 </dl>
                 <Details row={r} t={t} />
               </li>
@@ -121,11 +126,11 @@ function AuditBody({ data, t }: { data: Awaited<ReturnType<typeof getDailyAgentA
               <thead className="bg-muted text-left text-xs text-muted-foreground">
                 <tr>
                   <th className="px-3 py-2 font-medium">{t({ en: "Agent", bn: "এজেন্ট" })}</th>
-                  <th className="px-3 py-2 text-right font-medium">{t({ en: "Assigned leads", bn: "দেওয়া লিড" })}</th>
-                  <th className="px-3 py-2 text-right font-medium">{t({ en: "Calls", bn: "কল" })}</th>
-                  <th className="px-3 py-2 text-right font-medium">{t({ en: "Reports", bn: "রিপোর্ট" })}</th>
-                  <th className="px-3 py-2 text-right font-medium">{t({ en: "Follow-ups due", bn: "নির্ধারিত ফলো-আপ" })}</th>
-                  <th className="px-3 py-2 text-right font-medium">{t({ en: "Overdue", bn: "বকেয়া" })}</th>
+                  <th className="px-3 py-2 text-right font-medium">{t({ en: "Assigned today", bn: "আজ দেওয়া" })}</th>
+                  <th className="px-3 py-2 text-right font-medium">{t({ en: "Active backlog (now)", bn: "মোট বকেয়া (এখন)" })}</th>
+                  <th className="px-3 py-2 text-right font-medium">{t({ en: "Follow-ups due / overdue", bn: "ফলো-আপ / বকেয়া" })}</th>
+                  <th className="px-3 py-2 text-right font-medium">{t({ en: "Leads called / reports", bn: "কল করা লিড / রিপোর্ট" })}</th>
+                  <th className="px-3 py-2 text-right font-medium">{t({ en: "Closed (answered) / converted", bn: "বন্ধ (কথা হয়েছে) / রূপান্তর" })}</th>
                   <th className="px-3 py-2 text-right font-medium">{t({ en: "Incomplete reports", bn: "অসম্পূর্ণ রিপোর্ট" })}</th>
                   <th className="px-3 py-2 text-right font-medium">{t({ en: "Pending / workload", bn: "বাকি / মোট কাজ" })}</th>
                   <th className="px-3 py-2 font-medium">{t({ en: "Pending %", bn: "বাকি %" })}</th>
@@ -136,13 +141,17 @@ function AuditBody({ data, t }: { data: Awaited<ReturnType<typeof getDailyAgentA
                   <tr key={r.agentId} className="border-t border-border align-top">
                     <td className="px-3 py-2">
                       <p className="font-medium">{r.name}</p>
+                      <AssignmentLine row={r} t={t} />
                       <Details row={r} t={t} />
                     </td>
                     <td className="px-3 py-2 text-right tabular-nums">{r.assigned}</td>
-                    <td className="px-3 py-2 text-right tabular-nums">{r.callsLogged}</td>
-                    <td className="px-3 py-2 text-right tabular-nums">{r.reportsSubmitted}</td>
-                    <td className="px-3 py-2 text-right tabular-nums">{r.dueFollowUps}</td>
-                    <td className="px-3 py-2 text-right tabular-nums">{r.overdueFollowUps}</td>
+                    <td className="px-3 py-2 text-right tabular-nums"><BacklogValue row={r} /></td>
+                    <td className="px-3 py-2 text-right tabular-nums">{r.dueFollowUps} / {r.overdueFollowUps}</td>
+                    <td className="px-3 py-2 text-right tabular-nums">{r.leadsCalled} / {r.reportsSubmitted}</td>
+                    <td className="px-3 py-2 text-right tabular-nums">
+                      {r.closedAnswered} / {r.converted}
+                      {r.closedUnanswered > 0 && <p className="text-[11px] text-destructive">{r.closedUnanswered} {t({ en: "on unanswered call", bn: "কথা না হয়ে" })}</p>}
+                    </td>
                     <td className="px-3 py-2 text-right tabular-nums">{r.missedReports}</td>
                     <td className="px-3 py-2 text-right tabular-nums">{r.pending} / {r.eligible}</td>
                     <td className="px-3 py-2"><Badge row={r} t={t} /></td>
@@ -154,7 +163,7 @@ function AuditBody({ data, t }: { data: Awaited<ReturnType<typeof getDailyAgentA
         </>
       )}
       <p className="text-xs text-muted-foreground">
-        {t({ en: "Recalculated from saved CRM records at", bn: "সংরক্ষিত CRM রেকর্ড থেকে হিসাব করা হয়েছে" })} {fmtTime(data.measuredAt)}. {t({ en: "Self-collected leads are not part of the 50 company tasks and are excluded. Follow-ups whose responsibility is unconfirmed are not counted as overdue. Calls logged = call reports opened that day.", bn: "নিজস্ব লিড কোম্পানির ৫০টি কাজের অংশ নয়, তাই বাদ। দায় নিশ্চিত নয় এমন ফলো-আপ বকেয়া ধরা হয় না। কলের সংখ্যা = সেদিন খোলা কল রিপোর্ট।" })}
+        {t({ en: "Recalculated from saved CRM records at", bn: "সংরক্ষিত CRM রেকর্ড থেকে হিসাব করা হয়েছে" })} {fmtTime(data.measuredAt)}. {t({ en: "Self-collected leads are not part of the 50 company tasks and are excluded. Follow-ups whose responsibility is unconfirmed are not counted as overdue. Leads called = distinct leads with a call report started that day (saved call start; older reports use the time the report opened). Incomplete report = started that day and not submitted by its end; it adds to the workload unless that lead is already counted as pending. Closed (answered) uses the agent's answered-call mark, not phone proof. Active backlog and the Net-50 allowance are current values, shown for today only.", bn: "নিজস্ব লিড কোম্পানির ৫০টি কাজের অংশ নয়, তাই বাদ। দায় নিশ্চিত নয় এমন ফলো-আপ বকেয়া ধরা হয় না। কল করা লিড = সেদিন শুরু হওয়া কল রিপোর্টের আলাদা লিড (সংরক্ষিত কল শুরুর সময়; পুরোনো রিপোর্টে রিপোর্ট খোলার সময়)। অসম্পূর্ণ রিপোর্ট = সেদিন শুরু, দিনশেষে জমা হয়নি; একই লিড আগে থেকেই বাকি হিসেবে না থাকলে মোট কাজে যোগ হয়। 'কথা হয়েছে' এজেন্টের দেওয়া চিহ্ন, ফোনের প্রমাণ নয়। মোট বকেয়া ও Net-50 সীমা বর্তমান মান, শুধু আজকের জন্য দেখানো হয়।" })}
       </p>
     </div>
   );
@@ -197,5 +206,32 @@ function Details({ row, t }: { row: Row; t: ReturnType<typeof useT> }) {
         {row.backlogFollowUps > 0 && <p>{t({ en: "Older backlog, shown separately:", bn: "পুরোনো বকেয়া, আলাদা দেখানো:" })} {row.backlogFollowUps}</p>}
       </div>
     </details>
+  );
+}
+
+function AssignmentLine({ row, t }: { row: Row; t: ReturnType<typeof useT> }) {
+  if (!row.assignment) return null;
+  const { allowed, reason } = row.assignment;
+  const why =
+    reason === "review_lock" ? t({ en: "blocked: HQ review not approved", bn: "বন্ধ: HQ রিভিউ অনুমোদন হয়নি" })
+    : reason === "paused" ? t({ en: "blocked: auto-distribution paused today", bn: "বন্ধ: আজ স্বয়ংক্রিয় বণ্টন স্থগিত" })
+    : reason === "not_business_day" ? t({ en: "no distribution: holiday", bn: "বণ্টন নেই: ছুটি" })
+    : reason === "backlog_full" ? t({ en: `backlog ${row.olderBacklog} ≥ 50`, bn: `বকেয়া ${row.olderBacklog} ≥ ৫০` })
+    : reason === "backlog_reduced" ? t({ en: `50 − backlog ${row.olderBacklog}`, bn: `৫০ − বকেয়া ${row.olderBacklog}` })
+    : t({ en: "full daily quota", bn: "পূর্ণ দৈনিক কোটা" });
+  return (
+    <p className="text-[11px] text-muted-foreground">
+      {t({ en: "Received today", bn: "আজ পেয়েছেন" })} {row.receivedToday} · {t({ en: "allowed now", bn: "এখন সীমা" })} {allowed} ({why})
+    </p>
+  );
+}
+
+function BacklogValue({ row }: { row: Row }) {
+  if (row.olderBacklog === null) return <>—</>;
+  return (
+    <span title={`${row.olderBacklog} + ${row.todayPendingLeads}`}>
+      {row.olderBacklog + row.todayPendingLeads}
+      <span className="block text-[11px] text-muted-foreground">{row.olderBacklog} + {row.todayPendingLeads}</span>
+    </span>
   );
 }

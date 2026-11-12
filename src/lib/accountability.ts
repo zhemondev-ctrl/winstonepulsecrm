@@ -2,7 +2,8 @@ import type { OverdueClass } from "@/lib/overdue-evidence";
 /**
  * Daily Agent Accountability — pure rule, shared by server and tests.
  * Workload = eligible leads assigned for the business day + follow-ups due by
- * the end of that day. Pending = workload not actioned by the end of the day.
+ * the end of that day + call reports left unfinished at the end of that day.
+ * Pending = workload not actioned by the end of the day.
  * Above the threshold → one neutral HQ review for the next business day.
  */
 
@@ -23,6 +24,11 @@ export type AccountabilityInput = {
   leads: { id: string; completed: boolean }[];
   dueFollowUps: { id: string; handled: boolean; classification?: OverdueClass }[];
   missedReports: number;
+  /**
+   * Reports opened that day and not submitted by its end. Each adds one unit of
+   * pending work unless the same lead is already counted as a pending lead.
+   */
+  incompleteReports?: { id: string; leadId: string | null }[];
 };
 
 export type AccountabilityMetrics = {
@@ -33,6 +39,8 @@ export type AccountabilityMetrics = {
   pendingPercent: number;
   overdueFollowUps: number;
   missedReports: number;
+  /** Incomplete reports that added to the workload (not already a pending lead). */
+  incompleteReportsCounted: number;
   flagged: boolean;
   reason: string;
 };
@@ -43,7 +51,9 @@ export function computeAccountability(input: AccountabilityInput): Accountabilit
   const eligibleFollowUps = input.dueFollowUps.filter(f => f.handled || !f.classification || f.classification === "validated_overdue");
   const dueCount = eligibleFollowUps.length;
   const overdue = eligibleFollowUps.filter((f) => !f.handled).length;
-  const eligible = assigned + dueCount;
+  const pendingLeadIds = new Set(input.leads.filter((l) => !l.completed).map((l) => l.id));
+  const extraReports = (input.incompleteReports ?? []).filter((r) => !r.leadId || !pendingLeadIds.has(r.leadId)).length;
+  const eligible = assigned + dueCount + extraReports;
   const completed = completedLeads + (dueCount - overdue);
   const pending = eligible - completed;
   const pendingPercent = eligible === 0 ? 0 : Math.round((pending / eligible) * 1000) / 10;
@@ -65,6 +75,7 @@ export function computeAccountability(input: AccountabilityInput): Accountabilit
     pendingPercent,
     overdueFollowUps: overdue,
     missedReports: input.missedReports,
+    incompleteReportsCounted: extraReports,
     flagged,
     reason,
   };

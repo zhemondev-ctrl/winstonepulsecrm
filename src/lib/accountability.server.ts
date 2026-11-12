@@ -74,21 +74,26 @@ export async function measureAgentDay(agentId: string, day: string): Promise<Acc
   const due = all.filter((f) => String(f.scheduled_at) >= start);
   const backlog = all.filter((f) => String(f.scheduled_at) < start && !f.handled);
 
-  const { count: missed, error: missedError } = await db
+  // Reports opened this day (saved call start; older rows fall back to open time)
+  // that were still unfinished when the day ended.
+  const { data: openReports, error: missedError } = await db
     .from("call_reports")
-    .select("id", { count: "exact", head: true })
+    .select("id, lead_id")
     .eq("agent_id", agentId)
-    .is("submitted_at", null)
-    .gte("call_started_at", start)
-    .lte("call_started_at", end);
-
+    .or(`and(call_started_at.gte.${start},call_started_at.lte.${end}),and(call_started_at.is.null,created_at.gte.${start},created_at.lte.${end})`)
+    .or(`submitted_at.is.null,submitted_at.gt.${end}`)
+    .limit(1000);
   if (missedError) throw new Error("Incomplete-report evidence unavailable");
-  const m = computeAccountability({ leads: leadRows, dueFollowUps: due, missedReports: missed ?? 0 });
+  if ((openReports ?? []).length >= 1000) throw new Error("Incomplete-report evidence truncated");
+  const incompleteReports = (openReports ?? []).map((r) => ({ id: r.id, leadId: r.lead_id }));
+  const m = computeAccountability({ leads: leadRows, dueFollowUps: due, missedReports: incompleteReports.length, incompleteReports });
   return {
     ...m,
     evidence: {
       measured_at: new Date().toISOString(),
       backlog_followups: backlog.length,
+      incomplete_report_ids: incompleteReports.map((r) => r.id).slice(0, 50),
+      incomplete_reports_counted: m.incompleteReportsCounted,
       classifier_version: "overdue-evidence-v1",
       excluded_followups: due.filter(f => !f.handled && !f.faultEligible).map(f => ({ id: f.id, classification: f.classification, reason: f.reason })),
       fault_eligible_overdue: due.filter(f => !f.handled && f.faultEligible).length,

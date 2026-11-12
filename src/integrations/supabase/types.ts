@@ -1208,6 +1208,7 @@ export type Database = {
           ai_suggestion: Json | null
           call_ended_at: string
           call_started_at: string | null
+          call_started_source: string | null
           category: string | null
           channel: string
           connected: boolean
@@ -1254,6 +1255,7 @@ export type Database = {
           ai_suggestion?: Json | null
           call_ended_at?: string
           call_started_at?: string | null
+          call_started_source?: string | null
           category?: string | null
           channel?: string
           connected?: boolean
@@ -1300,6 +1302,7 @@ export type Database = {
           ai_suggestion?: Json | null
           call_ended_at?: string
           call_started_at?: string | null
+          call_started_source?: string | null
           category?: string | null
           channel?: string
           connected?: boolean

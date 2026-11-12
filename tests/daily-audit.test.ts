@@ -52,3 +52,70 @@ describe("daily audit access", () => {
     expect(state.reads).toBe(0);
   });
 });
+
+import { closureCounts, compareDays, explainAssignment } from "@/lib/daily-audit";
+import { computeAccountability } from "@/lib/accountability";
+
+describe("incomplete reports in the 10% check", () => {
+  const leads = (n: number, done: number) => Array.from({ length: n }, (_, i) => ({ id: `l${i}`, completed: i < done }));
+  it("a report left unfinished on a completed lead adds one pending unit", () => {
+    // 50 leads all done, 5 unfinished reports on other leads → 5 / 55 = 9.1% (within)
+    const m = computeAccountability({ leads: leads(50, 50), dueFollowUps: [], missedReports: 5, incompleteReports: Array.from({ length: 5 }, (_, i) => ({ id: `r${i}`, leadId: `x${i}` })) });
+    expect(m.eligible).toBe(55);
+    expect(m.pending).toBe(5);
+    expect(m.pendingPercent).toBe(9.1);
+    expect(m.flagged).toBe(false);
+  });
+  it("6 unfinished reports on 50 done leads crosses 10%", () => {
+    const m = computeAccountability({ leads: leads(50, 50), dueFollowUps: [], missedReports: 6, incompleteReports: Array.from({ length: 6 }, (_, i) => ({ id: `r${i}`, leadId: `x${i}` })) });
+    expect(m.pendingPercent).toBe(10.7);
+    expect(m.flagged).toBe(true);
+  });
+  it("an unfinished report on a lead already pending is not counted twice", () => {
+    const m = computeAccountability({ leads: leads(50, 49), dueFollowUps: [], missedReports: 1, incompleteReports: [{ id: "r1", leadId: "l49" }] });
+    expect(m.eligible).toBe(50);
+    expect(m.pending).toBe(1);
+    expect(m.incompleteReportsCounted).toBe(0);
+  });
+});
+
+describe("five counters: closures", () => {
+  it("separates answered closes, conversions and closes on unanswered calls", () => {
+    const c = closureCounts([
+      { lead_id: "a", category: "not_interested", connected: true },
+      { lead_id: "b", category: "not_interested", connected: false },
+      { lead_id: "c", category: "closed_converted", connected: true },
+      { lead_id: "d", category: "no_answer", connected: false },
+      { lead_id: "b", category: "wrong_number", connected: true },
+    ]);
+    expect(c).toEqual({ closedAnswered: 2, converted: 1, closedUnanswered: 0 });
+  });
+});
+
+describe("why an agent received today's leads", () => {
+  const cap = { enabled: true, limit: 50 };
+  it("backlog 232 → 0 allowed", () => {
+    expect(explainAssignment({ businessDay: true, paused: false, reviewLocked: false, backlog: 232, quota: 50, cap })).toEqual({ allowed: 0, reason: "backlog_full" });
+  });
+  it("backlog 39 → 11 allowed", () => {
+    expect(explainAssignment({ businessDay: true, paused: false, reviewLocked: false, backlog: 39, quota: 50, cap })).toEqual({ allowed: 11, reason: "backlog_reduced" });
+  });
+  it("an unapproved HQ review blocks the day", () => {
+    expect(explainAssignment({ businessDay: true, paused: false, reviewLocked: true, backlog: 0, quota: 50, cap })).toEqual({ allowed: 0, reason: "review_lock" });
+  });
+  it("no backlog → full 50", () => {
+    expect(explainAssignment({ businessDay: true, paused: false, reviewLocked: false, backlog: 0, quota: 50, cap })).toEqual({ allowed: 50, reason: "full_quota" });
+  });
+});
+
+describe("compare dates", () => {
+  it("lists each day in the range", () => {
+    expect(compareDays("2026-11-08", "2026-11-10", "2026-11-12")).toEqual(["2026-11-08", "2026-11-09", "2026-11-10"]);
+  });
+  it("caps the window at 7 days", () => {
+    expect(compareDays("2026-11-01", "2026-11-12", "2026-11-12")).toHaveLength(7);
+  });
+  it("refuses a reversed range", () => {
+    expect(compareDays("2026-11-10", "2026-11-08", "2026-11-12")).toEqual([]);
+  });
+});

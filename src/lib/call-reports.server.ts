@@ -223,6 +223,30 @@ export async function pendingReportFor(agentId: string) {
  * report is already open it is returned instead of creating a second one, so a
  * WorkManager retry or an app restart lands on the same durable state.
  */
+/** Accept a call start time only if it is plausible: not in the future, not older than a day. */
+export function plausibleCallStart(raw: string | null | undefined, now = Date.now()): string | null {
+  if (!raw) return null;
+  const t = Date.parse(raw);
+  if (Number.isNaN(t) || t > now + 5 * 60_000 || t < now - 24 * 3_600_000) return null;
+  return new Date(t).toISOString();
+}
+
+/**
+ * Saved call start: the phone's time first, then the linked call record. When
+ * neither is known the database stamps the report-open time and marks it so.
+ */
+async function resolveCallStart(input: { callStartedAt?: string | null; recordingId?: string | null }) {
+  const sent = plausibleCallStart(input.callStartedAt);
+  if (sent) return { call_started_at: sent, call_started_source: "device" as const };
+  if (input.recordingId) {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data } = await supabaseAdmin.from("call_recordings").select("started_at").eq("id", input.recordingId).maybeSingle();
+    const recorded = plausibleCallStart(data?.started_at ?? null);
+    if (recorded) return { call_started_at: recorded, call_started_source: "call_record" as const };
+  }
+  return { call_started_at: null, call_started_source: null };
+}
+
 export async function openCallReport(input: {
   leadId: string;
   agentId: string;
@@ -285,7 +309,7 @@ export async function openCallReport(input: {
         recording_id: input.recordingId ?? null,
         device_id: input.deviceId ?? null,
         phone_number: input.phoneNumber ?? null,
-        call_started_at: input.callStartedAt ?? null,
+        ...(await resolveCallStart(input)),
         duration_seconds: input.durationSeconds ?? 0,
         connected: input.connected ?? true,
         channel: input.channel ?? "call",
@@ -316,7 +340,7 @@ export async function openCallReport(input: {
       recording_id: input.recordingId ?? null,
       device_id: input.deviceId ?? null,
       phone_number: input.phoneNumber ?? null,
-      call_started_at: input.callStartedAt ?? null,
+      ...(await resolveCallStart(input)),
       duration_seconds: input.durationSeconds ?? 0,
       connected: input.connected ?? true,
       channel: input.channel ?? "call",

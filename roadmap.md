@@ -1,6 +1,16 @@
 # Roadmap
 
 ## Open tasks
+23. Daily audit accuracy + priority list (12 Nov, TrendFlux):
+   - [x] Save call start time on every new call report (web + Android); old reports keep empty value, audit falls back to report-open time.
+   - [x] Count reports left unfinished that day in the daily audit 10% check (accountability review), no double count for already-pending leads.
+   - [x] Compare agents' daily audit results across selected dates (up to 7 days, metric picker, CSV).
+   - [x] Daily assignment audit: why each agent received today's count (cap, backlog, review lock, pause).
+   - [x] Five separate counters: assigned today, active backlog, follow-up due/overdue, called leads, genuine closed/converted (+ closed on unanswered call).
+   - [ ] Wrongly closed lead recovery list (closed with no answered call) — read-only; recovery via LeadHub.
+   - [ ] Three-call closure policy — conflicts with owner rule of 31 Oct (Not Interested/Wrong Number allowed on unanswered calls); waiting on owner choice.
+   - [ ] Remember bill-notice dismissal on phone — waiting on how long to remember.
+   - [ ] Evidence-based implementation & testing plan document.
 22. MD report 11 Nov "direct build" (owner Zahid Hasan, 12 Nov):
    - [ ] #1 50+10 policy — not built: conflicts with owner's later decision (12 Nov) that self-collected leads are unlimited. Waiting on owner choice.
    - [x] #2 Same-day 2nd attempt: 1st miss → retry later today; 2nd miss → agent date within 2 working days; 3rd → Unresponsive Pool.
