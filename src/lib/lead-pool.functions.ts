@@ -691,3 +691,38 @@ export const previewDailyDistribution = createServerFn({ method: "POST" })
       measuredAt: new Date().toISOString(),
     };
   });
+
+/** LeadHub, read-only: who actually received leads from the morning run on a saved Dhaka day. */
+export const readHandoutResults = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) => TokenInput.extend({ date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/) }).parse(input))
+  .handler(async ({ data }) => {
+    await deckReader(data.adminToken);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const lp = await import("@/lib/lead-pool.server");
+    const { groupHandout } = await import("@/lib/handout-results");
+    const start = new Date(`${data.date}T00:00:00+06:00`).toISOString();
+    const end = new Date(Date.parse(start) + 864e5).toISOString();
+    const [run, agents] = await Promise.all([
+      supabaseAdmin.from("lead_distribution_runs").select("work_date,status,trigger,per_agent,moved,duplicates_skipped,actor_label,created_at,updated_at").eq("work_date", data.date).maybeSingle(),
+      lp.activeAgents(),
+    ]);
+    if (run.error) throw new Error("Run record unavailable");
+    const assignments: { to_agent_id: string | null; created_at: string; lead_id: string }[] = [];
+    for (let from = 0; ; from += 1000) {
+      const page = await supabaseAdmin.from("lead_assignments").select("to_agent_id,created_at,lead_id,id")
+        .eq("source", "lead_database").gte("created_at", start).lt("created_at", end).order("id").range(from, from + 999);
+      if (page.error) throw new Error("Assignment records unavailable");
+      assignments.push(...(page.data ?? []));
+      if ((page.data ?? []).length < 1000) break;
+      if (from > 20000) throw new Error("Too many assignment records to show");
+    }
+    const unknown = [...new Set(assignments.map((a) => a.to_agent_id).filter((id): id is string => !!id && !agents.some((g) => g.id === id)))];
+    const names: Record<string, string> = {};
+    if (unknown.length) {
+      const p = await supabaseAdmin.from("profiles").select("id,name").in("id", unknown);
+      if (p.error) throw new Error("Agent names unavailable");
+      for (const r of p.data ?? []) names[r.id] = r.name ?? "Unknown agent";
+    }
+    const result = groupHandout(agents.map((a) => ({ id: a.id, name: a.name })), assignments, names);
+    return { date: data.date, run: run.data ?? null, ...result, measuredAt: new Date().toISOString() };
+  });

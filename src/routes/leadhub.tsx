@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { HandoutResults } from "@/components/crm/HandoutResults";
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { Database, FileUp, History, KeyRound, Send, ShieldCheck } from "lucide-react";
@@ -115,7 +116,7 @@ function LeadHubWorkspace() {
       {section === "overview" && <><DailyAllocationSummary surface="leadhub" /><DeckKpis /><LeadStorePanel agents={agentOptions} canAssign={false} defaultAssignment="unassigned" title={t({ bn: "অনির্ধারিত লিড — পর্যালোচনার অপেক্ষায়", en: "Unassigned leads — awaiting review" })} /><AllocationTable onAssign={(id) => { setAssignFor(id); setSection("assign"); }} /></>}
       {section === "import" && <div className="space-y-4"><div className="flex justify-end"><CsvImportDialog /></div><HeadLeadIntakePanel /><ImportHistoryPanel /></div>}
       {section === "database" && <LeadStorePanel agents={agentOptions} canAssign={false} title={t({ bn: "মূল লিড ডেটাবেস", en: "Canonical Lead Database" })} />}
-      {section === "assign" && <div className="space-y-4"><LeadDatabasePanel /><DistributionDryRun /><AssignLeadsWorkspace key={`${assignFor ?? "all"}-${draftKey}`} initialAgentId={assignFor} initialCount={assignCount} /></div>}
+      {section === "assign" && <div className="space-y-4"><LeadDatabasePanel /><DistributionDryRun /><HandoutResults /><AssignLeadsWorkspace key={`${assignFor ?? "all"}-${draftKey}`} initialAgentId={assignFor} initialCount={assignCount} /></div>}
       {section === "history" && <div className="space-y-4"><ImportFunnelPanel /><ImportHistoryPanel /><LeadStorePanel agents={agentOptions} canAssign={false} defaultAssignment="duplicate" title={t({ bn: "ডুপ্লিকেট / আলাদা রাখা রেকর্ড", en: "Duplicate / parked records" })} /><LeadStorePanel agents={agentOptions} canAssign={false} defaultQuality="invalid_phone" title={t({ bn: "ডেটার মান যাচাই", en: "Data quality review" })} /></div>}
     </div>
   );
