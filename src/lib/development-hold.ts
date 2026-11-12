@@ -11,13 +11,13 @@ export const DEVELOPMENT_HOLD_TITLE = {
 } as const;
 
 export const DEVELOPMENT_HOLD_BODY = {
-  bn: "CRM-এ এখন ডেভেলপমেন্ট ও আপডেটের কাজ চলছে। System Architect নিশ্চিত না করা পর্যন্ত কেউ CRM ব্যবহার করতে পারবেন না। নিশ্চিত হলে CRM আবার নিজে থেকেই খুলে যাবে।",
-  en: "Development and update work is in progress on the CRM. Nobody can use the CRM until the System Architect confirms it is ready. It will reopen automatically once confirmed.",
+  bn: "আজ CRM-এ development-এর কাজ চলছে, এজন্য CRM সাময়িকভাবে বন্ধ আছে। এই সমস্যার জন্য আমরা আন্তরিকভাবে দুঃখিত। System Architect নিশ্চিত করলে CRM আবার নিজে থেকেই খুলে যাবে।",
+  en: "Development work is in progress on the CRM today, so the CRM is temporarily closed. We sincerely apologise for the inconvenience. It will reopen automatically once the System Architect confirms it is ready.",
 } as const;
 
 /** Server error text shown to blocked staff and phones. */
 export const DEVELOPMENT_HOLD_MESSAGE =
-  "DEVELOPMENT IN PROGRESS — CRM is closed until the System Architect confirms it is ready. / ডেভেলপমেন্ট কাজ চলছে — System Architect নিশ্চিত না করা পর্যন্ত CRM বন্ধ।";
+  "DEVELOPMENT IN PROGRESS — the CRM is temporarily closed. We sincerely apologise. / development-এর কাজ চলছে, এজন্য CRM সাময়িকভাবে বন্ধ আছে। এই সমস্যার জন্য আন্তরিকভাবে দুঃখিত।";
 
 export type DevelopmentHold = {
   active: boolean;
