@@ -114,3 +114,4 @@
 - [ ] Weekly Recovery review PDF: one-off file + HQ download button.
 - [ ] 50 company + 10 self-generated daily cap with daily performance scoring — blocked: confirm scoring formula with owner.
 - [ ] IT live call records page (HQ PIN): each agent's real calls, connection status, AI summary.
+- [ ] Sunday (Nov 15) distribution dry run review.
