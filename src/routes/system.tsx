@@ -7,6 +7,7 @@ import { SearchConsoleDashboard } from "@/components/crm/SearchConsoleDashboard"
 import { AgentWhatsAppAlertsPanel } from "@/components/crm/AgentWhatsAppAlertsPanel";
 import { DbPerformanceDashboard } from "@/components/crm/DbPerformanceDashboard";
 import { MeetingApprovalsPanel } from "@/components/crm/meeting/MeetingApprovalsPanel";
+import { DailyAgentAudit } from "@/components/crm/hq/DailyAgentAudit";
 import { PAGE_SECTIONS, sectionSearch, useSection } from "@/lib/page-sections";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Coins, Database, KeyRound, Lock, Radio, Receipt } from "lucide-react";
@@ -239,6 +240,7 @@ function SystemBoard() {
       )}
 
       {sec === "approvals" && <MeetingApprovalsPanel surface="it" />}
+      {sec === "audit" && <DailyAgentAudit />}
 
       {sec === "releases" && (
         <div className="space-y-6">

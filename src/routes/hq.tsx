@@ -54,6 +54,7 @@ import { buildAgentStats, buildTimeline, useSnapshot } from "@/lib/crm-data";
 
 const HQ_TABS = PAGE_SECTIONS["/hq"];
 const VipRecoveryQueue = lazy(() => import("@/components/crm/hq/VipRecoveryQueue").then(m => ({ default: m.VipRecoveryQueue })));
+const DailyAgentAudit = lazy(() => import("@/components/crm/hq/DailyAgentAudit").then(m => ({ default: m.DailyAgentAudit })));
 const SiteVisitAlerts = lazy(() => import("@/components/crm/hq/SiteVisitAlerts").then(m => ({ default: m.SiteVisitAlerts })));
 
 export const Route = createFileRoute("/hq")({
@@ -313,6 +314,7 @@ function ControlBoard() {
 
             {tab === "lead360" && <Lead360Workspace />}
             {tab === "approvals" && <MeetingApprovalsPanel surface="hq" />}
+            {tab === "audit" && <Suspense fallback={<SnapshotSkeleton />}><DailyAgentAudit /></Suspense>}
             {tab === "recovery" && <Suspense fallback={<SnapshotSkeleton />}><VipRecoveryQueue onOpenLead={setOpenLeadId} /></Suspense>}
 
             {tab === "tools" && (

@@ -10,6 +10,7 @@ export const PAGE_SECTIONS = {
     { key: "recovery", label: "VIP পুনরুদ্ধার তালিকা", en: "VIP recovery queue" },
     { key: "followups", label: "ফলো-আপ ও রিপোর্ট", en: "Follow-ups & reports" },
     { key: "performance", label: "এজেন্টেদের কাজ", en: "Agent work" },
+    { key: "audit", label: "দৈনিক এজেন্ট নিরীক্ষা", en: "Daily agent audit" },
     { key: "leads", label: "লিড ও ধাপ", en: "Leads & stages" },
     { key: "tools", label: "তদারকি ও সরঞ্জাম", en: "Checks & tools" },
     { key: "approvals", label: "মিটিং অনুমোদন", en: "Meeting approvals" },
@@ -46,6 +47,7 @@ export const PAGE_SECTIONS = {
     { key: "access", label: "অ্যাকোউন্ট ও অ্যাক্সেস", en: "Accounts & access" },
     { key: "releases", label: "অ্যাপ ও সংস্করণ", en: "Apps & versions" },
     { key: "billing", label: "বিল ও তদারকি", en: "Billing & review" },
+    { key: "audit", label: "দৈনিক এজেন্ট নিরীক্ষা", en: "Daily agent audit" },
     { key: "approvals", label: "মিটিং অনুমোদন", en: "Meeting approvals" },
   ],
 } as const;
