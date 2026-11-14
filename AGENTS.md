@@ -69,4 +69,5 @@
 - Phone call history uses `lead-events-once.server.ts` (key `lead_event:<id>:<kind>`); phone-identity SQL uses only indexed lead_phone_keys + lead_phone_legacy_aliases, never per-row extract_bd_phones scans — why: no duplicate history or sync timeouts.
 - `bun run scan:sensitive` is the read-only scan for signing keys/secrets in tracked files and public downloads (ZIPs opened); it prints file + rule only, never values — why: one check, no leaked matches.
 - No GitHub logic in the CRM app (panels, API calls, cron, issues); Git only runs Android CI (`.github/workflows/android-*.yml`, see android/AGENTS.md); APKs reach agents only via IT's PIN-gated `android-apk` links — why: no runtime Git dependency.
+- Agent collection follows src/lib/AGENTS.md's fail-closed receipt path — why: entry is not ownership.
 

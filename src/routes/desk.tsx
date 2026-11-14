@@ -29,6 +29,7 @@ import { MyCallLog } from "@/components/crm/MyCallLog";
 import { MyPhoneSetup } from "@/components/crm/MyPhoneSetup";
 import { PhoneSyncGuide } from "@/components/crm/PhoneSyncGuide";
 import { MyProfileCard } from "@/components/crm/MyProfileCard";
+import { MyCollectedLeads } from "@/components/crm/MyCollectedLeads";
 import { CarryOverLeads } from "@/components/crm/CarryOverLeads";
 import { LeadDayBoard } from "@/components/crm/LeadDayBoard";
 import { ActivitiesView, OutlookView, PipelineBoard, TasksView } from "@/components/crm/desk/WorkViews";
@@ -366,6 +367,8 @@ function DeskPage() {
           <OfficialNewsStrip />
           <DailyAllocationSummary surface="self" />
 
+          <MyCollectedLeads />
+
           <details className="group card-elevated overflow-hidden">
             <summary className="flex cursor-pointer list-none items-center justify-between gap-3 p-4 text-sm font-semibold [&::-webkit-details-marker]:hidden">
               {t({ bn: "প্রোফাইল ও ফোন সেটআপ", en: "Profile & phone setup" })}
@@ -438,6 +441,7 @@ function DeskPage() {
             <TeamSupportPanel />
           </TabsContent>
           <TabsContent value="leads" className="space-y-4">
+            <MyCollectedLeads />
             {queueLocked ? <QueueLockedNote /> : <LeadTable />}
           </TabsContent>
           <TabsContent value="queue" className="space-y-4">

@@ -29,7 +29,7 @@ const ParseInput = z.object({
   fileName: z.string().trim().min(1).max(200),
   mimeType: z.string().trim().min(3).max(120),
   /** Raw file bytes, base64 (no data: prefix). */
-  dataBase64: z.string().min(8),
+  dataBase64: z.string().min(8).max(Math.ceil(MAX_BYTES * 4 / 3) + 4),
 });
 
 const PROMPT = `You extract sales leads from a document supplied by a Bangladeshi sales agent.
@@ -58,8 +58,10 @@ function stripFence(text: string): string {
 export const parseLeadFile = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => ParseInput.parse(input))
   .handler(async ({ data }) => {
-    const { requireLeadHub } = await import("@/lib/access.server");
-    await requireLeadHub(data.adminToken);
+    const { collectionActor, readCollection } = await import("./lead-collection.server");
+    const agent = await collectionActor(true);
+    const setup = await readCollection(agent, { mode: "receipts", query: "", offset: 0 });
+    if (!setup.ready) throw new Error((await import("./lead-collection")).COLLECTION_SETUP_MESSAGE);
 
     const bytes = Uint8Array.from(atob(data.dataBase64), (c) => c.charCodeAt(0));
     if (bytes.byteLength > MAX_BYTES) {
@@ -120,13 +122,12 @@ export const parseLeadFile = createServerFn({ method: "POST" })
     });
 
     if (!response.ok) {
-      const detail = await response.text();
       if (response.status === 429)
         throw new Error("এখন অনেক অনুরোধ চলছে — একটু পরে আবার চেষ্টা করুন");
       if (response.status === 402)
         throw new Error("AI ক্রেডিট শেষ — মালিককে ক্রেডিট যোগ করতে বলুন");
       if (response.status === 403) throw new Error("এই কাজের জন্য AI এখন বন্ধ আছে");
-      throw new Error(`ফাইল পড়া যায়নি (${response.status}): ${detail.slice(0, 200)}`);
+      throw new Error("ফাইল পড়া যায়নি — পরে আবার চেষ্টা করুন");
     }
 
     const payload = (await response.json()) as {
@@ -145,11 +146,11 @@ export const parseLeadFile = createServerFn({ method: "POST" })
       throw new Error("ফাইলে ব্যবহারযোগ্য কোনো লিড পাওয়া যায়নি");
     }
 
-    const { normalizeLeadPhone } = await import("@/lib/lead-intake.server");
+    const { collectionPhone } = await import("./lead-collection");
     const seen = new Set<string>();
     const clean = rows.data
-      .map((row) => ({ ...row, phoneNumber: normalizeLeadPhone(row.phoneNumber) }))
-      .filter((row) => /^8801[3-9]\d{8}$/.test(row.phoneNumber))
+      .map((row) => { const phone = collectionPhone(row.phoneNumber); return { ...row, phoneNumber: phone ? phone.startsWith("880") ? phone : `+${phone}` : "" }; })
+      .filter((row) => row.phoneNumber !== "")
       .filter((row) => (seen.has(row.phoneNumber) ? false : seen.add(row.phoneNumber)));
 
     return { rows: clean, skipped: rows.data.length - clean.length };
@@ -157,45 +158,29 @@ export const parseLeadFile = createServerFn({ method: "POST" })
 
 const ImportInput = z.object({
   adminToken: z.string().nullable().optional(),
-  rows: z.array(ParsedLeadRow).min(1).max(1000),
+  rows: z.array(ParsedLeadRow.extend({ name: z.string().trim().max(120), phoneNumber: z.string().trim().max(40) })).min(1).max(1000),
   /** Fallback when a row has no reference; usually the agent's own name. */
   referenceBy: z.string().trim().max(120).nullable().optional(),
+  requestKey: z.string().uuid().optional(),
 });
 
-/** Saves reviewed rows into the signed-in agent's own lead list. */
+/** Saves reviewed rows unassigned with a verified collector receipt. */
 export const importMyLeads = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => ImportInput.parse(input))
   .handler(async ({ data }) => {
-    const { resolveCaller } = await import("@/lib/access.server");
-    const caller = await resolveCaller(data.adminToken ?? null);
-    if (caller.scope === "none" || !caller.profile) {
-      throw new Error("অনুমোদিত অ্যাকাউন্ট দিয়ে সাইন ইন করুন");
-    }
-
-    const { intakeLead } = await import("@/lib/lead-intake.server");
-    let added = 0;
-    let duplicate = 0;
-    const failed: string[] = [];
-
-    for (const row of data.rows) {
-      try {
-        const result = await intakeLead({
-          name: row.name,
-          phoneNumber: row.phoneNumber,
-          notes: row.notes ?? null,
-          company: row.company ?? null,
-          address: row.address ?? null,
-          serialNo: row.serialNo ?? null,
-          referenceBy: row.referenceBy ?? data.referenceBy ?? caller.profile.name,
-          ownerId: caller.profile.id,
-          ownerName: caller.profile.name,
-        });
-        if (result.duplicate) duplicate += 1;
-        else added += 1;
-      } catch (error) {
-        failed.push(`${row.name}: ${(error as Error).message}`);
-      }
-    }
-
-    return { added, duplicate, failed };
+    const { collectionActor, submitCollection } = await import("./lead-collection.server");
+    const { CollectedLeadInput } = await import("./lead-collection");
+    const agent = await collectionActor(true);
+    const failed: { index: number; reason: string }[] = [];
+    const valid: { index: number; fields: import("./lead-collection").LeadDraftFields }[] = [];
+    data.rows.forEach((row, index) => {
+      const check = CollectedLeadInput.safeParse({ name: row.name, phoneNumber: row.phoneNumber, company: row.company ?? "", notes: row.notes ?? "", address: row.address ?? "", serialNo: row.serialNo ?? "", referenceBy: row.referenceBy ?? data.referenceBy ?? "" });
+      if (check.success) valid.push({ index, fields: check.data });
+      else failed.push({ index, reason: "Check the customer name and phone number" });
+    });
+    if (!valid.length) return { added: 0, duplicate: 0, failed, acceptedIndices: [] as number[], duplicateIndices: [] as number[] };
+    const result = await submitCollection(agent, data.requestKey ?? crypto.randomUUID(), valid.map(row => row.fields));
+    const acceptedIndices = result.results.filter(r => r.status === "accepted").flatMap(r => { const row = valid[r.index]; return row ? [row.index] : []; });
+    const duplicateIndices = result.results.filter(r => r.status === "duplicate").flatMap(r => { const row = valid[r.index]; return row ? [row.index] : []; });
+    return { added: acceptedIndices.length, duplicate: duplicateIndices.length, failed, acceptedIndices, duplicateIndices };
   });

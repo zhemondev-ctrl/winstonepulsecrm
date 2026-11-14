@@ -69,7 +69,7 @@ export const readDailyScores = createServerFn({ method: "POST" })
     const leadIds = [...new Set([calls, reports, visits, followUps, bookings, visitsHeld].flatMap((r) => (r.data ?? []).map((x: { lead_id: string | null }) => x.lead_id).filter(Boolean) as string[]))];
     const selfLeadIds = new Set<string>();
     for (let i = 0; i < leadIds.length; i += 200) {
-      const r = await db.from("leads").select("id").in("id", leadIds.slice(i, i + 200)).eq("assignment_source", "self");
+      const r = await db.from("leads").select("id").in("id", leadIds.slice(i, i + 200)).or("assignment_source.eq.self,source.eq.agent_app");
       if (r.error) throw new Error("Score evidence unavailable. Please refresh.");
       for (const l of r.data ?? []) selfLeadIds.add(l.id);
     }

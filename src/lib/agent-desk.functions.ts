@@ -30,22 +30,15 @@ export const submitMyLead = createServerFn({ method: "POST" })
     requireWrite(caller);
     if (caller.scope === "none") throw new Error("অনুমোদিত অ্যাকাউন্ট দিয়ে সাইন ইন করুন");
 
-    // Same intake path as the phone app — identical number cleanup, duplicate
-    // check, ownership and timeline entry, so web and mobile leads look alike.
-    const { intakeLead } = await import("@/lib/lead-intake.server");
-    const result = await intakeLead({
-      name: data.name,
-      phoneNumber: data.phoneNumber,
-      company: data.company ?? null,
-      notes: data.notes ?? null,
-      address: data.address ?? null,
-      serialNo: data.serialNo ?? null,
-      referenceBy: data.referenceBy ?? null,
-      ownerId: caller.profile?.id ?? null,
-      ownerName: caller.profile?.name ?? null,
-    });
-
-    return { leadId: result.leadId, duplicate: result.duplicate };
+    if (!caller.userId || !caller.profile) throw new Error("Sign in to your own staff account");
+    await (await import("@/lib/agent-briefing.server")).assertBriefingForCaller(caller);
+    const { submitCollection } = await import("./lead-collection.server");
+    const result = await submitCollection(caller.profile.id, crypto.randomUUID(), [{
+      name: data.name, phoneNumber: data.phoneNumber, company: data.company ?? "", notes: data.notes ?? "",
+      address: data.address ?? "", serialNo: data.serialNo ?? "", referenceBy: data.referenceBy ?? "",
+    }]);
+    const first = result.results[0];
+    return { leadId: null, duplicate: first?.status === "duplicate", receiptId: first?.receiptId ?? null, routing: "leadhub_nexus" };
   });
 
 const OpenLeadsInput = z.object({

@@ -14,6 +14,10 @@ const input = {
   reports: [{ id: "1", agent_id: "a", lead_id: "co" }, { id: "2", agent_id: "a", lead_id: "self" }],
 };
 describe("daily score", () => {
+  it("a newly entered lead with no saved work evidence earns zero in every letter", () => {
+    const result = dailyScores(f(true), { ...input, reports: [] })[0];
+    expect(result?.total).toBe(0); expect(result?.parts.map(p => p.count)).toEqual([0,0,0,0,0]);
+  });
   it("earns a share of points below target", () => expect(dailyScores(f(false), input)[0].parts[1].earned).toBe(5));
   it("self-lead work counts only when included", () => expect(dailyScores(f(true), input)[0].parts[1].earned).toBe(10));
   it("caps a letter at its points", () => expect(dailyScores(f(true), { ...input, visits: [1, 2, 3].map((i) => ({ id: String(i), agent_id: "a", lead_id: "co" })) })[0].parts[3].earned).toBe(15));

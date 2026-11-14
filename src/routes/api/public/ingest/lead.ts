@@ -30,8 +30,6 @@ function json(body: unknown, status = 200): Response {
   });
 }
 
-const normalize = (p: string) => p.replace(/[^\d+]/g, "");
-
 export const Route = createFileRoute("/api/public/ingest/lead")({
   server: {
     handlers: {
@@ -65,27 +63,34 @@ export const Route = createFileRoute("/api/public/ingest/lead")({
         const capturerName = capturer?.name ?? null;
 
         // Shared intake with the web desk: identical result either way.
-        const { intakeLead } = await import("@/lib/lead-intake.server");
+        const { submitCollection } = await import("@/lib/lead-collection.server");
         try {
-          const result = await intakeLead({
-            name: body.name,
-            phoneNumber: body.phone_number,
-            company: body.company ?? null,
-            notes: body.notes ?? null,
-            ownerId: null,
-            source: "agent_app",
-            referenceBy: capturerName,
-            actorProfileId: caller.profile.id,
-            actorLabel: capturerName ?? "Android capture",
-          });
+          // The device's stable client reference is scoped to its verified actor.
+          // Older clients are still duplicate-safe through canonical phone identity.
+          let requestKey = crypto.randomUUID();
+          if (body.client_ref) {
+            const digest = new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(`${caller.device.id}:${body.client_ref}`)));
+            digest[6] = ((digest[6] ?? 0) & 15) | 64; digest[8] = ((digest[8] ?? 0) & 63) | 128;
+            const h = Array.from(digest.slice(0,16), byte => byte.toString(16).padStart(2,"0")).join("");
+            requestKey = `${h.slice(0,8)}-${h.slice(8,12)}-${h.slice(12,16)}-${h.slice(16,20)}-${h.slice(20)}`;
+          }
+          const result = await submitCollection(caller.profile.id, requestKey, [{ name: body.name, phoneNumber: body.phone_number,
+            company: body.company ?? "", notes: body.notes ?? "", address: "", serialNo: "", referenceBy: capturerName ?? "" }]);
+          const first = result.results[0];
+          if (!first) return json({ error: "Lead could not be saved" }, 500);
+          // Never expose a duplicate lead's ID or persist the device's guessed
+          // customer fields into that existing lead's version history.
+          if (first.status === "duplicate") return json({ ok: true, duplicate: true, lead_id: null }, 200);
           // Version data guarantee: remember which app version captured this
           // lead (and whether it was written offline), so the data can be
           // handed back if that version is replaced or reinstalled.
-          if (result.leadId) {
+          if (first.receiptId) {
             const { recordVersionData } = await import("@/lib/version-ledger.server");
             await recordVersionData({
               entityType: "lead",
-              entityId: result.leadId,
+              // Key the restoration payload by its collector receipt, never a
+              // mutable customer's ID. It cannot overwrite another lead ledger.
+              entityId: first.receiptId,
               appVersion: body.app_version ?? caller.device.app_version ?? null,
               versionCode: body.version_code ?? null,
               deviceId: caller.device.id,
@@ -98,19 +103,15 @@ export const Route = createFileRoute("/api/public/ingest/lead")({
                 phone_number: body.phone_number,
                 company: body.company ?? null,
                 notes: body.notes ?? null,
-                duplicate: result.duplicate ?? false,
+                duplicate: false,
               },
             });
           }
-          if (result.duplicate) {
-            return json({ ok: true, duplicate: true, lead_id: result.leadId }, 200);
-          }
-          return json({ ok: true, lead_id: result.leadId, assigned_to: null, routing: "leadhub_nexus" }, 201);
+          return json({ ok: true, lead_id: null, receipt_id: first.receiptId, assigned_to: null, routing: "leadhub_nexus" }, 201);
         } catch (err) {
-          const { InvalidLeadPhoneError } = await import("@/lib/lead-intake.server");
-          if (err instanceof InvalidLeadPhoneError)
-            return json({ error: err.message, code: "invalid_phone" }, 400);
-          console.error("lead intake failed", err);
+          if (err instanceof z.ZodError)
+            return json({ error: "Invalid customer name or phone number", code: "invalid_phone" }, 400);
+          if (err instanceof Error && /Daily personal lead limit/.test(err.message)) return json({ error: "Daily personal lead limit reached", code: "self_lead_daily_cap" }, 409);
           return json({ error: "Lead could not be saved" }, 500);
         }
       },

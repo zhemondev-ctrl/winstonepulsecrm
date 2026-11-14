@@ -7,6 +7,7 @@ import {
   type AccountabilityMetrics,
 } from "@/lib/accountability";
 import { isBusinessDay, nextBusinessDay } from "@/lib/business-day";
+import { isCollectedOrigin } from "@/lib/lead-collection";
 
 async function admin() {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -20,14 +21,14 @@ export async function measureAgentDay(agentId: string, day: string): Promise<Acc
 
   const { data: leads, error: leadsError } = await db
     .from("leads")
-    .select("id, name, status, work_state, updated_at, assignment_source")
+    .select("id, name, status, work_state, updated_at, assignment_source, source")
     .eq("assigned_to", agentId)
     .eq("work_date", day)
     .limit(1000);
   if (leadsError) throw new Error("Accountability lead evidence unavailable");
   if ((leads ?? []).length >= 1000) throw new Error("Accountability lead evidence truncated");
   // Self-added leads are extra credit, not the mandatory company task.
-  const usable = (leads ?? []).filter((l) => l.assignment_source !== "duplicate_skipped" && l.assignment_source !== "self");
+  const usable = (leads ?? []).filter((l) => l.assignment_source !== "duplicate_skipped" && !isCollectedOrigin(l));
   const ids = usable.map((l) => l.id);
 
   const reported = new Set<string>();
