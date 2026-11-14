@@ -24,7 +24,9 @@ export function DailyScoresPanel() {
           <Trophy className="mt-0.5 size-5 shrink-0 text-primary" />
           <div className="min-w-0">
             <h2 className="text-lg font-semibold">{t({ en: "Daily scores", bn: "দৈনিক স্কোর" })}</h2>
-            <p className="text-sm text-muted-foreground">{t({ en: "Score = 2C + 2R + A + 4V + 1.5F (no upper limit). Company and self-collected work both count. Recordings never count.", bn: "স্কোর = 2C + 2R + A + 4V + 1.5F (কোনো সর্বোচ্চ সীমা নেই)। কোম্পানি ও নিজের লিড দুটোই গণনা হয়। রেকর্ডিং কখনো গণনা হয় না।" })}</p>
+            <p className="text-sm text-muted-foreground">{d?.version === "points100"
+              ? t({ en: "Before 15 Nov 2026 this day uses the earlier 100-point score formula. Recordings never count.", bn: "১৫ নভেম্বর ২০২৬-এর আগের এই দিনে আগের ১০০-পয়েন্ট স্কোর সূত্র প্রযোজ্য। রেকর্ডিং কখনো গণনা হয় না।" })
+              : t({ en: "Score = 2C + 2R + A + 4V + 1.5F (no upper limit), in effect from 15 Nov 2026. Company and self-collected work both count; entering a lead earns nothing. Recordings never count.", bn: "স্কোর = 2C + 2R + A + 4V + 1.5F (কোনো সর্বোচ্চ সীমা নেই), ১৫ নভেম্বর ২০২৬ থেকে কার্যকর। কোম্পানি ও নিজের লিড দুটোই গণনা হয়; লিড যোগ করলে কোনো পয়েন্ট নেই। রেকর্ডিং কখনো গণনা হয় না।" })}</p>
           </div>
         </div>
         <input type="date" aria-label={t({ en: "Day", bn: "দিন" })} max={today} value={day} onChange={(e) => e.target.value && setDay(e.target.value)} className="h-10 rounded-md border border-input bg-background px-3 text-sm" />

@@ -5474,6 +5474,33 @@ export type Database = {
         }
         Relationships: []
       }
+      score_formula_versions: {
+        Row: {
+          approved_by: string
+          created_at: string
+          definition: Json
+          effective_from: string
+          formula: string
+          id: string
+        }
+        Insert: {
+          approved_by: string
+          created_at?: string
+          definition?: Json
+          effective_from: string
+          formula: string
+          id?: string
+        }
+        Update: {
+          approved_by?: string
+          created_at?: string
+          definition?: Json
+          effective_from?: string
+          formula?: string
+          id?: string
+        }
+        Relationships: []
+      }
       security_findings: {
         Row: {
           created_at: string
@@ -5547,6 +5574,52 @@ export type Database = {
           status?: string
         }
         Relationships: []
+      }
+      self_lead_attribution: {
+        Row: {
+          collector_id: string
+          created_at: string
+          evidence: string
+          lead_id: string
+          receipt_id: string | null
+        }
+        Insert: {
+          collector_id: string
+          created_at?: string
+          evidence: string
+          lead_id: string
+          receipt_id?: string | null
+        }
+        Update: {
+          collector_id?: string
+          created_at?: string
+          evidence?: string
+          lead_id?: string
+          receipt_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "self_lead_attribution_collector_id_fkey"
+            columns: ["collector_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "self_lead_attribution_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: true
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "self_lead_attribution_receipt_id_fkey"
+            columns: ["receipt_id"]
+            isOneToOne: false
+            referencedRelation: "agent_lead_receipts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       service_bill_review_attempts: {
         Row: {
@@ -7996,6 +8069,16 @@ export type Database = {
         }
         Returns: Json
       }
+      reroute_self_lead: {
+        Args: {
+          _actor_label: string
+          _lead: string
+          _reason: string
+          _to: string
+        }
+        Returns: undefined
+      }
+      route_collected_leads: { Args: { _actor_label: string }; Returns: number }
       save_agent_lead_draft: {
         Args: { _agent: string; _fields: Json; _id: string; _revision: number }
         Returns: Json

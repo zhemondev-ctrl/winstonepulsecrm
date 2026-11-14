@@ -167,6 +167,19 @@ export async function assignedTodayByAgent(workDate: string): Promise<Map<string
  * Older pending company leads per desk: pending leads it owns, minus the ones
  * it received today. Self-collected and parked-duplicate rows never count.
  */
+/** Self-collected leads never join the company round-robin; they route to their collector. */
+export async function withoutCollectedLeads<T extends { id: string }>(rows: T[]): Promise<T[]> {
+  if (rows.length === 0) return rows;
+  const supabaseAdmin = await admin();
+  const attributed = new Set<string>();
+  for (let i = 0; i < rows.length; i += 300) {
+    const { data, error } = await supabaseAdmin.from("self_lead_attribution").select("lead_id").in("lead_id", rows.slice(i, i + 300).map((r) => r.id));
+    if (error) throw new Error("Own-lead attribution unavailable");
+    for (const r of data ?? []) attributed.add(r.lead_id);
+  }
+  return rows.filter((r) => !attributed.has(r.id));
+}
+
 export async function pendingBacklogByAgent(agentIds: string[], workDate: string): Promise<Map<string, number>> {
   const supabaseAdmin = await admin();
   const { readAllocationReceipts } = await import("@/lib/allocation-ledger.server");
@@ -178,7 +191,7 @@ export async function pendingBacklogByAgent(agentIds: string[], workDate: string
       .select("id")
       .eq("assigned_to", id)
       .eq("status", "pending")
-      .or("assignment_source.is.null,assignment_source.not.in.(self,duplicate_skipped)")
+      .or("assignment_source.is.null,assignment_source.not.in.(self,self_collected,duplicate_skipped)")
       .limit(5000);
     if (error) throw new Error("Backlog evidence unavailable");
     if ((data ?? []).length >= 5000) throw new Error("Backlog evidence truncated");
@@ -205,6 +218,10 @@ export async function distributeDailyLeads(options: {
   assertDistributionDay();
   const supabaseAdmin = await admin();
   const today = dhakaToday();
+  // Own leads first: every self-collected lead goes back to its collector and
+  // never uses a company slot (owner 2026-11-14). Failure stops the run.
+  const routed = await supabaseAdmin.rpc("route_collected_leads", { _actor_label: options.actorLabel ?? options.trigger });
+  if (routed.error) throw new Error("Own-lead routing failed");
   const skip = new Set(
     (options.excludeEmployeeIds ?? []).map((id) => id.trim().toUpperCase()).filter(Boolean),
   );
@@ -292,6 +309,7 @@ export async function distributeDailyLeads(options: {
   }
   let pool = await readPool(cursor);
   if (cursor && pool.length < need) pool = await readPool(null);
+  pool = await withoutCollectedLeads(pool);
 
   const taken = await assignedPhoneKeys();
   const { eligibleLeadIds } = await import("@/lib/lead-eligibility.server");
@@ -585,6 +603,7 @@ export async function grantExtraLeads(input: {
     .or(USABLE)
     .order("created_at", { ascending: true })
     .limit(Math.min(input.quantity * 4 + 100, 4000));
+  const extraPool = await withoutCollectedLeads(pool ?? []);
 
   const taken = await assignedPhoneKeys();
   const { eligibleLeadIds } = await import("@/lib/lead-eligibility.server");
@@ -592,7 +611,7 @@ export async function grantExtraLeads(input: {
   const seen = new Set<string>();
   const picked: string[] = [];
 
-  for (const lead of pool ?? []) {
+  for (const lead of extraPool) {
     if (picked.length >= input.quantity) break;
     const keys = phoneKeys(lead.phone_number);
     if (keys.length === 0 || !eligible.has(lead.id)) continue;

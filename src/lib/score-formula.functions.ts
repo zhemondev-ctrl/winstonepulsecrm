@@ -69,7 +69,26 @@ export const readDailyScores = createServerFn({ method: "POST" })
       if (r.error) throw new Error("Score evidence unavailable. Please refresh.");
       for (const l of r.data ?? []) finalLeadIds.add(l.id);
     }
+    // Dated versions: a day uses the latest version effective on or before it;
+    // days before any version keep the saved 100-point formula (history unchanged).
+    const versions = await db.from("score_formula_versions").select("effective_from,formula").lte("effective_from", data.day).order("effective_from", { ascending: false }).limit(1);
+    if (versions.error) throw new Error("Score settings unavailable. Please refresh.");
+    const version = versions.data?.[0] ?? null;
+    const scoreInput = { agents: agents.data ?? [], selfLeadIds: new Set<string>(), calls: calls.data ?? [], reports: reports.data ?? [], visits: visits.data ?? [], followUps: followUps.data ?? [], bookings: bookings.data ?? [], visitsHeld: visitsHeld.data ?? [] };
+    if (version?.formula !== "policy_v2") {
+      const cfg = await db.from("app_config").select("data").eq("id", CONFIG_ID).maybeSingle();
+      if (cfg.error) throw new Error("Score settings unavailable. Please refresh.");
+      const saved = scoreFormulaSchema.safeParse((cfg.data?.data as { current?: unknown } | null)?.current);
+      if (!saved.success) return { formula: null, rows: [], day: data.day, version: "points100" as const, effectiveFrom: null, generatedAt: new Date().toISOString() };
+      for (let i = 0; i < leadIds.length; i += 200) {
+        const r = await db.from("leads").select("id").in("id", leadIds.slice(i, i + 200)).in("assignment_source", ["self", "self_collected"]);
+        if (r.error) throw new Error("Score evidence unavailable. Please refresh.");
+        for (const l of r.data ?? []) scoreInput.selfLeadIds.add(l.id);
+      }
+      const { dailyScores } = await import("./daily-score");
+      return { formula: saved.data, rows: dailyScores(saved.data, scoreInput), day: data.day, version: "points100" as const, effectiveFrom: null, generatedAt: new Date().toISOString() };
+    }
     const formula = { letters: Object.fromEntries((["C", "R", "A", "V", "F"] as const).map((l) => [l, { label: POLICY_LABELS[l], points: POLICY_WEIGHTS[l] }])) as Record<"C" | "R" | "A" | "V" | "F", { label: string; points: number }> };
-    const rows = policyScores({ agents: agents.data ?? [], selfLeadIds: new Set<string>(), calls: calls.data ?? [], reports: reports.data ?? [], visits: visits.data ?? [], followUps: followUps.data ?? [], bookings: bookings.data ?? [], visitsHeld: visitsHeld.data ?? [] }, finalLeadIds);
-    return { formula, rows, day: data.day, generatedAt: new Date().toISOString() };
+    const rows = policyScores(scoreInput, finalLeadIds);
+    return { formula, rows, day: data.day, version: "policy_v2" as const, effectiveFrom: version.effective_from, generatedAt: new Date().toISOString() };
   });
