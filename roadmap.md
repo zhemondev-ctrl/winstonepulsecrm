@@ -1,6 +1,7 @@
 # Roadmap
 
 ## Open tasks
+- [x] Prepare a plan for agents to enter leads from their profile and find their own submissions again; preserve canonical intake, LeadHub-only assignment, privacy and existing daily rules. Plan only; no customer writes or publication.
 27. [x] Dry-run preview (LeadHub › Assign, read-only; skips paused days) of the morning distribution: per-agent allocation with Net-50, review lock, pause and pool flags; no writes.
 26. [x] Operations manual (v1.7.0, PDF rebuilt, manual:check in sync): document same-day missed-call cadence, Net-50 limit, Saturday 14 Nov pause and demerit rules; rebuild PDF and pass manual:check.
 24. [x] Account clean-up: owner chose never-worked company leads only, effective Saturday. One-time database job set for Sat 14 Nov 00:05 Dhaka (717 leads today); worked/follow-up/closed/self leads stay; recall rows block the same agent. [ ] Verify the run on Saturday. [ ] Old published app still runs the 09:10 hand-out without the pause/Net-50 — needs publishing or a Saturday hold (owner choice).
