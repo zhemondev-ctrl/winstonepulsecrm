@@ -21,7 +21,12 @@ export const dhakaDate = (d = new Date()) =>
 async function readAll(table: BackupTable) {
   const rows: Record<string, unknown>[] = [];
   for (let from = 0; ; from += 1000) {
-    const { data, error } = await supabaseAdmin.from(table).select("*").order("id").range(from, from + 999);
+    let query = supabaseAdmin.from(table).select("*");
+    // The assignment ledger has a composite primary key, not an id column.
+    for (const column of table === "lead_daily_assignment_ledger" ? ["agent_id", "work_date", "lead_id"] : ["id"]) {
+      query = query.order(column);
+    }
+    const { data, error } = await query.range(from, from + 999);
     if (error) throw new Error(`${table}: ${error.message}`);
     rows.push(...((data ?? []) as Record<string, unknown>[]));
     if (!data || data.length < 1000) break;
@@ -42,9 +47,11 @@ const path = (date: string) => `${date}/crm-backup.json.gz`;
 
 /** Idempotent per Dhaka date: an existing completed backup is kept. */
 export async function runBackup(date = dhakaDate()) {
-  const { data: existing } = await supabaseAdmin.from("crm_backup_runs").select("status").eq("backup_date", date).maybeSingle();
+  const { data: existing, error: existingError } = await supabaseAdmin.from("crm_backup_runs").select("status").eq("backup_date", date).maybeSingle();
+  if (existingError) throw new Error("Backup history unavailable");
   if (existing?.status === "done") return { date, skipped: true };
-  await supabaseAdmin.from("crm_backup_runs").upsert({ backup_date: date, status: "running", error: null }, { onConflict: "backup_date" });
+  const started = await supabaseAdmin.from("crm_backup_runs").upsert({ backup_date: date, status: "running", error: null }, { onConflict: "backup_date" });
+  if (started.error) throw new Error("Backup run could not be recorded");
   try {
     const payload: Record<string, unknown[]> = {};
     const counts: Record<string, number> = {};
@@ -52,12 +59,20 @@ export async function runBackup(date = dhakaDate()) {
       payload[t] = await readAll(t);
       counts[t] = payload[t].length;
     }
-    const bytes = await gzip(JSON.stringify({ date, created_at: new Date().toISOString(), tables: payload }));
+    const serialized = JSON.stringify({ date, created_at: new Date().toISOString(), tables: payload });
+    const bytes = await gzip(serialized);
     const hash = Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", bytes)))
       .map((b) => b.toString(16).padStart(2, "0")).join("");
     const up = await supabaseAdmin.storage.from(BUCKET).upload(path(date), bytes, { contentType: "application/gzip", upsert: true });
     if (up.error) throw new Error(up.error.message);
-    await supabaseAdmin.from("crm_backup_runs").update({ status: "done", counts, size_bytes: bytes.byteLength, checksum: hash }).eq("backup_date", date);
+    const saved = await supabaseAdmin.storage.from(BUCKET).download(path(date));
+    if (saved.error || !saved.data) throw new Error("Stored backup could not be verified");
+    const savedBytes = await saved.data.arrayBuffer();
+    const savedHash = Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", savedBytes)))
+      .map((b) => b.toString(16).padStart(2, "0")).join("");
+    if (savedHash !== hash || await gunzip(savedBytes) !== serialized) throw new Error("Stored backup content mismatch");
+    const completed = await supabaseAdmin.from("crm_backup_runs").update({ status: "done", counts, size_bytes: bytes.byteLength, checksum: hash }).eq("backup_date", date);
+    if (completed.error) throw new Error("Verified backup completion could not be recorded");
     await prune();
     return { date, skipped: false, counts };
   } catch (e) {
