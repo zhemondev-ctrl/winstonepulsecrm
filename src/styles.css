@@ -265,6 +265,9 @@
    oklch(from …) preserves the exact requested sRGB colours. Wrappers inherit
    rather than redefining tokens, including when an old dark preference exists. */
 :root {
+  --google-button-background: #FFFFFF;
+  --google-button-border: #747775;
+  --google-button-foreground: #1F1F1F;
   --radius: 0.5rem;
   --background: oklch(from #F5F2EA l c h);
   --foreground: oklch(from #171717 l c h);
@@ -557,6 +560,21 @@
 }
 
 /* Retained wrapper names are compatibility hooks, not separate themes. */
+.google-sign-in {
+  background: var(--google-button-background);
+  border: 1px solid var(--google-button-border);
+  color: var(--google-button-foreground);
+  gap: 10px;
+  padding-inline: 12px;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 500;
+}
+.google-sign-in:hover {
+  background: var(--google-button-background);
+  color: var(--google-button-foreground);
+}
+
 :where(.theme-light, .hq-luxe, .theme-exec) {
   background-color: var(--background);
   color: var(--foreground);

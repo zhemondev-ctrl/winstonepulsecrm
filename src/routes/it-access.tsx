@@ -12,6 +12,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { getMyAccount, signInWithIdentifier } from "@/lib/accounts.functions";
 import { visibleItStep } from "@/lib/access-navigation";
 import { takeArchitectReturnFocus } from "@/lib/access-focus";
+import { lovable } from "@/integrations/lovable/index";
+import { verifyItOperator } from "@/lib/it-operator-login";
 
 export const Route = createFileRoute("/it-access")({
   ssr: false,
@@ -37,6 +39,8 @@ function ItAccess() {
   const [password, setPassword] = useState("");
   const [changePassword, setChangePassword] = useState(false);
   const [operatorVerified, setOperatorVerified] = useState(false);
+  const [googlePending, setGooglePending] = useState(false);
+  const [googleError, setGoogleError] = useState<string | null>(null);
   const unlocking = useRef(false);
   const pinTrigger = useRef<HTMLAnchorElement>(null);
   const emailInput = useRef<HTMLInputElement>(null);
@@ -63,15 +67,42 @@ function ItAccess() {
       const { error } = await supabase.auth.setSession(tokens);
       if (error) throw new Error(error.message);
       // Never pass the PIN token here: it would mask the actual account permissions.
-      const account = await getMyAccount({ data: { adminToken: null } });
-      if (account.scope !== "authority" || account.readOnly || account.profile?.role !== "admin") {
-        await supabase.auth.signOut();
-        throw new Error("এই অ্যাকাউন্টের IT Operator অনুমতি নেই।");
-      }
+      await verifyItOperator(() => getMyAccount({ data: { adminToken: null } }), () => supabase.auth.signOut());
     },
     onSuccess: () => { toast.success("IT Operator signed in"); if (changePassword) { setOperatorVerified(true); void navigate({ to: "/it-access", search: { step: "password" } }); } else void navigate({ to: "/system" }); },
     onError: (error: Error) => { setPassword(""); toast.error(error.message); },
   });
+  const finishGoogleLogin = async () => {
+    await verifyItOperator(() => getMyAccount({ data: { adminToken: null } }), () => supabase.auth.signOut());
+    toast.success("IT Operator signed in");
+    await navigate({ to: "/system" });
+  };
+  useEffect(() => {
+    if (!pinVerified || step !== "operator" || sessionStorage.getItem("it-google-return") !== "pending") return;
+    sessionStorage.removeItem("it-google-return");
+    setGooglePending(true);
+    void finishGoogleLogin().catch((error: unknown) => {
+      setGoogleError(error instanceof Error ? error.message : "Google লগইন সম্পন্ন হয়নি।");
+    }).finally(() => setGooglePending(false));
+  }, [pinVerified, step]);
+  const continueWithGoogle = async () => {
+    setGooglePending(true);
+    setGoogleError(null);
+    try {
+      sessionStorage.setItem("it-google-return", "pending");
+      const result = await lovable.auth.signInWithOAuth("google", {
+        redirect_uri: `${window.location.origin}/it-access?step=pin`,
+        extraParams: { prompt: "select_account", ...(email.trim() ? { login_hint: email.trim() } : {}) },
+      });
+      if (result.error) throw result.error;
+      if (result.redirected) return;
+      sessionStorage.removeItem("it-google-return");
+      await finishGoogleLogin();
+    } catch (error) {
+      sessionStorage.removeItem("it-google-return");
+      setGoogleError(error instanceof Error ? error.message : "Google লগইন সম্পন্ন হয়নি।");
+    } finally { setGooglePending(false); }
+  };
   return <main className="mx-auto min-h-dvh max-w-md space-y-6 px-4 py-8 sm:py-12">
     {step === "operator" || step === "password" ? <Button variant="ghost" size="sm" disabled={login.isPending} onClick={() => returnTo(step === "password" ? "operator" : "entry")}><ArrowLeft className="size-4" />আগের ধাপে ফিরে যান</Button> : <Button asChild variant="ghost" size="sm"><Link to="/"><ArrowLeft className="size-4" />হোমে ফিরে যান</Link></Button>}
     <header className="flex items-center gap-3 border-b border-border pb-4">
@@ -84,10 +115,15 @@ function ItAccess() {
     </section>
     {step === "password" ? <ItOwnPasswordForm onBack={() => returnTo("operator")} /> : step === "operator" && <section className="space-y-4 border-t border-border pt-5">
       <h2 className="text-base font-semibold">২. IT Operator লগইন</h2>
+      <Button type="button" variant="outline" className="google-sign-in w-full" disabled={googlePending || login.isPending} onClick={() => void continueWithGoogle()}>
+        {googlePending ? <Loader2 className="size-[18px] animate-spin" /> : <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="size-[18px] shrink-0"><path fill="#4285F4" d="M23.49 12.27c0-.79-.07-1.54-.19-2.27H12v4.51h6.47c-.29 1.48-1.14 2.73-2.4 3.58v3h3.86c2.26-2.09 3.56-5.17 3.56-8.82z"/><path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.86-3c-1.08.72-2.45 1.16-4.07 1.16-3.13 0-5.78-2.11-6.73-4.96H1.29v3.09C3.26 21.3 7.31 24 12 24z"/><path fill="#FBBC05" d="M5.27 14.29c-.25-.72-.38-1.49-.38-2.29s.14-1.57.38-2.29V6.62H1.29C.47 8.24 0 10.06 0 12s.47 3.76 1.29 5.38l3.98-3.09z"/><path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.26 2.7 1.29 6.62l3.98 3.09c.95-2.85 3.6-4.96 6.73-4.96z"/></svg>}
+        Google দিয়ে চালিয়ে যান
+      </Button>
+      {googleError && <p role="alert" className="text-sm text-destructive">{googleError}</p>}
       <form className="space-y-4" onSubmit={(event) => { event.preventDefault(); if (!login.isPending) login.mutate(); }}>
         <div className="space-y-2"><Label htmlFor="it-email">Email</Label><Input ref={emailInput} id="it-email" type="email" autoComplete="username" autoCapitalize="none" required value={email} onChange={(event) => setEmail(event.target.value)} /></div>
         <div className="space-y-2"><Label htmlFor="it-password">Password</Label><Input id="it-password" type="password" autoComplete="current-password" required value={password} onChange={(event) => setPassword(event.target.value)} /></div>
-        <Button type="submit" className="w-full" disabled={login.isPending || !email.trim() || !password}>{login.isPending ? <Loader2 className="size-4 animate-spin" /> : <LogIn className="size-4" />}IT Operator হিসেবে লগইন</Button>
+        <Button type="submit" className="w-full" disabled={googlePending || login.isPending || !email.trim() || !password}>{login.isPending ? <Loader2 className="size-4 animate-spin" /> : <LogIn className="size-4" />}IT Operator হিসেবে লগইন</Button>
         <label className="flex items-center gap-2 text-sm"><input type="checkbox" className="size-4 accent-primary" checked={changePassword} disabled={login.isPending} onChange={(event) => setChangePassword(event.target.checked)} />লগইনের পরে নিজের CRM পাসওয়ার্ড পরিবর্তন</label>
         {login.error && <p role="alert" className="text-sm text-destructive">{login.error.message}</p>}
       </form>
