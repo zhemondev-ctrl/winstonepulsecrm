@@ -132,3 +132,7 @@
 - [x] IT call records page (HQ PIN)
 - [x] Dry-run comparison dashboard
 - [x] Hand-out history by date and agent (LeadHub)
+
+## 14 Nov requests
+- [ ] Forecast vs received date-range report (accuracy trends) in LeadHub
+- [ ] Dual-lead policy request (6 modules) — blocked: conflicts with approved cadence/score/lock rules; needs MD confirmation

@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Check, FileText, Loader2, Plus, Save, UserPlus } from "lucide-react";
-import { useId, useState } from "react";
+import { useId, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -53,7 +53,8 @@ export function NewLeadDialog({ draft, disabled = false, onSaved, onViewReceipt 
         return;
       }
       toast.success(t({ bn: "জমা হয়েছে — LeadHub বরাদ্দের অপেক্ষায়", en: "Submitted — awaiting LeadHub assignment" }));
-      setReceipt(row.receiptId); setFields(emptyLeadDraft()); setDraftRef(null); setRequestKey(crypto.randomUUID()); setNotice(null);
+      window.__lovableEvents?.track?.("project.lead_submitted", { from_draft: Boolean(draftRef), another });
+      setReceipt(row.receiptId); setFields(emptyLeadDraft()); setDraftRef(null); setRequestKey(crypto.randomUUID()); setNotice(null); startedRef.current = false;
       refresh();
       if (another) setReceipt(null);
     },
@@ -61,13 +62,14 @@ export function NewLeadDialog({ draft, disabled = false, onSaved, onViewReceipt 
   });
   const draftMutation = useMutation({
     mutationFn: (reference: { id: string; revision: number }) => saveDraft({ data: { ...reference, fields } }),
-    onSuccess: saved => { setDraftRef({ id: saved.id, revision: saved.revision }); setNotice(null); toast.success(t({ bn: "খসড়া সংরক্ষিত", en: "Draft saved" })); refresh(); },
+    onSuccess: saved => { window.__lovableEvents?.track?.("project.lead_draft_saved", { revision: saved.revision }); setDraftRef({ id: saved.id, revision: saved.revision }); setNotice(null); toast.success(t({ bn: "খসড়া সংরক্ষিত", en: "Draft saved" })); refresh(); },
     onError: (error: Error) => setNotice(error.message),
   });
   const busy = mutation.isPending || draftMutation.isPending;
   const available = ready.data?.ready === true;
   const valid = fields.name.trim().length > 0 && collectionPhone(fields.phoneNumber) !== null;
-  const update = (key: keyof LeadDraftFields, value: string) => { setFields(prev => ({ ...prev, [key]: value })); setRequestKey(crypto.randomUUID()); setNotice(null); };
+  const startedRef = useRef(false);
+  const update = (key: keyof LeadDraftFields, value: string) => { if (!startedRef.current) { startedRef.current = true; window.__lovableEvents?.track?.("project.lead_form_started", { resumed_draft: Boolean(draftRef) }); } setFields(prev => ({ ...prev, [key]: value })); setRequestKey(crypto.randomUUID()); setNotice(null); };
   const textInput = (key: keyof LeadDraftFields, label: string, type = "text") => <div className="space-y-1.5"><Label htmlFor={`${id}-${key}`}>{label}</Label><Input id={`${id}-${key}`} type={type} inputMode={key === "phoneNumber" ? "tel" : "text"} value={fields[key]} onChange={e => update(key, e.target.value)} disabled={busy} maxLength={key === "address" ? 300 : key === "phoneNumber" || key === "serialNo" ? 40 : 120} /></div>;
   return (
     <Dialog open={open} onOpenChange={next => { if (!busy) { setOpen(next); if (next && !requestKey) setRequestKey(crypto.randomUUID()); } }}>

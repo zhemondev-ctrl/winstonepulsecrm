@@ -311,6 +311,70 @@
           }
         }
       }
+    },
+    "project.lead_form_started": {
+      "event_schema_version": 1,
+      "description": "Agent typed the first character into a fresh personal lead form.",
+      "privacy": {
+        "contains_pii": false,
+        "purpose": "product_analytics"
+      },
+      "properties_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "resumed_draft"
+        ],
+        "properties": {
+          "resumed_draft": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    "project.lead_draft_saved": {
+      "event_schema_version": 1,
+      "description": "A personal lead draft was saved successfully.",
+      "privacy": {
+        "contains_pii": false,
+        "purpose": "product_analytics"
+      },
+      "properties_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "revision"
+        ],
+        "properties": {
+          "revision": {
+            "type": "number"
+          }
+        }
+      }
+    },
+    "project.lead_submitted": {
+      "event_schema_version": 1,
+      "description": "Server accepted a personal lead submission with a receipt.",
+      "privacy": {
+        "contains_pii": false,
+        "purpose": "product_analytics"
+      },
+      "properties_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "from_draft",
+          "another"
+        ],
+        "properties": {
+          "from_draft": {
+            "type": "boolean"
+          },
+          "another": {
+            "type": "boolean"
+          }
+        }
+      }
     }
   }
 }
