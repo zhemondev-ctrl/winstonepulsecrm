@@ -22,6 +22,8 @@ describe("actual collection entry interactions with isolated writes", () => {
   });
   it("a duplicate does not clear the form or claim a new receipt", async () => {
     fx.submit.mockResolvedValue({ results: [{ index: 0,status: "duplicate",receiptId: null }],used: 0,limit: 10,today: "2026-11-14" }); await open(); enter(); fireEvent.click(screen.getByRole("button",{ name: "Submit",exact: true })); await screen.findByRole("alert"); expect((screen.getByLabelText("Customer name") as HTMLInputElement).value).toBe("Synthetic customer");
+    expect(screen.queryByRole("button", { name: "Add another" })).toBeNull();
+    expect(fx.submit).toHaveBeenCalledTimes(1);
   });
   it("shows a saved receipt only after accepted submission", async () => {
     fx.submit.mockResolvedValue({ results: [{ index: 0,status: "accepted",receiptId: "10000000-0000-4000-8000-000000000003" }],used: 1,limit: 10,today: "2026-11-14" }); await open(); enter(); fireEvent.click(screen.getByRole("button",{ name: "Submit",exact: true })); await screen.findByRole("button",{ name: "Add another" }); expect(screen.queryByLabelText("Customer name")).toBeNull();

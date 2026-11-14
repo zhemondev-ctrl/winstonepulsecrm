@@ -21,6 +21,15 @@ export function DailyAllocationSummary({ surface }: { surface: "hq" | "leadhub" 
     retry: false,
   });
   const d = query.data;
+  const operationLabels = {
+    confirmed: t({ bn: "স্বয়ংক্রিয় বণ্টন সম্পন্ন — সংরক্ষিত রসিদ আছে", en: "Automatic assignment completed — saved receipt confirmed" }),
+    friday: t({ bn: "শুক্রবার — নির্ধারিত বণ্টন নেই", en: "Friday — no scheduled assignment" }),
+    paused: t({ bn: "আজ স্বয়ংক্রিয় বণ্টন বিরতিতে", en: "Automatic assignment is paused today" }),
+    waiting: t({ bn: "সকাল ৯:১০-এর অপেক্ষায়", en: "Waiting for 9:10 AM" }),
+    manual_only: t({ bn: "শুধু ম্যানুয়াল বণ্টনের রসিদ — স্বয়ংক্রিয় রান নিশ্চিত নয়", en: "Manual assignment receipt only — automatic run not confirmed" }),
+    unconfirmed: t({ bn: "রান রেকর্ড আছে, সম্পন্ন হওয়ার প্রমাণ নিশ্চিত নয়", en: "Run record exists; completion evidence is not confirmed" }),
+    missing: t({ bn: "সকাল ৯:১০ পেরিয়েছে — সম্পন্ন রানের রসিদ পাওয়া যায়নি", en: "9:10 AM has passed — no completed run receipt found" }),
+  };
   return <section className="min-w-0 space-y-3 border-y border-border py-4" aria-label={t({ bn: "দৈনিক নতুন লিড বণ্টন", en: "Daily new lead distribution" })}>
     <header className="flex items-start justify-between gap-3">
       <div><h2 className="text-sm font-semibold">{t({ bn: "দৈনিক নতুন লিড বণ্টন", en: "Daily new lead distribution" })}</h2>
@@ -28,6 +37,11 @@ export function DailyAllocationSummary({ surface }: { surface: "hq" | "leadhub" 
       <Button size="icon" variant="ghost" disabled={query.isFetching} onClick={() => void query.refetch()} aria-label={t({ bn: "বণ্টন সারাংশ আবার দেখুন", en: "Refresh allocation summary" })} title={t({ bn: "আবার দেখুন", en: "Refresh" })}><RefreshCw className={query.isFetching ? "size-4 animate-spin motion-reduce:animate-none" : "size-4"} /></Button>
     </header>
     {query.isError ? <p role="alert" className="text-sm text-destructive">{t({ bn: "বণ্টনের তথ্য আনা যায়নি। আবার চেষ্টা করুন।", en: "Could not load the allocation data. Please try again." })}</p> : d && <>
+      {d.operations && <div className="space-y-1 border-l-2 border-border pl-3 text-sm" role={["missing", "manual_only", "unconfirmed"].includes(d.operations.state) ? "alert" : "status"}>
+        <h3 className="font-semibold">{t({ bn: "অপারেশন চেক · কোম্পানি বণ্টন · সকাল ৯:১০", en: "Operations check · Company assignment · 9:10 AM" })}</h3>
+        <p>{operationLabels[d.operations.state]}</p>
+        {d.operations.completedAt && <p className="text-xs text-muted-foreground">{new Date(d.operations.completedAt).toLocaleString("en-GB", { timeZone: "Asia/Dhaka" })} · {t({ bn: `${d.operations.moved}টি বণ্টিত`, en: `${d.operations.moved} assigned` })}</p>}
+      </div>}
       {!d.distributionOpen && <p role="status" className="text-sm text-muted-foreground">{t({ bn: "আজ শুক্রবার — নতুন লিড বণ্টন বন্ধ; আগের লিডের কাজ চালু থাকবে।", en: "Today is Friday — new lead distribution is paused; work on existing leads continues." })}</p>}
       {d.showZeroAlert && <div role="alert" className="flex gap-2 rounded-md border border-warning/40 bg-warning/10 p-3 text-sm text-foreground"><AlertTriangle className="mt-0.5 size-4 shrink-0 text-warning" />
         <p>{surface === "self" ? t({ bn: "আজ আপনি কোনো নতুন লিড পাননি — বণ্টন ঠিক আছে কি না দেখে নেওয়া হবে।", en: "You received no new leads today — the allocation is being checked." }) : t({ bn: `${d.zeroCount} জন এজেন্ট আজ কোনো নতুন লিড পাননি — বণ্টন ঠিক আছে কি না দেখে নেওয়া হবে।`, en: `${d.zeroCount} agents received no new leads today — the allocation is being checked.` })}</p></div>}
