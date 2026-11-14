@@ -1,6 +1,7 @@
 # Roadmap
 
 ## Open tasks
+- [ ] Remove the requested HQ approval content in full — clarify whether this means Meeting approvals only or all uploaded sections (maintenance notice, visit alerts and meeting approvals); preserve saved history and existing security/business rules.
 - [x] Fix dialer/incoming proof-sync failed-write acknowledgements and preserve verified talk time; 36 isolated tests pass, including synced V +1/+4 points and no retry double credit. Handset installation/real call remains unverified; publication requested separately.
 - [x] Build HQ dated score version page; 12 isolated tests pass. Real HQ read shows 10 agents, Nov 13/14 use V1, V2 is scheduled Nov 15; phone has no sideways overflow or runtime errors. No production writes or publishing; future-day V2 verified by tests only.
 - [x] Prepare a plan for agents to enter leads from their profile and find their own submissions again; preserve canonical intake, LeadHub-only assignment, privacy and existing daily rules. Plan only; no customer writes or publication.
