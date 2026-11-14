@@ -215,10 +215,12 @@ describe("report submission verifies only phone-measured duration", () => {
     await expect(submitCallReport(input)).rejects.toThrow("captured submission");
     expect(state.writes[0]?.patch.connection_verified).toBe(false);
   });
-  it("phone sync supplies both verified duration and sync timestamp", async () => {
+  it("phone sync claims do not earn verified duration (spoofable)", async () => {
     state.phoneSeconds = 95;
     await expect(submitCallReport(input)).rejects.toThrow("captured submission");
-    expect(state.writes[0]?.patch).toMatchObject({ connection_verified: true, duration_seconds: 95, duration_source: "phone_sync", duration_synced_at: "2026-10-19T00:01:00Z" });
+    // Security fix: device-supplied phone sync data is caller-controlled, so it
+    // must not verify the connection or replace the entered duration.
+    expect(state.writes[0]?.patch).toMatchObject({ connection_verified: false, duration_source: "web_timer", duration_synced_at: null });
   });
   for (const phoneStatus of ["no_answer", "busy", "failed"]) it(`a claimed connection cannot upgrade ${phoneStatus} phone evidence`, async () => {
     state.phoneSeconds = 95; state.phoneStatus = phoneStatus;

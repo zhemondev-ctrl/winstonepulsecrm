@@ -4,6 +4,7 @@ import { readFileSync } from "node:fs";
 // Isolated: every database call is mocked — nothing is written anywhere.
 const s = vi.hoisted(() => ({
   intake: null as null | Record<string, unknown>,
+  collection: null as null | { agentId: string; requestKey: string; rows: Array<Record<string, unknown>> },
   rpc: [] as Array<{ fn: string; args: Record<string, unknown> }>,
   rpcResult: { data: null as unknown, error: null as null | { message: string } },
   leadUpdates: 0,
@@ -40,6 +41,12 @@ vi.mock("@/lib/lead-intake.server", () => ({
     return { leadId: "11111111-1111-4111-8111-111111111111", duplicate: false, assignedTo: null };
   },
   InvalidLeadPhoneError: class extends Error {},
+}));
+vi.mock("@/lib/lead-collection.server", () => ({
+  submitCollection: async (agentId: string, requestKey: string, rows: Array<Record<string, unknown>>) => {
+    s.collection = { agentId, requestKey, rows };
+    return { results: [{ status: "saved", receiptId: "rcpt-1" }] };
+  },
 }));
 vi.mock("@/integrations/supabase/client.server", () => ({
   supabaseAdmin: {
@@ -96,6 +103,7 @@ const src = (p: string) => readFileSync(p, "utf8");
 
 beforeEach(() => {
   s.intake = null;
+  s.collection = null;
   s.rpc = [];
   s.rpcResult = { data: { ok: true, duplicate: false }, error: null };
   s.leadUpdates = 0;
@@ -120,9 +128,12 @@ describe("P1-3 phone-captured leads enter LeadHub unassigned", () => {
       agent_id: "22222222-2222-4222-8222-222222222222",
     });
     expect(res.status).toBe(201);
-    expect(s.intake?.ownerId).toBeNull();
-    expect(s.intake?.actorProfileId).toBe("agent-a");
-    expect(s.intake?.referenceBy).toBe("Agent A");
+    // Shared atomic collection lands the capture unassigned for LeadHub; the
+    // payload's assign/agent_id never reach the write.
+    expect(s.collection?.agentId).toBe("agent-a");
+    expect(s.collection?.rows[0]?.referenceBy).toBe("Agent A");
+    expect(s.collection?.rows[0]).not.toHaveProperty("assign");
+    expect(s.collection?.rows[0]).not.toHaveProperty("agent_id");
     expect((await res.json()).assigned_to).toBeNull();
   });
   it("Android no longer asks for self-assignment", () => {

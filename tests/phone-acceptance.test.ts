@@ -12,8 +12,12 @@ const run = (o: { d?: Partial<typeof device> & { revoked_at?: string | null }; c
 const step = (r: ReturnType<typeof run>, k: string) => r.steps.find((s) => s.key === k)!;
 
 describe("real phone acceptance checklist", () => {
-  it("passes only when install, sign-in and a call-log-proven answered call all exist", () => {
-    expect(run().ready).toBe(true);
+  it("does not pass on a device-claimed call-log mark alone (spoofable)", () => {
+    // Security fix: talk_time_source is sent by the device and caller-controlled,
+    // so it no longer proves talk time; the call step stays unverified.
+    const r = run();
+    expect(step(r, "call").status).not.toBe("pass");
+    expect(r.ready).toBe(false);
   });
 
   it("passes the test build IT currently hands out, but names it as a test build", () => {

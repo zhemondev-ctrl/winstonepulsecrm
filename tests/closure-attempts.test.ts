@@ -34,8 +34,10 @@ describe("closure recovery rules", () => {
     const c = closing({ category: "not_interested", connected: true, no_follow_up_reason: "not_interested" });
     const unproven = measureClosure({ closing: c, reportsBefore: 1, calls: [call({ call_source: "android_sim", call_status: "completed", duration_seconds: 40 })] });
     expect(unproven).toMatchObject({ kind: "conversation", provenConversations: 0, short: true });
-    const proven = measureClosure({ closing: c, reportsBefore: 1, calls: [call({ call_source: "android_sim", call_status: "completed", duration_seconds: 40, talk_time_source: "call_log" })] });
-    expect(proven.short).toBe(false);
+    // Security fix: a device-sent talk_time_source is caller-controlled, so it
+    // no longer proves a conversation on its own.
+    const deviceClaim = measureClosure({ closing: c, reportsBefore: 1, calls: [call({ call_source: "android_sim", call_status: "completed", duration_seconds: 40, talk_time_source: "call_log" })] });
+    expect(deviceClaim.short).toBe(true);
   });
 
   it("a report verified from the phone call log proves the conversation, once per call", () => {

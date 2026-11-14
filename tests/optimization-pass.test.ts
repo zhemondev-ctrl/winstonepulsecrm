@@ -35,7 +35,10 @@ describe("inbound lead intake", () => {
     const src = readFileSync("src/routes/api/public/ingest/lead.ts", "utf8");
     expect(src).not.toMatch(/Round-robin/);
     expect(src).toMatch(/caller\.kind !== "device"/);
-    expect(src).toMatch(/ownerId: null,/);
+    // Intake goes through the shared atomic collection RPC, which lands every
+    // capture unassigned for LeadHub; the route itself reports assigned_to: null.
+    expect(src).toMatch(/submitCollection\(/);
+    expect(src).toMatch(/assigned_to: null/);
   });
 });
 
