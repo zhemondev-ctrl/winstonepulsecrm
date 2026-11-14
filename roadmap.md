@@ -1,6 +1,7 @@
 # Roadmap
 
 ## Open tasks
+- [x] Simplify IT Console: essential health/call/lead/app panels first; secondary tools and histories mount only when opened. Removed prominent duplicate Copilot action, kept billing notices/access/stored records. Real PIN-unlocked Apps view verified at 1280px and 780×577; secondary panel expands and page has no sideways overflow. Build OK; no publication.
 - [ ] Full-system language audit: owner clarified EN = complete English, বাংলা = complete Bangla across every CRM page. Current batch covers IT agent work/review and shared gate/account labels; remaining legacy panels require page-by-page translation and acceptance, not an automatic translation of customer records.
 - [x] Language follow-up: new IT agent-work/review labels, staff account controls and shared gate buttons switch English/Bangla; real unlocked preview verified both headings and phone layout. Legacy child panels and shared Copilot/notice labels are not yet fully translated.
 - [x] Clean IT Console agent-work view and existing handout eligibility reviews; full IT PIN approval allowed through shared server reviewer guard, HQ preserved and LeadHub-only assignment unchanged. 14 isolated tests pass; real PIN-unlocked preview displays authorized pending-lead totals at desktop/phone, no overflow, both languages switch. Pending review list currently empty, so actual decision controls/save are not end-to-end verified; no approval writes or publication. This is eligibility review, not a new agent handout-request submission workflow.

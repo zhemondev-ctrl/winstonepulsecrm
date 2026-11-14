@@ -1,4 +1,5 @@
 import { HubSyncStatusPanel } from "@/components/crm/HubAlerts";
+import { ItSecondaryTools } from "@/components/crm/ItSecondaryTools";
 import { ItAgentWorkPanel } from "@/components/crm/ItAgentWorkPanel";
 import { DistributionFailurePanel } from "@/components/crm/DistributionFailurePanel";
 import { SystemManualCard } from "@/components/crm/SystemManualCard";
@@ -147,7 +148,7 @@ function SystemBoard() {
         <div className="min-w-0">
           <h1 className="text-xl font-semibold sm:text-2xl">{t({ bn: "আইটি কনসোল", en: "IT Console" })}</h1>
         </div>
-        <CopilotDrawer />
+        <div className="text-xs text-muted-foreground">{t({ bn: "কাজ · অ্যাকাউন্ট · সিস্টেম", en: "Work · Accounts · System" })}</div>
       </div>
 
       <nav aria-label="IT Console sections" className="grid grid-cols-2 gap-2 border-b border-border pb-4 sm:grid-cols-3 lg:grid-cols-5">
@@ -171,31 +172,36 @@ function SystemBoard() {
         <div className="space-y-6">
           <HubSyncStatusPanel />
           <SystemNoticeBar surface="it" />
+          <BackendHealthPanel />
+          <DeploymentStatusPanel />
+          <ItSecondaryTools>
+          <CopilotDrawer />
           <InstructionCopilot surface="system" />
           <SafeWorkflowGuide />
           <SystemCustomizer />
-          <DeploymentStatusPanel />
           <ItPhoneTestReports />
           <SearchConsoleDashboard />
           <AgentWhatsAppAlertsPanel />
           <DbPerformanceDashboard />
           <SystemManualCard />
           <SystemUpdateReport />
-          <BackendHealthPanel />
           <AppwriteConnectionTest />
           <SheetSyncHealthPanel />
           <VersionDataPanel />
           <CommandAgentPanel surface="system" />
+          </ItSecondaryTools>
         </div>
       )}
 
       {sec === "leads" && (
         <div className="space-y-6">
           <LeadDatabasePanel />
+          <ItSecondaryTools>
           <AgentSelfLeadsPanel />
           <SheetLeadStreamPanel />
           <ExtraLeadPanel />
           <YearArchivePanel />
+          </ItSecondaryTools>
         </div>
       )}
 
@@ -204,8 +210,9 @@ function SystemBoard() {
           <DistributionFailurePanel />
           <CallOpsPanel showControls />
           <CallLogMatchSummaryPanel />
-          <RecordingReadinessPanel />
           <RecordingPipelinePanel />
+          <ItSecondaryTools>
+          <RecordingReadinessPanel />
           <SyncedCallsPanel />
           <DayCallExportPanel />
           <DriveBackupPanel />
@@ -214,6 +221,7 @@ function SystemBoard() {
           <LeadReportSheetPanel />
           <OfflineAlertSettingsPanel />
           <ShiftSummaryPanel scope="it" />
+          </ItSecondaryTools>
         </div>
       )}
 
@@ -243,8 +251,10 @@ function SystemBoard() {
       {sec === "releases" && (
         <div className="space-y-6">
           <ApkInstallCard />
+          <ItSecondaryTools title={{ en: "Release history & handset checks", bn: "সংস্করণের ইতিহাস ও ফোন পরীক্ষা" }}>
           <PhoneAcceptanceChecklist />
           <AppReleasePanel />
+          </ItSecondaryTools>
         </div>
       )}
 
