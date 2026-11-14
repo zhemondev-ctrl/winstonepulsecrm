@@ -31,6 +31,7 @@ export const SHARED_NAV_ROUTES = [
   "/",
   "/security",
   "/integrations",
+  "/release-status",
   "/docs",
   "/docs-admin",
   "/help",

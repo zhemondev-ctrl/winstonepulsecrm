@@ -73,4 +73,5 @@
 - The dated score page reuses readDailyScores and authority gates; score-version.ts resolves effective days and rejects unknown formulas — why: separate displays must never create a second scoring or permission path.
 - HQ/IT meeting approval UI is retired; preserve storage and server gates — why: no audit loss.
 - Follow docs/DEVELOPMENT_PROCESS.md for distinct implementation, business, security and release gates — why: development is not operational authority.
+- Release dashboard: gated, dated evidence — why: no live claims.
 
