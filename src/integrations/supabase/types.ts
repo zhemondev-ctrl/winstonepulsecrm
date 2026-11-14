@@ -365,6 +365,121 @@ export type Database = {
           },
         ]
       }
+      agent_lead_drafts: {
+        Row: {
+          agent_id: string
+          created_at: string
+          fields: Json
+          id: string
+          revision: number
+          submitted_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          agent_id: string
+          created_at?: string
+          fields?: Json
+          id?: string
+          revision?: number
+          submitted_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          agent_id?: string
+          created_at?: string
+          fields?: Json
+          id?: string
+          revision?: number
+          submitted_at?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_lead_drafts_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      agent_lead_receipts: {
+        Row: {
+          accepted_at: string
+          agent_id: string
+          id: string
+          lead_id: string
+          request_key: string
+          row_index: number
+          work_day: string
+        }
+        Insert: {
+          accepted_at?: string
+          agent_id: string
+          id?: string
+          lead_id: string
+          request_key: string
+          row_index: number
+          work_day?: string
+        }
+        Update: {
+          accepted_at?: string
+          agent_id?: string
+          id?: string
+          lead_id?: string
+          request_key?: string
+          row_index?: number
+          work_day?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_lead_receipts_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agent_lead_receipts_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: true
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      agent_lead_submission_requests: {
+        Row: {
+          agent_id: string
+          created_at: string
+          payload_hash: string
+          request_key: string
+          result: Json
+        }
+        Insert: {
+          agent_id: string
+          created_at?: string
+          payload_hash: string
+          request_key: string
+          result: Json
+        }
+        Update: {
+          agent_id?: string
+          created_at?: string
+          payload_hash?: string
+          request_key?: string
+          result?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_lead_submission_requests_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       agent_whatsapp_alerts: {
         Row: {
           agent_id: string
@@ -7749,6 +7864,10 @@ export type Database = {
       capture_db_performance_snapshot: { Args: never; Returns: string }
       claim_sheet_lead_intake: { Args: { _slot: string }; Returns: string }
       clean_person_name: { Args: { _raw: string }; Returns: string }
+      collection_require_agent: {
+        Args: { _agent: string; _mutation?: boolean }
+        Returns: undefined
+      }
       company_reset_return_untouched: {
         Args: { _business_date: string; _not_before: string; _reason: string }
         Returns: Json
@@ -7851,6 +7970,17 @@ export type Database = {
         }
         Returns: string
       }
+      read_agent_lead_collection: {
+        Args: {
+          _agent: string
+          _from?: string
+          _mode?: string
+          _offset?: number
+          _query?: string
+          _to?: string
+        }
+        Returns: Json
+      }
       reconcile_site_visit_alert: {
         Args: { _report: string }
         Returns: undefined
@@ -7866,6 +7996,10 @@ export type Database = {
         }
         Returns: Json
       }
+      save_agent_lead_draft: {
+        Args: { _agent: string; _fields: Json; _id: string; _revision: number }
+        Returns: Json
+      }
       set_development_hold_atomic: {
         Args: {
           _action: string
@@ -7877,6 +8011,16 @@ export type Database = {
           _next: string
           _previous: string
           _reason: string
+        }
+        Returns: Json
+      }
+      submit_collected_leads_atomic: {
+        Args: {
+          _agent: string
+          _draft?: string
+          _request: string
+          _revision?: number
+          _rows: Json
         }
         Returns: Json
       }

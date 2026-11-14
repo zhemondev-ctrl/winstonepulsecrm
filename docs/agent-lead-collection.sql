@@ -1,6 +1,6 @@
 -- PREPARATION ONLY. Do not apply to the shared live database without explicit
 -- authorisation and a verified backup. Run local regression tests first.
--- RELEASE BLOCKED: staged full-flow and LeadHub personal/company assignment
+-- APPLIED 2026-11-14 as drizzle migration 0164 (owner approved after 13 Nov nightly backup).
 -- accounting must be reviewed together before this preparation is applied.
 -- No existing customer row, ownership, report or history is changed.
 
