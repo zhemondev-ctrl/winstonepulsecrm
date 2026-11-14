@@ -150,7 +150,7 @@ export const triageMyLead = createServerFn({ method: "POST" })
     await (await import("@/lib/agent-briefing.server")).assertBriefingForCaller(caller);
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { LEAD_OWNER_COLUMNS, leadHeldByOther, LEAD_NOT_YOURS } = await import(
+    const { LEAD_OWNER_COLUMNS, leadNotAssignedTo, LEAD_NOT_YOURS } = await import(
       "@/lib/lead-access.server"
     );
 
@@ -160,15 +160,23 @@ export const triageMyLead = createServerFn({ method: "POST" })
       .eq("id", data.leadId)
       .maybeSingle();
     if (!lead) throw new Error(LEAD_NOT_YOURS);
-    if (caller.scope === "agent" && caller.profile && leadHeldByOther(lead, caller.profile.id)) {
+    if (caller.scope !== "authority" && (!caller.userId || !caller.profile || leadNotAssignedTo(lead, caller.profile.id))) {
       throw new Error(LEAD_NOT_YOURS);
     }
 
-    const { error } = await supabaseAdmin
+    let update = supabaseAdmin
       .from("leads")
       .update({ status: data.action, updated_at: new Date().toISOString() })
       .eq("id", data.leadId);
+    // Compare both owner columns at write time: a transfer after the read must
+    // not change somebody else's lead or append follow-up/history for it.
+    if (caller.scope !== "authority") {
+      update = lead.assigned_to ? update.eq("assigned_to", lead.assigned_to) : update.is("assigned_to", null);
+      update = lead.assigned_agent_id ? update.eq("assigned_agent_id", lead.assigned_agent_id) : update.is("assigned_agent_id", null);
+    }
+    const { data: updated, error } = await update.select("id").maybeSingle();
     if (error) throw new Error(error.message);
+    if (!updated) throw new Error(LEAD_NOT_YOURS);
 
     let scheduledAt: string | null = null;
     if (data.action === "follow_up") {
