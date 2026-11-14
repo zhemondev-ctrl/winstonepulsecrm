@@ -115,13 +115,18 @@ async function resolveCallerInner(adminToken?: string | null): Promise<Caller> {
     return { scope: "none", profile, userId, approval, readOnly: true };
   }
 
+  const { data: adminRole, error: roleError } = await supabaseAdmin.from("user_roles")
+    .select("role").eq("user_id", userId).eq("role", "admin").maybeSingle();
+  if (roleError) throw new Error("Account permissions unavailable");
+  const isAdmin = Boolean(adminRole);
+
   return {
     scope:
-      profile.role === "admin" || identity.executiveHq ? "authority" : "agent",
-    profile,
+      isAdmin || identity.executiveHq ? "authority" : "agent",
+    profile: { ...profile, role: isAdmin ? "admin" : profile.role === "admin" ? "agent" : profile.role },
     userId,
     approval,
-    readOnly: identity.executiveHq && profile.role !== "admin",
+    readOnly: identity.executiveHq && !isAdmin,
   };
 }
 
