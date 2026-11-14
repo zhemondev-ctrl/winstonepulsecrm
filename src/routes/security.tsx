@@ -1,6 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Check, Lock, ShieldCheck, X } from "lucide-react";
 import { useState } from "react";
+import { SecurityHistoryPanel } from "@/components/crm/SecurityHistoryPanel";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useT } from "@/lib/i18n";
 
 import { AppShell } from "@/components/crm/AppShell";
 import { PinVaultPanel } from "@/components/crm/PinVaultPanel";
@@ -13,16 +16,16 @@ import { useMyAccount } from "@/lib/session";
 export const Route = createFileRoute("/security")({
   head: () => ({
     meta: [
-      { title: "PIN ও অ্যাক্সেস — Winstone Pulse" },
+      { title: "Security History & Access — Winstone Pulse" },
       {
         name: "description",
         content:
-          "Role-by-role access guide for Executive HQ, IT Console and Sales Agent, plus the encrypted PIN vault with rotation history.",
+          "Role-scoped access guidance and authority-only dated security evidence with scan and code revision comparisons.",
       },
-      { property: "og:title", content: "PIN ও অ্যাক্সেস — Winstone Pulse" },
+      { property: "og:title", content: "Security History & Access — Winstone Pulse" },
       {
         property: "og:description",
-        content: "Who unlocks what, how PINs are stored, and every rotation on record.",
+        content: "Recorded security checks, code revisions and verification gaps alongside the existing access guide.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -45,10 +48,21 @@ function SecurityPage() {
         title="পিন ও অ্যাক্সেস"
         description="কে কোন বোর্ড খুলতে পারে আর পিন কীভাবে রক্ষণাবেক্ষণ হয় — নিজের অংশটুকু দেখতে সাইন ইন করুন।"
       >
-        <SecurityBoard />
+        <SecurityViews />
       </RoleGate>
     </AppShell>
   );
+}
+
+function SecurityViews() {
+  const { scope } = useMyAccount();
+  const t = useT();
+  if (scope !== "authority") return <SecurityBoard />;
+  return <Tabs defaultValue="history" className="space-y-5">
+    <TabsList><TabsTrigger value="history">{t({ en: "Scan history", bn: "স্ক্যানের ইতিহাস" })}</TabsTrigger><TabsTrigger value="access">{t({ en: "PIN & access", bn: "পিন ও অ্যাক্সেস" })}</TabsTrigger></TabsList>
+    <TabsContent value="history"><SecurityHistoryPanel /></TabsContent>
+    <TabsContent value="access"><SecurityBoard /></TabsContent>
+  </Tabs>;
 }
 
 function SecurityBoard() {

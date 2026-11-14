@@ -1,6 +1,7 @@
 # Roadmap
 
 ## Open tasks
+- [x] Add authority-only Security history with dated scan evidence, explicit code-revision linkage and before/after comparisons; pending/stale results never imply verification. Twelve tests pass; signed-in desktop/phone comparison and filtering verified, PIN access tab retained. Curated evidence only, no automatic scan import or publication.
 - [x] Build an authority-gated central release dashboard for HQ, IT, Nexus, Agents and System with separate implementation/business/security/publication columns, dated evidence and unresolved checks; no live probes or production writes. Not published.
 - [x] Separate implementation permission, business authorization, security review and publication/verification conditions in development instructions.
 - [ ] Security review and post-scan release acceptance: deep scan completed 14 Nov 14:57 UTC with two critical findings (unassigned-lead status changes; self-rated completion inflation), marked not up to date. Live HQ, IT/System, Nexus, Agents and dated scores each return 200 with correct titles and access gates, no runtime errors; manual 1.7.0/$35.29/50 markers pass. Remaining: authenticated live confirmation of removed meeting UI and preserved notices; address security findings before wide rollout. No production writes or fixes in verification.
