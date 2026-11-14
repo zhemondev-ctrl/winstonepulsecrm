@@ -1,5 +1,8 @@
 # Winstone Pulse (WEB CRM WINSTONE)
 
+[![Type checks](https://github.com/zhemondev-ctrl/winstonepulsecrm/actions/workflows/web-ci.yml/badge.svg?branch=main)](https://github.com/zhemondev-ctrl/winstonepulsecrm/actions/workflows/web-ci.yml)
+[![Tests](https://github.com/zhemondev-ctrl/winstonepulsecrm/actions/workflows/web-ci.yml/badge.svg?branch=main)](https://github.com/zhemondev-ctrl/winstonepulsecrm/actions/workflows/web-ci.yml)
+
 বাংলা UI-র সেলস CRM — এজেন্টের নিজের সিমে কল, রেকর্ডিং সিঙ্ক, দৈনিক লিড বিতরণ, শিফট সারসংক্ষেপ, Executive HQ ও আইটি কনসোল।
 
 **Live app**: https://crm.winstonebd.com
