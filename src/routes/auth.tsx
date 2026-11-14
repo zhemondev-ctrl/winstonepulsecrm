@@ -10,11 +10,9 @@ import logoAsset from "@/assets/winstone-properties-logo.png.asset.json";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { lovable } from "@/integrations/lovable/index";
 import { supabase } from "@/integrations/supabase/client";
 import { signInWithIdentifier } from "@/lib/accounts.functions";
 import { ensureRegistered, saveSignupDraft } from "@/lib/session";
-import "@lovable.dev/cloud-auth-js/styles.css";
 
 const SearchSchema = z.object({
   role: z.literal("agent").catch("agent"),
@@ -94,31 +92,8 @@ function AuthPage() {
     onError: (error: Error) => toast.error(error.message),
   });
 
-
-  const [lovableBusy, setLovableBusy] = useState(false);
-
-  const continueWithLovable = async () => {
-    if (lovableBusy) return;
-    setLovableBusy(true);
-    try {
-      const result = await lovable.auth.signInWithOAuth("lovable", {
-        redirect_uri: window.location.origin,
-      });
-      if (result.error) {
-        toast.error(result.error.message);
-        return;
-      }
-      if (result.redirected) return;
-      await ensureRegistered();
-      toast.success("Signed in");
-      void navigate({ to: "/desk" });
-    } finally {
-      setLovableBusy(false);
-    }
-  };
-
   const isSignup = mode === "signup";
-  const busy = signIn.isPending || signUp.isPending || lovableBusy;
+  const busy = signIn.isPending || signUp.isPending;
   const canSubmit =
     (isSignup ? email.includes("@") : email.trim().length >= 4) &&
     password.length >= 6 &&
@@ -297,24 +272,6 @@ function AuthPage() {
                 </p>
               )}
             </form>
-
-            <div className="mt-6 flex items-center gap-3" aria-hidden>
-              <span className="h-px flex-1 bg-border" />
-              <span className="text-xs text-muted-foreground">or</span>
-              <span className="h-px flex-1 bg-border" />
-            </div>
-
-            <button
-              type="button"
-              className="lovable-auth-button mt-4 w-full"
-              onClick={() => void continueWithLovable()}
-              disabled={busy}
-            >
-              {lovableBusy ? (
-                <Loader2 className="size-4 animate-spin" aria-hidden />
-              ) : null}
-              Continue with Lovable
-            </button>
 
             <p className="mt-6 text-center text-sm text-muted-foreground">
               {isSignup ? "Already have an account? " : "New here? "}
