@@ -51,7 +51,7 @@ export function AdminPinDialog({
         if (surface === "leadhub") setLeadHubToken(result.token);
         else setAdminToken(result.token);
         toast.success(
-          surface === "hq" ? "Executive HQ unlocked (view-only)" : surface === "leadhub" ? "LeadHub Nexus unlocked" : "Control board unlocked",
+          surface === "hq" ? t({ bn: "Executive HQ খোলা হয়েছে (শুধু দেখা)", en: "Executive HQ unlocked (view-only)" }) : surface === "leadhub" ? t({ bn: "LeadHub Nexus খোলা হয়েছে", en: "LeadHub Nexus unlocked" }) : t({ bn: "কন্ট্রোল বোর্ড খোলা হয়েছে", en: "Control board unlocked" }),
         );
         setPin("");
         onOpenChange(false);
@@ -83,9 +83,9 @@ export function AdminPinDialog({
           <span className="grid size-11 place-items-center rounded-full bg-primary/15 text-primary">
             <Lock className="size-5" />
           </span>
-          <DialogTitle>{surface === "leadhub" ? "LeadHub Nexus PIN" : "Control board PIN"}</DialogTitle>
+          <DialogTitle>{surface === "leadhub" ? t({ bn: "LeadHub Nexus পিন", en: "LeadHub Nexus PIN" }) : t({ bn: "কন্ট্রোল বোর্ড পিন", en: "Control board PIN" })}</DialogTitle>
           <DialogDescription>
-            {surface === "leadhub" ? "LeadHub-এর আলাদা PIN দিন।" : "Enter the master PIN to unlock this board on this device."}
+            {surface === "leadhub" ? t({ bn: "LeadHub-এর আলাদা PIN দিন।", en: "Enter the separate LeadHub PIN." }) : t({ bn: "এই ডিভাইসে বোর্ড খুলতে মাস্টার PIN দিন।", en: "Enter the master PIN to unlock this board on this device." })}
           </DialogDescription>
         </DialogHeader>
         <div className="flex flex-col items-center gap-4 py-2">
@@ -118,10 +118,10 @@ export function AdminPinDialog({
             ) : (
               <LockOpen className="size-4" />
             )}
-            Unlock
+            {t({ bn: "খুলুন", en: "Unlock" })}
           </Button>
           {remaining > 0 && <p role="alert" className="text-center text-sm text-destructive">{t({ bn: "PIN প্রবেশে সাময়িক বিরতি। বাকি", en: "PIN entry temporarily paused. Remaining" })}: {Math.floor(remaining / 60)}:{String(remaining % 60).padStart(2, "0")}</p>}
-          <Button variant="ghost" className="w-full" disabled={attempt.isPending} onClick={() => { setPin(""); onOpenChange(false); }}><ArrowLeft className="size-4" />ফিরে যান</Button>
+          <Button variant="ghost" className="w-full" disabled={attempt.isPending} onClick={() => { setPin(""); onOpenChange(false); }}><ArrowLeft className="size-4" />{t({ bn: "ফিরে যান", en: "Go back" })}</Button>
         </div>
       </DialogContent>
     </Dialog>

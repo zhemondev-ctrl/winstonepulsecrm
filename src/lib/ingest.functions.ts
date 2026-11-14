@@ -43,31 +43,17 @@ export const runIngestDiagnostics = createServerFn({ method: "POST" })
     const { requireAdminToken } = await import("@/lib/admin-gate.server");
     requireAdminToken(data.adminToken);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { pageAllParallel } = await import("@/lib/page-all");
     const { BD_PHONE } = await import("@/lib/ingest-schemas");
 
     const [leadsRes, callsRes, msgRes, bucketRes] = await Promise.all([
-      (async () => {
-        const all: { id: string; phone_number: string; assigned_to: string | null; created_at: string }[] = [];
-        for (let from = 0; ; from += 1000) {
-          const { data, error } = await supabaseAdmin.from("leads").select("id, phone_number, assigned_to, created_at").order("id").range(from, from + 999);
-          if (error) return { data: all, error };
-          all.push(...(data ?? []));
-          if (!data || data.length < 1000) return { data: all, error: null };
-        }
-      })(),
-      supabaseAdmin
-        .from("call_recordings")
-        .select("id, lead_id, agent_id, sync_status, transcription_text, created_at")
-        .order("created_at", { ascending: false })
-        .limit(1000),
-      supabaseAdmin
-        .from("whatsapp_interactions")
-        .select("id, lead_id, agent_id, created_at")
-        .order("created_at", { ascending: false })
-        .limit(1000),
+      pageAllParallel((from, to) => supabaseAdmin.from("leads").select("id, phone_number, assigned_to, assigned_agent_id, created_at").order("id").range(from, to)),
+      pageAllParallel((from, to) => supabaseAdmin.from("call_recordings").select("id, lead_id, agent_id, sync_status, upload_status, storage_path, audio_url, analysis_status, transcription_text, created_at").order("created_at", { ascending: false }).order("id").range(from, to)),
+      pageAllParallel((from, to) => supabaseAdmin.from("whatsapp_interactions").select("id, lead_id, agent_id, created_at").order("created_at", { ascending: false }).order("id").range(from, to)),
       supabaseAdmin.storage.from("call-audio").list("", { limit: 1 }),
     ]);
 
+    if (leadsRes.error || callsRes.error || msgRes.error) throw new Error("Ingest diagnostics unavailable: incomplete data read");
     const leads = leadsRes.data ?? [];
     const calls = callsRes.data ?? [];
     const messages = msgRes.data ?? [];
@@ -95,8 +81,8 @@ export const runIngestDiagnostics = createServerFn({ method: "POST" })
           label: "AI transcription available",
           ok: Boolean(process.env["LOVABLE_API_KEY"]),
           detail: process.env["LOVABLE_API_KEY"]
-            ? "Transcript, summary and sentiment run on upload"
-            : "Recordings will store without transcripts",
+            ? "Configuration present; uploaded audio is analyzed separately. Provider processing is not verified by this check"
+            : "AI configuration absent; audio storage is independent",
         },
         {
           key: "audio_store",
@@ -112,6 +98,8 @@ export const runIngestDiagnostics = createServerFn({ method: "POST" })
         },
       ],
       problems: [
+        { key: "audio_absent", label: "Call rows without uploaded audio", count: calls.filter(c => !c.storage_path && !c.audio_url).length, hint: "No server audio reference. Recover the original phone file if available; do not infer an upload failure or block lead work." },
+        { key: "analysis_failed", label: "Stored audio with processing failures", count: calls.filter(c => Boolean(c.storage_path || c.audio_url) && c.sync_status === "failed").length, hint: "Upload and analysis are separate. Inspect each saved error; unavailable speech cannot be fabricated." },
         {
           key: "bad_phone",
           label: "Leads with an unusable phone number",
@@ -127,20 +115,20 @@ export const runIngestDiagnostics = createServerFn({ method: "POST" })
         {
           key: "unassigned",
           label: "Leads with no agent",
-          count: leads.filter((l) => !l.assigned_to).length,
-          hint: "Run Balance Leads on the Coordinator Deck.",
+          count: leads.filter((l) => !l.assigned_to && !l.assigned_agent_id).length,
+          hint: "Only LeadHub Nexus can assign eligible pool leads; IT operators are not recipients.",
         },
         {
           key: "failed_sync",
-          label: "Recordings that failed to sync",
-          count: calls.filter((c) => c.sync_status === "failed").length,
-          hint: "The phone uploaded audio the server could not process.",
+          label: "Audio upload failures",
+          count: calls.filter((c) => c.upload_status === "failed").length,
+          hint: "Retry the genuine file from its originating phone with the same call ID and checksum.",
         },
         {
           key: "no_transcript",
-          label: "Recordings without a transcript",
-          count: calls.filter((c) => !c.transcription_text).length,
-          hint: "Usually a missing AI key or a silent recording.",
+          label: "Stored audio without a transcript",
+          count: calls.filter((c) => Boolean(c.storage_path || c.audio_url) && !c.transcription_text).length,
+          hint: "Audio exists; inspect the saved analysis error before retrying. Missing transcripts do not block lead work.",
         },
         {
           key: "orphan_call",

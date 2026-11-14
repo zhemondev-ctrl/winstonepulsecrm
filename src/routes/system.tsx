@@ -17,8 +17,6 @@ import { useT } from "@/lib/i18n";
 
 import { AccountApprovals } from "@/components/crm/AccountApprovals";
 import { ApkInstallCard } from "@/components/crm/ApkInstallCard";
-import { PhoneAcceptanceChecklist } from "@/components/crm/PhoneAcceptanceChecklist";
-import { AppReleasePanel } from "@/components/crm/AppReleasePanel";
 import { AuditTrail } from "@/components/crm/AuditTrail";
 import { AccountabilityReviewPanel } from "@/components/crm/AccountabilityReviewPanel";
 import { DocSummaryPanel } from "@/components/crm/DocSummaryPanel";
@@ -251,10 +249,6 @@ function SystemBoard() {
       {sec === "releases" && (
         <div className="space-y-6">
           <ApkInstallCard />
-          <ItSecondaryTools title={{ en: "Release history & handset checks", bn: "সংস্করণের ইতিহাস ও ফোন পরীক্ষা" }}>
-          <PhoneAcceptanceChecklist />
-          <AppReleasePanel />
-          </ItSecondaryTools>
         </div>
       )}
 
