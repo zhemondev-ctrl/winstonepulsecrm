@@ -85,7 +85,7 @@ export const Route = createFileRoute("/api/public/smoke")({
             ok: present,
             status: present ? 200 : 404,
             detail: present
-              ? "পেজ এই ভার্সনে চালু আছে (সাইন ইন করে ব্রাউজারে খুলবে)"
+              ? "পেজের কোড আছে; সাইন-ইন, লক, হিসাব ও ফোন sync যাচাই হয়নি"
               : "পেজ এই ভার্সনে নেই",
           });
         }

@@ -25,7 +25,7 @@ export function ApkPreInstallChecklist() {
         <span><span className="font-medium">{t(it.title)}</span><span className="block text-xs text-muted-foreground">{t(it.hint)}</span></span>
       </label></li>)}</ul>
     <p className={all ? "text-sm font-medium text-primary" : "text-xs text-muted-foreground"}>
-      {all ? t({ en: "All checks done — safe to install.", bn: "সব যাচাই শেষ — ইনস্টল করা নিরাপদ।" }) : t({ en: `${done.filter(Boolean).length} of ${ITEMS.length} checked. If any item fails, don't install — contact IT.`, bn: `${ITEMS.length}টির মধ্যে ${done.filter(Boolean).length}টি যাচাই হয়েছে। কোনোটি না মিললে ইনস্টল করবেন না — IT-কে জানান।` })}
+      {all ? t({ en: "Your checklist is complete; APK signature and phone tests still need independent verification.", bn: "আপনার চেকলিস্ট পূর্ণ; APK-এর স্বাক্ষর ও ফোন পরীক্ষা আলাদাভাবে যাচাই করতে হবে।" }) : t({ en: `${done.filter(Boolean).length} of ${ITEMS.length} checked. If any item fails, don't install — contact IT.`, bn: `${ITEMS.length}টির মধ্যে ${done.filter(Boolean).length}টি যাচাই হয়েছে। কোনোটি না মিললে ইনস্টল করবেন না — IT-কে জানান।` })}
     </p>
   </section>;
 }

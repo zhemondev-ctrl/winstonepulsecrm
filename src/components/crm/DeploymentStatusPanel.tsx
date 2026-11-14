@@ -21,7 +21,7 @@ export function DeploymentStatusPanel() {
   const m = useMutation({
     mutationFn: () => run({ data: { adminToken: getAdminToken() } }),
     onSuccess: (r) => {
-      if (r.lastDeployed) toast.success("Live site verified");
+      if (r.lastDeployed) toast.success("Live manual markers verified");
       else toast.error(r.error ?? "Live site does not show this release yet");
       void qc.invalidateQueries({ queryKey: ["release-status"] });
     },
@@ -58,7 +58,7 @@ export function DeploymentStatusPanel() {
         </ul>
       ) : null}
       <p className="text-xs text-muted-foreground">
-        Status: {s ? (s.lastDeployed ? "Deployed — verified on crm.winstonebd.com/manual" : "Not deployed — live site differs") : "Unknown"}. Publish time is recorded as the first check that saw this version live.
+        Manual markers: {s ? (s.lastDeployed ? "Verified on crm.winstonebd.com/manual" : "Not verified — live manual differs") : "Unknown"}. This does not establish the deployed code revision, successful sign-in, dashboard totals or phone sync. The recorded time is the first successful manual-marker check, not the publication time.
       </p>
     </section>
   );

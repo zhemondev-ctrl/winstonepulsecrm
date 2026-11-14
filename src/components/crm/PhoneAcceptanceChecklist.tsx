@@ -59,7 +59,7 @@ export function PhoneAcceptanceChecklist() {
 
       {q.data && !q.data.official && (
         <p className="rounded-md border border-border bg-muted p-3 text-sm">
-          {t({ en: `The current download (${q.data.expectedVersion}) is company-signed but not yet the official release. A pass here proves the flow works, not that the official app is approved.`, bn: `বর্তমান ডাউনলোডটি (${q.data.expectedVersion}) কোম্পানির কী দিয়ে সাইন করা, কিন্তু এখনও অফিশিয়াল রিলিজ নয়। এখানে পাস মানে প্রক্রিয়া কাজ করছে, অফিশিয়াল অ্যাপ অনুমোদিত নয়।` })}
+          {t({ en: `The current download (${q.data.expectedVersion}) has not met the final-release evidence gates. This checklist does not establish source provenance, signing approval or complete handset acceptance.`, bn: `বর্তমান ডাউনলোডটির (${q.data.expectedVersion}) চূড়ান্ত রিলিজের প্রমাণ পূর্ণ নয়। এই চেকলিস্ট কোডের উৎস, স্বাক্ষরের অনুমোদন বা সম্পূর্ণ ফোন পরীক্ষা নিশ্চিত করে না।` })}
         </p>
       )}
 

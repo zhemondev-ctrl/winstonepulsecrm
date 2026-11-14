@@ -28,8 +28,14 @@ describe("agent APK handed out by IT", () => {
   it("2.21 is company-signed older code, not official", () => {
     expect(apkReleaseStatus(APK_RELEASE)).toBe("company_signed_older_code");
   });
-  it("2.22 built by the release script with the approved key is official", () => {
-    expect(apkReleaseStatus(release22)).toBe("official");
+  it("2.22 signed build without handset/source evidence is not final", () => {
+    expect(apkReleaseStatus(release22)).toBe("company_signed_older_code");
+  });
+  it("requires reviewed source and phone evidence for the exact APK bytes", () => {
+    const accepted = { ...release22, acceptance: { apkSha256: release22.sha256, sourceCommit: "a".repeat(40), reviewedAt: "2026-11-15T00:00:00Z", deviceTestPassed: true } };
+    expect(apkReleaseStatus(accepted)).toBe("official");
+    expect(apkReleaseStatus({ ...accepted, acceptance: { ...accepted.acceptance, apkSha256: "b".repeat(64) } })).not.toBe("official");
+    expect(apkReleaseStatus({ ...accepted, acceptance: { ...accepted.acceptance, deviceTestPassed: false } })).not.toBe("official");
   });
   it("2.22 not built by the release script is not official", () => {
     expect(apkReleaseStatus({ ...release22, builtByReleaseScript: false })).toBe("company_signed_older_code");

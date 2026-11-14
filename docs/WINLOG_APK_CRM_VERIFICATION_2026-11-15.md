@@ -86,3 +86,29 @@ Manual markers সাধারণ release evidence; এগুলো নতুন
 ফোনের পরীক্ষার ফল পাঠালে customer phone/name, audio, tokens, passwords ও notification-এর ব্যক্তিগত তথ্য ঢেকে দিন। শুধু সফল লেখা বা একটি “Synced” badge নয়—একই কলের ফোনের CallLog ও CRM-এ পড়ে পাওয়া ফল মিলতে হবে।
 
 **এই যাচাইয়ে কোনো ফোনকল, customer/lead write, assignment, payment/unlock, signing-key ব্যবহার, APK build বা publish করা হয়নি।**
+
+## অ্যাপজুড়ে নিয়মের পর্যালোচনা — পরবর্তী সংশোধন
+
+নিয়ম: বৈধ স্বাক্ষর, checkbox, HTTP 200 বা bundled page উপস্থিতি চূড়ান্ত APK/সফল login/লিড হিসাব/কল sync প্রমাণ নয়।
+
+| ব্যবহারকারীর পথ | কোড পড়ে পাওয়া অবস্থা / সংশোধন |
+|---|---|
+| IT APK download card ও release status | শুধু build checkbox দিয়ে final দাবি করা যেত; এখন exact checksum-এর সঙ্গে reviewed source commit ও handset evidence দরকার। পুরনো stored rows অপরিবর্তিত। |
+| IT upload browser/server verification | checksum/package/newer version/signature/signer server-checked; build checkbox একা final status দিতে পারে না। কোনো upload/publish চালানো হয়নি। |
+| Pre-install checklist | নিজের checkbox পূর্ণ মানে “safe” বলা সরানো; স্বাধীন signature ও handset test বাকি থাকে। |
+| Install guide, download card | পুরনো app uninstall পরামর্শ সরিয়ে queued data রাখা; audio/summary optional, call-sync proof আলাদা। |
+| Shared header ও Android install menu | download request-কে delivered বলা বন্ধ; untested APK-কে recommended বলা সরানো। |
+| Real-phone acceptance reader | hardcoded পুরনো release বদলে canonical current release পড়ে; UI স্পষ্ট করে এটি সম্পূর্ণ release approval নয়। Call scoring/evidence gates অপরিবর্তিত। |
+| Agent-submitted phone test reports | self-reported pass/fail, own account insert/own history/full IT inbox; independently verified release evidence-তে স্বয়ংক্রিয় ব্যবহার নেই। অপরিবর্তিত। |
+| Android CRM connection strip | সফল read থাকলে connection, stale/error আলাদা; একটি call delivered দাবি করে না। অপরিবর্তিত। |
+| Bash/PowerShell signed build ও Android CI | signature/package/version/checksum checks আছে, record বলে handset approval এখনও বাকি। বাস্তব build/run হয়নি। |
+| Manual status dashboard | general “Live site verified” দাবি সংকুচিত করে manual-marker result; revision/login/counts/sync বা publish time নিশ্চিত নয়। Stored history অপরিবর্তিত। |
+| Smoke availability check | bundled route-এর ফল এখন explicitly login/lock/count/sync unverified বলে। APK storage probe legacy path পড়ে; official readiness নয়। |
+| Agent/HQ/Nexus daily allocation | shared reader, caller-scoped receipts, 50 কোম্পানি/10 self balance; query errors পৃথক, কোনো অনুমান বা record rewrite করা হয়নি। |
+| Database cap/routing functions | advisory-lock ledger, canonical routing ও append-only history; SQL source পড়া হয়েছে, migration/live schema যাচাই বা পরিবর্তন হয়নি। |
+| Maintenance web/phone/server | বর্তমান authoritative lock বহাল; বাংলা notice এখনও অসম্পূর্ণ। কোনো permission, exemption, payment বা unlock বদলানো হয়নি। |
+| Legacy public APK download/update + disabled old publisher | public download app-downloads/winstone-pulse.apk, update reads app_releases, IT card reads android_apk_release: **এক source নয়, unresolved**। old publisher fail-closed phone-upgrade guard-এ বন্ধ। অনুমতি/settings না বদলানোর শর্তে public delivery path পরিবর্তন করা হয়নি; official acceptance দাবি নয়। |
+
+সংশোধনের focused regression run: **101 passed, 0 failed** (APK checks/status/build scripts, phone acceptance, allocation, quota, maintenance boundaries)। এটি Android instrumentation বা ফোন পরীক্ষা নয়।
+
+বাকি: connected handset ও approved Winlog build provenance; Architect-এর বর্তমান unlock process; active agent-এর live dashboard acceptance; legacy/public download-এর canonicalization-এর জন্য আলাদা distribution/permission scope; সম্পূর্ণ বাংলা notice translation।

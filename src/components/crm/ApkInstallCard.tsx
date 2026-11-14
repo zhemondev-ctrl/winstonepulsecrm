@@ -24,7 +24,7 @@ const fileName = (path: string) => path.split("/").pop() ?? path;
 const INSTALL_STEPS: { bn: string; en: string }[] = [
   { bn: "এজেন্টের ফোনে লিংক বা QR খুলে ফাইলটি ডাউনলোড করুন।", en: "Open the link or scan the QR on the agent's phone and download the file." },
   { bn: "উপরের চেকসাম মিলিয়ে নিন (IT কম্পিউটারে যাচাই করে দিলে ভালো)।", en: "Check the checksum above (best done by IT on a computer)." },
-  { bn: "পুরনো টেস্ট অ্যাপ (Winstone Connect Test) থাকলে আগে আনইনস্টল করুন।", en: "Uninstall any old test app (Winstone Connect Test) first." },
+  { bn: "পুরনো অ্যাপ বা অপেক্ষমান কল/রিপোর্ট মুছবেন না; ইনস্টল ব্যর্থ হলে IT-কে জানান।", en: "Keep the old app and pending calls/reports; if installation fails, contact IT." },
   { bn: "ফাইলটি খুলুন; ফোন জিজ্ঞেস করলে শুধু এই একবারের জন্য \"অজানা অ্যাপ ইনস্টল\" অনুমতি দিন।", en: "Open the file; if the phone asks, allow \"Install unknown apps\" for this one install." },
   { bn: "Install চাপুন, তারপর অ্যাপ খুলে CRM-এর ইমেইল ও পাসওয়ার্ড দিয়ে লগইন করুন।", en: "Tap Install, then open the app and sign in with the CRM email and password." },
   { bn: "ফোন, কল লগ ও নোটিফিকেশন অনুমতি দিন, তারপর একটি টেস্ট কল করে CRM-এ রিপোর্ট আসছে কিনা দেখুন।", en: "Allow phone, call log and notification permissions, then make one test call and check the report reaches the CRM." },
@@ -247,15 +247,15 @@ export function ApkInstallCard() {
               <span className="font-semibold">{t({ bn: "অফিশিয়াল রিলিজ", en: "Official release" })}</span>
               {" — "}
               {t({
-                bn: "সর্বশেষ কোড থেকে কোম্পানির অনুমোদিত কী দিয়ে সাইন করা। সব এজেন্টকে দেওয়ার আগে নিচের Real phone test checklist একটি ফোনে পাস করান। ইনস্টলের পর CRM-এর ইমেইল ও পাসওয়ার্ড দিয়ে লগইন করুন।",
-                en: "Built from the latest code and signed with the approved company key. Pass the Real phone test checklist below on one phone before giving it to all agents. After installing, sign in with the CRM email and password.",
+                bn: "এই ফাইলের স্বাক্ষর, কোডের রেকর্ড ও ফোন পরীক্ষার প্রমাণ সংরক্ষিত আছে। ইনস্টলের পর নিজের CRM অ্যাকাউন্টে সাইন ইন করুন।",
+                en: "Signing, source record and phone-test evidence are recorded for this file. After installing, sign in with your own CRM account.",
               })}
             </p>
           ) : releaseStatus === "company_signed_older_code" ? (
             <p className="rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-xs">
               {t({
-                bn: "কোম্পানির কী দিয়ে সাইন করা, কিন্তু পুরনো কোড থেকে তৈরি — এখনও অফিশিয়াল রিলিজ নয়। অফিশিয়াল 2.22 আসবে কী-রক্ষকের build-signed-apk বিল্ড থেকে। পুরনো টেস্ট অ্যাপ থাকলে আনইনস্টল করে দিন। ইনস্টলের পর CRM-এর ইমেইল ও পাসওয়ার্ড দিয়ে লগইন করুন।",
-                en: "Company-signed, but built from older code — not the official release yet. The official 2.22 will come from the key holder's build-signed-apk run. Uninstall any old test app. After installing, sign in with the CRM email and password.",
+                bn: "কোম্পানির কী দিয়ে সাইন করা; সর্বশেষ কোড ও এই ফাইলের ফোন পরীক্ষার সম্পূর্ণ প্রমাণ নেই — চূড়ান্ত রিলিজ নয়। পুরনো অ্যাপ বা অপেক্ষমান তথ্য মুছবেন না।",
+                en: "Company-signed; complete latest-source and phone-test evidence for this file is missing — not a final release. Keep the old app and pending data.",
               })}
             </p>
           ) : (
@@ -313,7 +313,7 @@ export function ApkInstallCard() {
             ) : (
               <ShieldAlert className="size-4 text-warning" />
             )}
-            {t({ bn: "লাইভ সাইট পরীক্ষা", en: "Live site check" })}
+            {t({ bn: "পেজ ও ফাইলের উপস্থিতি পরীক্ষা", en: "Page & file availability check" })}
           </h3>
           {result ? (
             <span className="text-xs text-muted-foreground">
@@ -323,6 +323,7 @@ export function ApkInstallCard() {
           ) : null}
         </div>
 
+        <p className="mt-2 text-xs text-muted-foreground">{t({ bn: "এটি সাইন-ইন, বাংলা ড্যাশবোর্ডের হিসাব বা ফোনের কল/sync পরীক্ষার ফল নয়।", en: "This does not verify sign-in, dashboard totals, translations or phone call/sync results." })}</p>
         {error ? <p className="mt-2 text-xs text-destructive">{error}</p> : null}
         {!result && running ? (
           <p className="mt-2 text-xs text-muted-foreground">{t({ bn: "পরীক্ষা চলছে…", en: "Checking…" })}</p>

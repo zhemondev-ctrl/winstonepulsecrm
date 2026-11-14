@@ -87,8 +87,8 @@ export function InstallAppButton() {
             >
               <Smartphone className="size-4 shrink-0 text-primary" />
               <span>
-                <span className="block font-medium">{t({ bn: "Android অ্যাপ (সুপারিশকৃত)", en: "Android app (recommended)" })}</span>
-                <span className="text-xs text-muted-foreground">{t({ bn: "নিজের সিমে কল ও রেকর্ডিং", en: "Calls & recording on your own SIM" })}</span>
+                <span className="block font-medium">{t({ bn: "Android অ্যাপ — IT যাচাই প্রয়োজন", en: "Android app — IT verification required" })}</span>
+                <span className="text-xs text-muted-foreground">{t({ bn: "স্বাক্ষর ও ফোন পরীক্ষার ফল নিশ্চিত করুন", en: "Confirm signing and phone-test results" })}</span>
               </span>
             </a>
             <WebOption prompt={!!prompt} onInstall={installWeb} hint={t({ bn: "Chrome মেনু (⋮) → “Add to Home screen”", en: "Chrome menu (⋮) → “Add to Home screen”" })} />

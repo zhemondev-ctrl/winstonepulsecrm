@@ -228,7 +228,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 document.body.appendChild(a);
                 a.click();
                 a.remove();
-                toast.success("Agent app download started");
+                toast.info(t({ bn: "ডাউনলোডের অনুরোধ করা হয়েছে; ফাইল ও স্বাক্ষর IT দিয়ে যাচাই করুন।", en: "Download requested; ask IT to verify the file and signature." }));
               }}
             >
               <Smartphone className="size-3.5" />

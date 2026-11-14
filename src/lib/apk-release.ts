@@ -29,6 +29,8 @@ export type ApkRelease = {
   companySigned: boolean;
   /** True only when the file came out of scripts/build-signed-apk with its release record and .sha256 matching. */
   builtByReleaseScript: boolean;
+  /** Missing evidence is never approval; bind reviewed build/device evidence to these exact bytes. */
+  acceptance?: { apkSha256: string; sourceCommit: string; reviewedAt: string; deviceTestPassed: boolean };
   addedAt: string;
 };
 
@@ -68,7 +70,10 @@ export function apkReleaseStatus(r: ApkRelease): ApkReleaseStatus {
     r.packageName === "com.winstone.connect" &&
     /^[a-f0-9]{64}$/.test(r.sha256);
   if (!signed) return "not_company_signed";
-  if (r.builtByReleaseScript && r.versionCode >= FIRST_OFFICIAL_VERSION_CODE) return "official";
+  const evidence = r.acceptance;
+  if (r.builtByReleaseScript && r.versionCode >= FIRST_OFFICIAL_VERSION_CODE &&
+    evidence?.apkSha256 === r.sha256 && /^[a-f0-9]{40}$/i.test(evidence.sourceCommit) &&
+    Number.isFinite(Date.parse(evidence.reviewedAt)) && evidence.deviceTestPassed === true) return "official";
   return "company_signed_older_code";
 }
 

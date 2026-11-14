@@ -17,8 +17,8 @@ export function AndroidApkInstallGuide() {
     {
       title: t({ en: "2. Download on your phone", bn: "২. ফোনে ডাউনলোড করুন" }),
       body: t({
-        en: "Open the link on the phone you use for calls and download the APK file. It is a test build, so it may not install over a Winstone Pulse app you already have — remove the old one first if the install is refused.",
-        bn: "যে ফোনে কল করেন সেই ফোনেই লিংক খুলে APK ফাইলটি ডাউনলোড করুন। এটি টেস্ট বিল্ড, তাই আগে থেকে থাকা Winstone Pulse অ্যাপের ওপর ইনস্টল নাও হতে পারে — সেক্ষেত্রে পুরোনো অ্যাপটি আগে তুলে ফেলুন।",
+        en: "Download on the phone you use for calls. If installation is refused, keep the old app and pending data and contact IT; do not uninstall to force an update.",
+        bn: "যে ফোনে কল করেন সেখানে ডাউনলোড করুন। ইনস্টল ব্যর্থ হলে পুরনো অ্যাপ ও অপেক্ষমান তথ্য রেখে IT-কে জানান; আপডেটের জন্য আনইনস্টল করবেন না।",
       }),
     },
     {
@@ -38,8 +38,8 @@ export function AndroidApkInstallGuide() {
     {
       title: t({ en: "5. Make one test call", bn: "৫. একটি টেস্ট কল করুন" }),
       body: t({
-        en: "Call a test number — never a customer. Check: the call shows in the CRM, the recording plays after 2–3 minutes, and a summary appears. Also try one short rejection report (Not Interested / Wrong Number / Fake) and confirm it asks only the short questions.",
-        bn: "টেস্ট নম্বরে কল করুন — কখনো গ্রাহককে নয়। দেখুন: কলটি CRM-এ দেখা যায়, ২–৩ মিনিটের মধ্যে রেকর্ডিং বাজে এবং সারাংশ আসে। একটি সংক্ষিপ্ত রিজেকশন রিপোর্টও (Not Interested / Wrong Number / Fake) দেখুন — শুধু ছোট প্রশ্নগুলোই আসছে কি না।",
+        en: "Use an authorized test number, never a customer. Match the phone call log to the CRM record. Recording is optional and needs consent and real audio; missing audio or summary is not proof of failed call sync.",
+        bn: "অনুমোদিত পরীক্ষার নম্বর ব্যবহার করুন, গ্রাহক নয়। ফোনের কল লগ ও CRM-এর একই কল মিলিয়ে দেখুন। রেকর্ডিং ঐচ্ছিক; সম্মতি ও আসল অডিও দরকার। অডিও বা সারাংশ না থাকা কল sync ব্যর্থ হওয়ার প্রমাণ নয়।",
       }),
     },
     {
