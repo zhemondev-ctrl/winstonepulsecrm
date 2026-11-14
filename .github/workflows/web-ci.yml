@@ -27,6 +27,9 @@ jobs:
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
+          # Caches Bun's global package cache keyed on bun.lock, so repeat
+          # runs skip re-downloading dependencies.
+          cache: true
       - name: Install dependencies
         run: bun install --frozen-lockfile
       - name: Type check
