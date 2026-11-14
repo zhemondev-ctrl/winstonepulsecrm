@@ -13,7 +13,6 @@ export const PAGE_SECTIONS = {
     { key: "audit", label: "দৈনিক এজেন্ট নিরীক্ষা", en: "Daily agent audit" },
     { key: "leads", label: "লিড ও ধাপ", en: "Leads & stages" },
     { key: "tools", label: "তদারকি ও সরঞ্জাম", en: "Checks & tools" },
-    { key: "approvals", label: "মিটিং অনুমোদন", en: "Meeting approvals" },
   ],
   "/desk": [
     { key: "today", label: "আজকের কাজ", en: "Today's work" },
@@ -48,7 +47,6 @@ export const PAGE_SECTIONS = {
     { key: "releases", label: "অ্যাপ ও সংস্করণ", en: "Apps & versions" },
     { key: "billing", label: "বিল ও তদারকি", en: "Billing & review" },
     { key: "audit", label: "দৈনিক এজেন্ট নিরীক্ষা", en: "Daily agent audit" },
-    { key: "approvals", label: "মিটিং অনুমোদন", en: "Meeting approvals" },
   ],
 } as const;
 

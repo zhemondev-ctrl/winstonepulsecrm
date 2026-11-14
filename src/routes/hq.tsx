@@ -8,8 +8,6 @@ import { ScoreFormulaSettings } from "@/components/crm/hq/ScoreFormulaSettings";
 import { DailyScoresPanel } from "@/components/crm/hq/DailyScoresPanel";
 import { Button } from "@/components/ui/button";
 import { AgentSelfLeadsPanel } from "@/components/crm/hq/AgentSelfLeadsPanel";
-import { MdApprovalReportButton } from "@/components/crm/hq/MdApprovalReportButton";
-import { MeetingApprovalsPanel } from "@/components/crm/meeting/MeetingApprovalsPanel";
 import { DistributionFailurePanel } from "@/components/crm/DistributionFailurePanel";
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { ChevronDown, ShieldCheck } from "lucide-react";
@@ -226,7 +224,6 @@ function ControlBoard() {
           <div className="min-w-0 flex-1 rounded-2xl border border-border bg-card p-4 text-card-foreground shadow-sm sm:p-6">
             <MaintenanceProfileNotice />
             <Suspense fallback={null}><SiteVisitAlerts /></Suspense>
-            {tab === "overview" && <div className="mb-6"><MdApprovalReportButton /></div>}
             {tab === "kpis" && <div className="space-y-6"><Button asChild variant="secondary"><Link to="/score-versions">তারিখভিত্তিক স্কোর · Dated scores</Link></Button><ScoreFormulaSettings /><DailyScoresPanel /><AgentSalesScorecards /><AgentSelfLeadsPanel /><AgentKpiDashboard /></div>}
             {tab === "overview" && (
               <div className="space-y-8">
@@ -317,7 +314,6 @@ function ControlBoard() {
             {tab === "followups" && <div className="space-y-4"><ConversationOutcomesPanel /><ReportsBoard /></div>}
 
             {tab === "lead360" && <Lead360Workspace />}
-            {tab === "approvals" && <MeetingApprovalsPanel surface="hq" />}
             {tab === "audit" && <Suspense fallback={<SnapshotSkeleton />}><DailyAgentAudit /></Suspense>}
             {tab === "recovery" && <Suspense fallback={<SnapshotSkeleton />}><div className="space-y-6"><ClosureRecoveryQueue onOpenLead={setOpenLeadId} /><VipRecoveryQueue onOpenLead={setOpenLeadId} /></div></Suspense>}
 
