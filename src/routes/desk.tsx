@@ -73,16 +73,16 @@ export const Route = createFileRoute("/desk")({
   validateSearch: sectionSearch,
   head: () => ({
     meta: [
-      { title: "My Desk — Winstone Pulse" },
+      { title: "Agent Dashboard — Daily Leads | Winstone Pulse" },
       {
         name: "description",
         content:
-          "Your own lead list, call recordings, WhatsApp inbox and a place to add new leads — all in one desk.",
+          "Today's handout, remaining company allowance, self-registrations and secure phone-number entry in the Winstone Pulse agent dashboard.",
       },
-      { property: "og:title", content: "My Desk — Winstone Pulse" },
+      { property: "og:title", content: "Agent Dashboard — Daily Leads | Winstone Pulse" },
       {
         property: "og:description",
-        content: "One tap to call, WhatsApp conversations and your own leads — the Winstone Pulse agent desk.",
+        content: "View your daily handout, company allowance and self-registration receipts in your chosen language.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -363,9 +363,9 @@ function DeskPage() {
 
           {tab === "today" && (
             <>
+          {scope === "agent" && <DailyAllocationSummary surface="self" />}
           <MyProgressCard />
           <OfficialNewsStrip />
-          <DailyAllocationSummary surface="self" />
 
           <MyCollectedLeads />
 

@@ -1,6 +1,8 @@
 # Roadmap
 
 ## Open tasks
+- [x] 15 Nov agent dashboard: prominent chosen-language daily handout/company allowance/self-registration cards and canonical phone-save entry, moved above secondary work. 33 isolated tests pass; build OK. Actual self-session resolves inactive account, so authorized agent display/save remains unverified; no fake leads or permission override.
+- [ ] 15 Nov publish dashboard/live design acceptance; latest-source official APK cannot be built here (no Java/SDK/company signing runner or handset evidence), uploaded signed 2.21 stays current but is not latest 2.22 code. Existing current-only APK screen retained; no files/audit deletion. 325-lead recovery cannot bypass fresh verified backup/canonical LeadHub/daily limits.
 - [x] APK view now shows canonical current download only; old release/history panel removed from this screen, no stored files/audit deleted. Uploaded 2.21/code32 has verified v2 approved company signer, checksum c5e1e5861bf384975086e6b206b17283348e3524d97ab0d5fb784942be394710; source is 2.22/code33, so no replacement/latest-code attestation. PIN-unlocked 1280/780px checks passed, no overflow.
 - [ ] Reassign 325 assigned-pending leads: read-only counts confirm 100 on two IT accounts and 175 with call/report/follow-up history. Blocked on verified recoverable backup and reviewed canonical LeadHub recovery; daily 50 cap/Net-50 remain, no ownership or history writes.
 - [ ] Publication requested for 09d6e310 at crm.winstonebd.com: saved clean IT layout, current-only APK view and available EN/Bangla changes included; basic scan/build pass, deep scan stale. Deployment/live design confirmation pending; whole-CRM translation remains incomplete and must not be claimed complete.

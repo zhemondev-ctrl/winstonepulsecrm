@@ -22,8 +22,9 @@ import { collectionPhone, emptyLeadDraft, type CollectionDraft, type LeadDraftFi
 import { useT } from "@/lib/i18n";
 
 /** A collected lead is submitted, not self-assigned. Input remains in memory on failure. */
-export function NewLeadDialog({ draft, disabled = false, onSaved, onViewReceipt }: {
+export function NewLeadDialog({ draft, disabled = false, onSaved, onViewReceipt, phoneEntry = false }: {
   draft?: CollectionDraft | undefined; disabled?: boolean; onSaved?: (() => void) | undefined; onViewReceipt?: ((id: string) => void) | undefined;
+  phoneEntry?: boolean;
 }) {
   const t = useT();
   const id = useId();
@@ -75,7 +76,7 @@ export function NewLeadDialog({ draft, disabled = false, onSaved, onViewReceipt 
     <Dialog open={open} onOpenChange={next => { if (!busy) { setOpen(next); if (next && !requestKey) setRequestKey(crypto.randomUUID()); } }}>
       <DialogTrigger asChild>
         <Button size="sm" className="gap-2" disabled={disabled} variant={draft ? "outline" : "default"}>
-          {draft ? <FileText className="size-4" /> : <UserPlus className="size-4" />} {draft ? t({ bn: "খসড়া চালিয়ে যান", en: "Continue draft" }) : t({ bn: "লিড যোগ করুন", en: "Add lead" })}
+          {draft ? <FileText className="size-4" /> : <UserPlus className="size-4" />} {draft ? t({ bn: "খসড়া চালিয়ে যান", en: "Continue draft" }) : phoneEntry ? t({ bn: "ফোন নম্বর সংরক্ষণ", en: "Save phone number" }) : t({ bn: "লিড যোগ করুন", en: "Add lead" })}
         </Button>
       </DialogTrigger>
       <DialogContent className="max-h-[88dvh] overflow-y-auto sm:max-w-lg">

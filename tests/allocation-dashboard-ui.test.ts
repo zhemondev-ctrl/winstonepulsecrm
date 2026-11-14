@@ -4,6 +4,7 @@ import { cleanup, render, screen } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { afterEach, expect, it, vi } from "vitest";
 vi.mock("@tanstack/react-start", () => ({ useServerFn: (fn: unknown) => fn }));
+vi.mock("@/components/crm/NewLeadDialog", () => ({ NewLeadDialog: () => null }));
 vi.mock("@/lib/i18n", () => ({ useT: () => (v: { en: string }) => v.en }));
 vi.mock("@/lib/local-session", () => ({ useAdminToken: () => "fixture", useDeckToken: () => null }));
 vi.mock("@/lib/session", () => ({ useMyAccount: () => ({ account: null }) }));

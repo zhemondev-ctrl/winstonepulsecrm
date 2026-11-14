@@ -6,6 +6,7 @@ import { getDailyAllocation } from "@/lib/daily-allocation.functions";
 import { useAdminToken, useDeckToken } from "@/lib/local-session";
 import { useMyAccount } from "@/lib/session";
 import { useT } from "@/lib/i18n";
+import { NewLeadDialog } from "@/components/crm/NewLeadDialog";
 import { useEffect, useState } from "react";
 
 export function DailyAllocationSummary({ surface }: { surface: "hq" | "leadhub" | "self" }) {
@@ -43,7 +44,7 @@ export function DailyAllocationSummary({ surface }: { surface: "hq" | "leadhub" 
     <header className="flex items-start justify-between gap-3">
       <div><h2 className="text-sm font-semibold">{t({ bn: "দৈনিক নতুন লিড বণ্টন", en: "Daily new lead distribution" })}</h2>
         <p className="text-xs text-muted-foreground">{d ? `${d.day} · ${t({ bn: "ঢাকা সময়", en: "Dhaka time" })}` : t({ bn: "তথ্য আনা হচ্ছে…", en: "Loading…" })}</p></div>
-      <Button size="icon" variant="ghost" disabled={query.isFetching} onClick={() => void query.refetch()} aria-label={t({ bn: "বণ্টন সারাংশ আবার দেখুন", en: "Refresh allocation summary" })} title={t({ bn: "আবার দেখুন", en: "Refresh" })}><RefreshCw className={query.isFetching ? "size-4 animate-spin motion-reduce:animate-none" : "size-4"} /></Button>
+      <div className="flex flex-wrap items-center justify-end gap-2">{surface === "self" && <NewLeadDialog phoneEntry />}<Button size="icon" variant="ghost" disabled={query.isFetching} onClick={() => void query.refetch()} aria-label={t({ bn: "বণ্টন সারাংশ আবার দেখুন", en: "Refresh allocation summary" })} title={t({ bn: "আবার দেখুন", en: "Refresh" })}><RefreshCw className={query.isFetching ? "size-4 animate-spin motion-reduce:animate-none" : "size-4"} /></Button></div>
     </header>
     {query.isError ? <p role="alert" className="text-sm text-destructive">{t({ bn: "বণ্টনের তথ্য আনা যায়নি। আবার চেষ্টা করুন।", en: "Could not load the allocation data. Please try again." })}</p> : d && <>
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-3">
@@ -58,7 +59,15 @@ export function DailyAllocationSummary({ surface }: { surface: "hq" | "leadhub" 
       {!d.distributionOpen && <p role="status" className="text-sm text-muted-foreground">{t({ bn: "আজ শুক্রবার — নতুন লিড বণ্টন বন্ধ; আগের লিডের কাজ চালু থাকবে।", en: "Today is Friday — new lead distribution is paused; work on existing leads continues." })}</p>}
       {d.showZeroAlert && <div role="alert" className="flex gap-2 rounded-md border border-warning/40 bg-warning/10 p-3 text-sm text-foreground"><AlertTriangle className="mt-0.5 size-4 shrink-0 text-warning" />
         <p>{surface === "self" ? t({ bn: "আজ আপনি কোনো নতুন লিড পাননি — বণ্টন ঠিক আছে কি না দেখে নেওয়া হবে।", en: "You received no new leads today — the allocation is being checked." }) : t({ bn: `${d.zeroCount} জন এজেন্ট আজ কোনো নতুন লিড পাননি — বণ্টন ঠিক আছে কি না দেখে নেওয়া হবে।`, en: `${d.zeroCount} agents received no new leads today — the allocation is being checked.` })}</p></div>}
-      {d.agents.length === 0 ? <p className="text-sm text-muted-foreground">{t({ bn: "কোনো সক্রিয় অনুমোদিত এজেন্ট নেই।", en: "No active approved agents." })}</p> : <>
+      {surface === "self" && d.agents[0] && <dl className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        {[
+          { label: t({ bn: "আজকের কোম্পানি লিড", en: "Today's company handout" }), value: d.agents[0].received, hint: t({ bn: "সংরক্ষিত বণ্টন রসিদ", en: "Saved assignment receipts" }) },
+          { label: t({ bn: "কোম্পানি বণ্টন বাকি", en: "Company allowance remaining" }), value: d.agents[0].remaining, hint: t({ bn: "৫০-এর সীমার মধ্যে; বরাদ্দ নিশ্চিত নয়", en: "Within the 50 limit; not a promised allocation" }) },
+          { label: t({ bn: "আজ নিজের নিবন্ধন", en: "Self-registrations today" }), value: d.agents[0].registered, hint: t({ bn: "গৃহীত জমার রসিদ", en: "Accepted submission receipts" }) },
+          { label: t({ bn: "নিজের নিবন্ধন বাকি", en: "Self-registration slots" }), value: d.agents[0].selfRemaining, hint: t({ bn: "দৈনিক সর্বোচ্চ ১০টি", en: "Maximum 10 per day" }) },
+        ].map(item => <div key={item.label} className="min-w-0 rounded-md border border-border bg-card p-4 shadow-sm"><dt className="text-sm font-medium">{item.label}</dt><dd className="my-2 text-3xl font-semibold tabular-nums">{item.value}</dd><p className="text-xs text-muted-foreground">{item.hint}</p></div>)}
+      </dl>}
+      {d.agents.length === 0 ? <p className="text-sm text-muted-foreground">{t({ bn: "কোনো সক্রিয় অনুমোদিত এজেন্ট নেই।", en: "No active approved agents." })}</p> : surface !== "self" && <>
         <dl className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
           {[{ label: t({ bn: "নতুন লিড বণ্টিত", en: "New leads assigned" }), value: d.total }, { label: t({ bn: "সক্রিয় এজেন্ট", en: "Active agents" }), value: d.agents.length }, { label: t({ bn: "৫০ পূর্ণ করেছেন", en: "Received all 50" }), value: d.completeCount }, { label: t({ bn: "বণ্টন বাকি", en: "Still to assign" }), value: d.remaining }].map(item => <div key={item.label}><dt className="text-xs text-muted-foreground">{item.label}</dt><dd className="tabular-nums text-lg font-semibold">{item.value}</dd></div>)}
         </dl>
