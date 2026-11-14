@@ -141,6 +141,6 @@
 - [x] Migration A: self-lead attribution, routed self leads skip 50 ledger
 - [x] LeadHub routes attributed leads to collector; HQ-only reroute with reason
 - [x] Migration B: score_formula_versions; V2 from 2026-11-15, older days 100-pt
-- [ ] Show fresh backup evidence, then publish (owner approved)
+- [x] Show fresh backup evidence, then publish (requested 14 Nov)
 - [ ] Phone call proof → V: server path ready; blocked until agents install Android 2.22+ (devices report 2.3 and older)
 - [ ] Agent draft/submit test on live data (needs owner OK: creates permanent lead)
