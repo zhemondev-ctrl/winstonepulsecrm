@@ -46,18 +46,20 @@ describe("phone call-state acknowledgement", () => {
     expect(res.status).toBe(200);
     expect(s.reports).toBe(1);
   });
-  it("stores call-history proof only when the phone sends it (app 2.21 never does)", async () => {
+  it("never promotes a caller-selected call-log flag to proof", async () => {
     const callRowPatches = () => s.patches.filter((p) => "call_status" in p);
     await call();
     expect(callRowPatches()[0]).not.toHaveProperty("talk_time_source");
     await call({ talk_time_source: "call_log" });
-    expect(callRowPatches()[1]).toMatchObject({ talk_time_source: "call_log", duration_seconds: 42, call_status: "completed" });
+    expect(callRowPatches()[1]).not.toHaveProperty("talk_time_source");
+    expect(callRowPatches()[1]).toMatchObject({ duration_seconds: 42, call_status: "completed" });
   });
   it("never lets a live push replace talk time the call history already proved", async () => {
     s.existingTalkSource = "call_log";
     s.existingStatus = "initiated";
     await call({ duration_seconds: 75 });
-    const patch = s.patches.find((p) => "call_status" in p)!;
+    const patch = s.patches.find((p) => "call_status" in p);
+    if (!patch) throw new Error("Missing patch");
     expect(patch.call_status).toBe("completed");
     expect(patch).not.toHaveProperty("duration_seconds");
   });

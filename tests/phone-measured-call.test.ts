@@ -3,8 +3,8 @@ import { isPhoneMeasuredCall, pickPhoneMeasuredCall } from "@/lib/call-duration"
 
 describe("which calls prove talk time", () => {
   it("accepts a dialled call the phone read from its own call log", () => {
-    expect(isPhoneMeasuredCall({ call_source: "android_dialer", external_call_id: "log-812-01712345678" })).toBe(true);
-    expect(isPhoneMeasuredCall({ call_source: "android_incoming", external_call_id: "log-9-01812345678" })).toBe(true);
+    expect(isPhoneMeasuredCall({ call_source: "android_dialer", external_call_id: "log-812-01712345678" })).toBe(false);
+    expect(isPhoneMeasuredCall({ call_source: "android_incoming", external_call_id: "log-9-01812345678" })).toBe(false);
   });
 
   it("rejects a live dialer row whose time includes ringing", () => {
@@ -12,8 +12,8 @@ describe("which calls prove talk time", () => {
   });
 
   it("keeps the app's SIM call and the phone recorder, and never a web callback", () => {
-    expect(isPhoneMeasuredCall({ call_source: "android_sim", talk_time_source: "call_log" })).toBe(true);
-    expect(isPhoneMeasuredCall({ call_source: "phone_recorder" })).toBe(true);
+    expect(isPhoneMeasuredCall({ call_source: "android_sim", talk_time_source: "call_log" })).toBe(false);
+    expect(isPhoneMeasuredCall({ call_source: "phone_recorder" })).toBe(false);
     expect(isPhoneMeasuredCall({ call_source: "web_callback", external_call_id: "log-1-0171" })).toBe(false);
   });
 

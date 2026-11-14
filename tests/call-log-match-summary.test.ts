@@ -5,13 +5,13 @@ import { hqCallLogParams } from "@/lib/hq-daily-report";
 const agents = [{ id: "a1", name: "Rina" }, { id: "a2", name: "Karim" }];
 
 describe("daily call-log match summary", () => {
-  it("counts a call-log proven talk as matched and its lead as reached", () => {
+  it("does not count self-attested call-log talk as verified or reached", () => {
     const s = summarizeCallLogMatches({ agents, failures: [], calls: [
       { agent_id: "a1", lead_id: "L1", call_source: "android_sim", call_status: "completed", duration_seconds: 75, talk_time_source: "call_log" },
       { agent_id: "a1", lead_id: "L1", call_source: "android_sim", call_status: "completed", duration_seconds: 40, talk_time_source: "call_log" },
     ] });
-    expect(s.team.matched).toBe(2);
-    expect(s.team.verifiedLeads).toBe(1);
+    expect(s.team.matched).toBe(0);
+    expect(s.team.verifiedLeads).toBe(0);
   });
 
   it("never counts ringing-only app time (no call-log mark) as matched", () => {

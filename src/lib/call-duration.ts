@@ -103,13 +103,8 @@ export function durationSourceLabel(source: string | null | undefined): string {
  * time starts at dialling and includes ringing — unless the call log later
  * reconciled that row (talk_time_source = "call_log").
  */
-export function isPhoneMeasuredCall(row: { call_source?: string | null; external_call_id?: string | null; talk_time_source?: string | null }): boolean {
-  const source = String(row.call_source ?? "");
-  if (source === "phone_recorder") return true;
-  // App-dialled calls: app 2.21 sends dial-to-hang-up time (includes ringing and
-  // can mark an unanswered call "completed"), so only call-history evidence counts.
-  if (source === "android_sim") return row.talk_time_source === "call_log";
-  // A live phone row the phone's call log later reconciled (same physical call).
-  if ((source === "android_dialer" || source === "android_incoming") && row.talk_time_source === "call_log") return true;
-  return (source === "android_dialer" || source === "android_incoming") && String(row.external_call_id ?? "").startsWith("log-");
+export function isPhoneMeasuredCall(_row: { call_source?: string | null; external_call_id?: string | null; talk_time_source?: string | null }): boolean {
+  // Source labels, call IDs and recorder files are caller-controlled. They
+  // cannot independently establish an answered call or earn verified credit.
+  return false;
 }

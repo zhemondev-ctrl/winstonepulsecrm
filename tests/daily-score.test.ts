@@ -38,7 +38,8 @@ describe("policy score 2C + 2R + A + 4V + 1.5F", () => {
       reports: [{ id: "r1", agent_id: "a", lead_id: "L1" }, { id: "r2", agent_id: "a", lead_id: "L2" }],
       followUps: [{ id: "f1", agent_id: "a", lead_id: "L1", scheduled_at: null, completed_at: "2026-11-14T05:00:00Z" }],
     }, new Set(["L1"]));
-    // C=1 (L1 final), R=2, A=2, V=1, F=1 → 2+4+2+4+1.5
-    expect(r.total).toBe(13.5);
+    // C=1, R=2, A=2, V=0 (device claims aren't proof), F=1.
+    expect(r.parts.find(p => p.letter === "V")).toMatchObject({ count: 0, earned: 0 });
+    expect(r.total).toBe(9.5);
   });
 });

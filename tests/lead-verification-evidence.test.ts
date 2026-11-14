@@ -13,8 +13,8 @@ const check = (row: CallEvidenceRow | null, callUid: string | null = UID) =>
 
 describe("lead verification needs valid call evidence", () => {
   it("verifies only a completed, phone-measured call with talk time for this agent and lead", () => {
-    expect(check(good)).toEqual({ verified: true, reason: "verified" });
-    expect(check({ ...good, call_source: "android_dialer", external_call_id: "log-55-1711223344" }, "log-55-1711223344").verified).toBe(true);
+    expect(check(good)).toEqual({ verified: false, reason: "not_phone_measured" });
+    expect(check({ ...good, call_source: "android_dialer", external_call_id: "log-55-1711223344" }, "log-55-1711223344").verified).toBe(false);
   });
   it("missing call id or missing call record never verifies", () => {
     expect(check(good, null)).toEqual({ verified: false, reason: "no_call_id" });
@@ -40,7 +40,7 @@ describe("lead verification needs valid call evidence", () => {
     expect(check({ ...good, talk_time_source: "live" }).reason).toBe("not_phone_measured");
   });
   it("phone-dialer call verifies with call-history proof", () => {
-    expect(check({ ...good, call_source: "android_dialer", talk_time_source: "call_log" }).verified).toBe(true);
+    expect(check({ ...good, call_source: "android_dialer", talk_time_source: "call_log" }).verified).toBe(false);
   });
   it("time not measured by the phone (live dialer, web timer, manual) never verifies", () => {
     expect(check({ ...good, call_source: "android_dialer", external_call_id: UID, talk_time_source: null }).reason).toBe("not_phone_measured");
@@ -109,8 +109,8 @@ describe("phone outcome endpoint", () => {
   it("valid call evidence verifies even if the phone did not claim connected", async () => {
     s.call = { ...good };
     const body = await (await post({ lead_id: LEAD, outcome: "interested", call_uid: UID })).json();
-    expect(s.rpc[0]._connected).toBe(true);
-    expect(body.verified).toBe(true);
+    expect(s.rpc[0]._connected).toBe(false);
+    expect(body.verified).toBe(false);
   });
   it("legacy payload without call id never writes is_verified", async () => {
     const body = await (await post({ lead_id: LEAD, outcome: "interested", connected: true })).json();

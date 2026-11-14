@@ -47,8 +47,8 @@ import { hasProvenTalkTime } from "@/lib/lead-verification";
 
 describe("call log match on the phone app's call list", () => {
   const m = (row: Parameters<typeof callLogMatch>[0]) => callLogMatch(row, hasProvenTalkTime);
-  it("app-dialled call with call-history talk time matches with talk", () => {
-    expect(m({ call_source: "android_sim", call_status: "completed", duration_seconds: 67, talk_time_source: "call_log" })).toBe("log_talk");
+  it("app-dialled call-history claim is not independently matched", () => {
+    expect(m({ call_source: "android_sim", call_status: "completed", duration_seconds: 67, talk_time_source: "call_log" })).toBe("not_matched");
   });
   it("app-dialled 40s of ringing without call-history proof does not match", () => {
     expect(m({ call_source: "android_sim", call_status: "completed", duration_seconds: 40, talk_time_source: null })).toBe("not_matched");
@@ -56,8 +56,8 @@ describe("call log match on the phone app's call list", () => {
   it("phone call-history row that nobody answered matches with no talk", () => {
     expect(m({ call_source: "android_dialer", call_status: "no_answer", duration_seconds: 0, external_call_id: "log-123" })).toBe("log_no_answer");
   });
-  it("phone call-history row with talk time matches with talk", () => {
-    expect(m({ call_source: "android_dialer", call_status: "completed", duration_seconds: 38, external_call_id: "log-9" })).toBe("log_talk");
+  it("caller-selected log ID cannot prove talk", () => {
+    expect(m({ call_source: "android_dialer", call_status: "completed", duration_seconds: 38, external_call_id: "log-9" })).toBe("not_matched");
   });
   it("live dialer row not yet reconciled does not match", () => {
     expect(m({ call_source: "android_dialer", call_status: "completed", duration_seconds: 38, external_call_id: "uid-1" })).toBe("not_matched");

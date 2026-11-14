@@ -69,20 +69,17 @@ export function recordingBindingError(body: { recorder_source?: string | null | 
 }
 
 /**
- * Fields stored only when the phone proved the call's result from Android's call
- * history (app 2.22+ sends talk_time_source = "call_log" with a terminal state).
- * App 2.21 never sends it, so its ringing-inclusive time stays unproven.
+ * Device-reported call history is retained as observations, never independent
+ * evidence. Authentication identifies the agent, not the truth of the payload.
  */
-export function talkTimeEvidence(body: {
+export function talkTimeEvidence(_body: {
   state: string;
   talk_time_source?: string | undefined;
   duration_seconds?: number | undefined;
-}): { talk_time_source: "call_log"; duration_seconds: number; call_status: string } | Record<string, never> {
-  if (body.talk_time_source !== "call_log") return {};
-  if (body.state !== "completed" && body.state !== "no_answer") return {};
-  const seconds = typeof body.duration_seconds === "number" && body.duration_seconds > 0 ? body.duration_seconds : 0;
-  if (body.state === "completed" && seconds === 0) return {}; // completed needs talk time
-  return { talk_time_source: "call_log", duration_seconds: body.state === "completed" ? seconds : 0, call_status: body.state };
+}): Record<string, never> {
+  // An authenticated device is still the claimant, not an independent witness.
+  // Retain lifecycle/duration observations, but never promote them to proof.
+  return {};
 }
 
 /**
@@ -136,8 +133,8 @@ export function pickCallLogMatch<T extends CallLogCandidate>(
 }
 
 /**
- * Fields written onto the matched live row. Call-log state/duration are
- * authoritative (they replace live dial-to-hang-up time). An incoming row the
+ * Fields written onto the matched live row. Call-log state/duration remain
+ * device observations (they replace live dial-to-hang-up observations). An incoming row the
  * phone saw answered (answered_at) is never downgraded to "no_answer" — older
  * apps label a 0-second answered incoming call that way — but it still gets
  * 0 talk seconds, so it can never prove a connection.
@@ -155,8 +152,8 @@ export function callLogReconcilePatch(
     duration_seconds: status === "completed" ? seconds : 0,
     // Keep the earlier device claim when one exists; otherwise store the phone's measurement.
     ...(row.device_reported_duration_seconds == null ? { device_reported_duration_seconds: seconds } : {}),
-    talk_time_source: "call_log" as const,
-    talk_time_verified_at: nowIso,
+    talk_time_source: null,
+    talk_time_verified_at: null,
     call_log_id: log.callUid,
     ...(!row.finished_at && Number.isFinite(log.atMs) ? { finished_at: new Date(log.atMs + seconds * 1000).toISOString() } : {}),
   };
@@ -167,7 +164,8 @@ export function pendingReportDurationPatch(patch: { duration_seconds: number }, 
   return {
     duration_seconds: patch.duration_seconds,
     device_reported_duration_seconds: Math.max(0, Math.floor(seconds)),
-    duration_source: "phone_sync",
-    duration_synced_at: nowIso,
+    duration_source: "entered",
+    duration_synced_at: null,
+    connection_verified: false,
   };
 }

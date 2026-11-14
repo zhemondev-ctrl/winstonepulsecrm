@@ -28,10 +28,6 @@ export type CallEvidenceRow = {
  * count with that mark or a call-log row id; other sources follow isPhoneMeasuredCall.
  */
 export function hasProvenTalkTime(row: CallEvidenceRow): boolean {
-  const source = String(row.call_source ?? "");
-  const fromCallLog = row.talk_time_source === "call_log";
-  if (source === "android_sim") return fromCallLog;
-  if (source === "android_dialer" && fromCallLog) return true;
   return isPhoneMeasuredCall(row);
 }
 

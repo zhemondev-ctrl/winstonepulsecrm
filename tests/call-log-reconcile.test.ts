@@ -57,7 +57,7 @@ const input = (over: Partial<Parameters<typeof reconcileLateCallLog>[1]> = {}) =
 });
 
 describe("G2: late call-log entry reconciles the live row of the same call", () => {
-  it("phone-log sync increases V by one and four points, without double credit on retry", async () => {
+  it("self-attested phone-log sync and retry earn zero V points", async () => {
     const tables = { call_recordings: [liveRow()], call_reports: [] as Row[] };
     const { db } = fakeDb(tables);
     const scores = () => policyScores({ agents: [{ id: AGENT, name: "Agent" }], selfLeadIds: new Set<string>(), calls: tables.call_recordings as unknown as ScoreInput["calls"], reports: [], visits: [], visitsHeld: [], bookings: [], followUps: [] }, new Set<string>())[0];
@@ -65,8 +65,8 @@ describe("G2: late call-log entry reconciles the live row of the same call", () 
     expect(before?.parts.find(p => p.letter === "V")?.count).toBe(0);
     await reconcileLateCallLog(db, input());
     const after = scores();
-    expect(after?.parts.find(p => p.letter === "V")).toMatchObject({ count: 1, earned: 4 });
-    expect((after?.total ?? 0) - (before?.total ?? 0)).toBe(4);
+    expect(after?.parts.find(p => p.letter === "V")).toMatchObject({ count: 0, earned: 0 });
+    expect((after?.total ?? 0) - (before?.total ?? 0)).toBe(0);
     await reconcileLateCallLog(db, input());
     expect(scores()?.total).toBe(after?.total);
   });
@@ -84,8 +84,8 @@ describe("G2: late call-log entry reconciles the live row of the same call", () 
     expect(r).toMatchObject({ recordingId: "rec-live", reconciled: true, callStatus: "completed", previous: { duration_seconds: 78 } });
     expect(tables.call_recordings).toHaveLength(1);
     expect(tables.call_recordings[0]).toMatchObject({
-      duration_seconds: 41, call_status: "completed", talk_time_source: "call_log",
-      talk_time_verified_at: "2026-11-01T10:05:00.000Z", call_log_id: "log-812-5678",
+      duration_seconds: 41, call_status: "completed", talk_time_source: null,
+      talk_time_verified_at: null, call_log_id: "log-812-5678",
       device_reported_duration_seconds: 78, finished_at: iso(80),
     });
   });
@@ -93,7 +93,7 @@ describe("G2: late call-log entry reconciles the live row of the same call", () 
   it("downgrades app 2.21 ringing time to no answer when the call log says nobody picked up", async () => {
     const tables = { call_recordings: [liveRow()], call_reports: [] as Row[] };
     await reconcileLateCallLog(fakeDb(tables).db, input({ state: "no_answer", durationSeconds: 0 }));
-    expect(tables.call_recordings[0]).toMatchObject({ call_status: "no_answer", duration_seconds: 0, talk_time_source: "call_log" });
+    expect(tables.call_recordings[0]).toMatchObject({ call_status: "no_answer", duration_seconds: 0, talk_time_source: null });
   });
 
   it("is idempotent: a retry of the same call-log entry writes nothing more", async () => {
@@ -135,7 +135,7 @@ describe("G2: late call-log entry reconciles the live row of the same call", () 
     const submitted = { id: "rep-s", recording_id: "rec-live", agent_id: AGENT, status: "submitted", category: "follow_up", grade: "B", duration_seconds: 78 };
     const tables = { call_recordings: [liveRow()], call_reports: [pending, submitted] as Row[] };
     await reconcileLateCallLog(fakeDb(tables).db, input());
-    expect(tables.call_reports[0]).toEqual({ ...pending, duration_seconds: 41, device_reported_duration_seconds: 41, duration_source: "phone_sync", duration_synced_at: "2026-11-01T10:05:00.000Z" });
+    expect(tables.call_reports[0]).toEqual({ ...pending, duration_seconds: 41, device_reported_duration_seconds: 41, duration_source: "entered", duration_synced_at: null, connection_verified: false });
     expect(tables.call_reports[1]).toEqual(submitted);
   });
 });
@@ -169,7 +169,7 @@ describe("duration precedence and connected-talk-time evidence", () => {
     expect(resolveDurationSource({ phoneSeconds: 41, storedSeconds: 78 })).toBe("phone_sync");
   });
   it("a reconciled live dialer row counts as phone-measured; an unmarked one does not", () => {
-    expect(isPhoneMeasuredCall({ call_source: "android_dialer", external_call_id: "uuid", talk_time_source: "call_log" })).toBe(true);
+    expect(isPhoneMeasuredCall({ call_source: "android_dialer", external_call_id: "uuid", talk_time_source: "call_log" })).toBe(false);
     expect(isPhoneMeasuredCall({ call_source: "android_dialer", external_call_id: "uuid" })).toBe(false);
     expect(isPhoneMeasuredCall({ call_source: "web_callback", talk_time_source: "call_log" })).toBe(false);
   });
@@ -177,7 +177,7 @@ describe("duration precedence and connected-talk-time evidence", () => {
     const base = { agent_id: AGENT, lead_id: "lead-1", external_call_id: "u", call_status: "completed", talk_time_source: "call_log" };
     const call = (row: Record<string, unknown>) => verifyLeadFromCallEvidence({ callUid: "u", agentId: AGENT, leadId: "lead-1", row: { ...base, ...row } });
     expect(call({ duration_seconds: 0, call_source: "android_incoming" })).toEqual({ verified: false, reason: "no_talk_time" });
-    expect(call({ duration_seconds: 41, call_source: "android_sim" })).toEqual({ verified: true, reason: "verified" });
+    expect(call({ duration_seconds: 41, call_source: "android_sim" })).toEqual({ verified: false, reason: "not_phone_measured" });
     // Finalization only sets connection_verified for phone_sync with seconds > 0.
     expect(resolveDurationSource({ phoneSeconds: 0, storedSeconds: 0 })).toBe("entered");
   });
