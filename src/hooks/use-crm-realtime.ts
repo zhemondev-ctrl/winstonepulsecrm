@@ -3,7 +3,7 @@ import { useEffect } from "react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { useMyAccount } from "@/lib/session";
-import { shouldSubscribeToCrm } from "@/lib/crm-live-refresh";
+import { acquireCrmRefresh, shouldSubscribeToCrm } from "@/lib/crm-live-refresh";
 
 const TABLES = ["leads", "call_recordings", "whatsapp_interactions", "profiles", "it_notices", "it_notice_recipients", "it_notice_replies"] as const;
 
@@ -15,7 +15,7 @@ export function useCrmRealtime() {
 
   useEffect(() => {
     if (!enabled) return;
-    let timer: ReturnType<typeof setTimeout> | null = null;
+    const refresh = acquireCrmRefresh(queryClient);
     // Unique name per mount: reusing "crm-live" returns the already-subscribed
     // channel and throws "cannot add postgres_changes callbacks after subscribe()".
     const channel = supabase.channel(`crm-live-${Math.random().toString(36).slice(2)}`);
@@ -24,13 +24,7 @@ export function useCrmRealtime() {
       channel.on("postgres_changes", { event: "*", schema: "public", table }, () => {
         // Match the shared snapshot's 8s burst window instead of bypassing it
         // with a second immediate full reload on every database change.
-        if (!timer) timer = setTimeout(() => {
-          timer = null;
-          void queryClient.invalidateQueries(
-            { queryKey: ["crm-snapshot"], refetchType: document.visibilityState === "hidden" ? "none" : "active" },
-            { cancelRefetch: false },
-          );
-        }, 8000);
+        refresh.invalidate();
         if (table.startsWith("it_notice")) void queryClient.invalidateQueries({ queryKey: ["it-notice-board"] });
       });
     }
@@ -38,7 +32,7 @@ export function useCrmRealtime() {
     channel.subscribe();
 
     return () => {
-      if (timer) clearTimeout(timer);
+      refresh.release();
       void supabase.removeChannel(channel);
     };
   }, [queryClient, enabled]);

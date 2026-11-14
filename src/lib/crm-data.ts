@@ -2,7 +2,7 @@ import { useLocation } from "@tanstack/react-router";
 import { queryOptions, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { leadOwner } from "./lead-owner";
-import { shouldSubscribeToCrm } from "./crm-live-refresh";
+import { acquireCrmRefresh, shouldSubscribeToCrm } from "./crm-live-refresh";
 import { useEffect } from "react";
 
 import { supabase } from "@/integrations/supabase/client";
@@ -93,22 +93,12 @@ let liveUsers = 0;
 let liveTeardown: (() => void) | null = null;
 
 function startLive(queryClient: ReturnType<typeof useQueryClient>) {
-  let timer: ReturnType<typeof setTimeout> | null = null;
+  const refresh = acquireCrmRefresh(queryClient);
   // Every floor write used to trigger a full board reload in every open tab
   // within 1.5s — the single biggest database cost (all leads re-read per
   // change). Coalesce bursts into one reload per 8s, and hidden tabs only mark
   // the board stale so it reloads when the user returns to the tab.
-  const invalidate = () => {
-    if (timer) return;
-    timer = setTimeout(() => {
-      timer = null;
-      const hidden = typeof document !== "undefined" && document.visibilityState === "hidden";
-      void queryClient.invalidateQueries(
-        { queryKey: ["crm-snapshot"], refetchType: hidden ? "none" : "active" },
-        { cancelRefetch: false },
-      );
-    }, 8000);
-  };
+  const invalidate = () => refresh.invalidate();
   // A submitted report must land instantly on Reports, Executive HQ and the
   // Coordinator Deck, so report/follow-up writes refresh those panels too.
   const invalidateReports = () => {
@@ -127,7 +117,7 @@ function startLive(queryClient: ReturnType<typeof useQueryClient>) {
     .on("postgres_changes", { event: "*", schema: "public", table: "whatsapp_interactions" }, invalidate)
     .subscribe();
   return () => {
-    if (timer) clearTimeout(timer);
+    refresh.release();
     void supabase.removeChannel(channel);
   };
 }
