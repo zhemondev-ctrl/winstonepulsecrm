@@ -36,3 +36,6 @@ tmp-manual/
 android/local.properties
 *.jks
 *.keystore
+
+# Test coverage output
+coverage/

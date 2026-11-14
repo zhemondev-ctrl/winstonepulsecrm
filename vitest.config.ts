@@ -12,5 +12,12 @@ export default defineConfig({
     // Refuses every request to the real backend (preview and live share one database).
     setupFiles: [fileURLToPath(new URL("./tests/setup/block-live-database.ts", import.meta.url))],
     testTimeout: 30_000,
+    coverage: {
+      provider: "v8",
+      reporter: ["text", "json-summary"],
+      reportsDirectory: "./coverage",
+      include: ["src/**/*.{ts,tsx}"],
+      exclude: ["src/integrations/supabase/types.ts", "src/routeTree.gen.ts"],
+    },
   },
 });
