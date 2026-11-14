@@ -55,6 +55,7 @@ import { Route as ReportsRouteImport } from './routes/reports'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as RuntimeErrorsRouteImport } from './routes/runtime-errors'
 import { Route as SalesIntelRouteImport } from './routes/sales-intel'
+import { Route as ScoreVersionsRouteImport } from './routes/score-versions'
 import { Route as SecurityRouteImport } from './routes/security'
 import { Route as ServiceBillAlertRouteImport } from './routes/service-bill-alert'
 import { Route as ServiceBillUnlockRouteImport } from './routes/service-bill-unlock'
@@ -369,6 +370,11 @@ const RuntimeErrorsRoute = RuntimeErrorsRouteImport.update({
 const SalesIntelRoute = SalesIntelRouteImport.update({
   id: '/sales-intel',
   path: '/sales-intel',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ScoreVersionsRoute = ScoreVersionsRouteImport.update({
+  id: '/score-versions',
+  path: '/score-versions',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SecurityRoute = SecurityRouteImport.update({
@@ -873,6 +879,7 @@ export interface FileRoutesByFullPath {
   '/reset-password': typeof ResetPasswordRoute
   '/runtime-errors': typeof RuntimeErrorsRoute
   '/sales-intel': typeof SalesIntelRoute
+  '/score-versions': typeof ScoreVersionsRoute
   '/security': typeof SecurityRoute
   '/service-bill-alert': typeof ServiceBillAlertRoute
   '/service-bill-unlock': typeof ServiceBillUnlockRoute
@@ -1006,6 +1013,7 @@ export interface FileRoutesByTo {
   '/reset-password': typeof ResetPasswordRoute
   '/runtime-errors': typeof RuntimeErrorsRoute
   '/sales-intel': typeof SalesIntelRoute
+  '/score-versions': typeof ScoreVersionsRoute
   '/security': typeof SecurityRoute
   '/service-bill-alert': typeof ServiceBillAlertRoute
   '/service-bill-unlock': typeof ServiceBillUnlockRoute
@@ -1140,6 +1148,7 @@ export interface FileRoutesById {
   '/reset-password': typeof ResetPasswordRoute
   '/runtime-errors': typeof RuntimeErrorsRoute
   '/sales-intel': typeof SalesIntelRoute
+  '/score-versions': typeof ScoreVersionsRoute
   '/security': typeof SecurityRoute
   '/service-bill-alert': typeof ServiceBillAlertRoute
   '/service-bill-unlock': typeof ServiceBillUnlockRoute
@@ -1275,6 +1284,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/runtime-errors'
     | '/sales-intel'
+    | '/score-versions'
     | '/security'
     | '/service-bill-alert'
     | '/service-bill-unlock'
@@ -1408,6 +1418,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/runtime-errors'
     | '/sales-intel'
+    | '/score-versions'
     | '/security'
     | '/service-bill-alert'
     | '/service-bill-unlock'
@@ -1541,6 +1552,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/runtime-errors'
     | '/sales-intel'
+    | '/score-versions'
     | '/security'
     | '/service-bill-alert'
     | '/service-bill-unlock'
@@ -1675,6 +1687,7 @@ export interface RootRouteChildren {
   ResetPasswordRoute: typeof ResetPasswordRoute
   RuntimeErrorsRoute: typeof RuntimeErrorsRoute
   SalesIntelRoute: typeof SalesIntelRoute
+  ScoreVersionsRoute: typeof ScoreVersionsRoute
   SecurityRoute: typeof SecurityRoute
   ServiceBillAlertRoute: typeof ServiceBillAlertRoute
   ServiceBillUnlockRoute: typeof ServiceBillUnlockRoute
@@ -2084,6 +2097,13 @@ declare module '@tanstack/react-router' {
       path: '/sales-intel'
       fullPath: '/sales-intel'
       preLoaderRoute: typeof SalesIntelRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/score-versions': {
+      id: '/score-versions'
+      path: '/score-versions'
+      fullPath: '/score-versions'
+      preLoaderRoute: typeof ScoreVersionsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/security': {
@@ -2731,6 +2751,7 @@ const rootRouteChildren: RootRouteChildren = {
   ResetPasswordRoute: ResetPasswordRoute,
   RuntimeErrorsRoute: RuntimeErrorsRoute,
   SalesIntelRoute: SalesIntelRoute,
+  ScoreVersionsRoute: ScoreVersionsRoute,
   SecurityRoute: SecurityRoute,
   ServiceBillAlertRoute: ServiceBillAlertRoute,
   ServiceBillUnlockRoute: ServiceBillUnlockRoute,

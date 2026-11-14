@@ -1,6 +1,7 @@
 # Roadmap
 
 ## Open tasks
+- [x] Build HQ dated score version page; 12 isolated tests pass. Real HQ read shows 10 agents, Nov 13/14 use V1, V2 is scheduled Nov 15; phone has no sideways overflow or runtime errors. No production writes or publishing; future-day V2 verified by tests only.
 - [x] Prepare a plan for agents to enter leads from their profile and find their own submissions again; preserve canonical intake, LeadHub-only assignment, privacy and existing daily rules. Plan only; no customer writes or publication.
 - [x] Prepare profile lead entry, private drafts, scoped receipts/search, reviewed-import recovery and atomic personal allowance; 118 isolated tests pass. Signed-in desktop/phone entry renders without runtime errors or sideways overflow; saving remains explicitly inactive. No live schema changes, customer test writes or publication.
 - [ ] Collection release acceptance: verify the complete saved-entry flow on an isolated staging backend, reconcile personal-origin LeadHub assignment/50-company-ledger accounting, finish source/status history filters and optional desktop card/table selection. Do not apply the prepared SQL or publish until those checks pass; shared-live activation also requires explicit authorisation and a verified backup.

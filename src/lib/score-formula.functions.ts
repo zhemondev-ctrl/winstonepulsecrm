@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { scoreFormulaSchema } from "./score-formula";
+import { scoreVersionForDay } from "./score-version";
 
 const CONFIG_ID = "daily_score_formula";
 const token = z.object({ adminToken: z.string().nullable().optional() });
@@ -42,6 +43,15 @@ export const saveScoreFormula = createServerFn({ method: "POST" })
   });
 
 const dayInput = token.extend({ day: z.string().regex(/^\d{4}-\d{2}-\d{2}$/) });
+export const readScoreVersions = createServerFn({ method: "POST" })
+  .inputValidator((v: unknown) => token.parse(v))
+  .handler(async ({ data }) => {
+    await gate(data.adminToken, false);
+    const { supabaseAdmin: db } = await import("@/integrations/supabase/client.server");
+    const r = await db.from("score_formula_versions").select("id,effective_from,formula,created_at").order("effective_from");
+    if (r.error) throw new Error("Score versions unavailable");
+    return { versions: r.data ?? [] };
+  });
 /** Read-only daily scores for every agent on one Dhaka day, using the saved formula. */
 export const readDailyScores = createServerFn({ method: "POST" })
   .inputValidator((v: unknown) => dayInput.parse(v))
@@ -73,7 +83,7 @@ export const readDailyScores = createServerFn({ method: "POST" })
     // days before any version keep the saved 100-point formula (history unchanged).
     const versions = await db.from("score_formula_versions").select("effective_from,formula").lte("effective_from", data.day).order("effective_from", { ascending: false }).limit(1);
     if (versions.error) throw new Error("Score settings unavailable. Please refresh.");
-    const version = versions.data?.[0] ?? null;
+    const version = scoreVersionForDay(data.day, versions.data ?? []);
     const scoreInput = { agents: agents.data ?? [], selfLeadIds: new Set<string>(), calls: calls.data ?? [], reports: reports.data ?? [], visits: visits.data ?? [], followUps: followUps.data ?? [], bookings: bookings.data ?? [], visitsHeld: visitsHeld.data ?? [] };
     if (version?.formula !== "policy_v2") {
       const cfg = await db.from("app_config").select("data").eq("id", CONFIG_ID).maybeSingle();

@@ -70,4 +70,5 @@
 - `bun run scan:sensitive` is the read-only scan for signing keys/secrets in tracked files and public downloads (ZIPs opened); it prints file + rule only, never values — why: one check, no leaked matches.
 - No GitHub logic in the CRM app (panels, API calls, cron, issues); Git only runs Android CI (`.github/workflows/android-*.yml`, see android/AGENTS.md); APKs reach agents only via IT's PIN-gated `android-apk` links — why: no runtime Git dependency.
 - Agent collection follows src/lib/AGENTS.md's fail-closed receipt path — why: entry is not ownership.
+- The dated score page reuses readDailyScores and authority gates; score-version.ts resolves effective days and rejects unknown formulas — why: separate displays must never create a second scoring or permission path.
 
