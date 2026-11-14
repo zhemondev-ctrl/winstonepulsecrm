@@ -52,6 +52,7 @@ import { ConversationOutcomesPanel } from "@/components/crm/hq/ConversationOutco
 import { WhatsappAgentSummary } from "@/components/crm/hq/WhatsappAgentSummary";
 
 import { buildAgentStats, buildTimeline, useSnapshot } from "@/lib/crm-data";
+import { useT } from "@/lib/i18n";
 
 const HQ_TABS = PAGE_SECTIONS["/hq"];
 const ClosureRecoveryQueue = lazy(() => import("@/components/crm/hq/ClosureRecoveryQueue").then(m => ({ default: m.ClosureRecoveryQueue })));
@@ -88,14 +89,15 @@ export const Route = createFileRoute("/hq")({
 });
 
 function ControlBoardPage() {
+  const t = useT();
   return (
     <AppShell>
       <RoleGate
         surface="hq"
         allow={["authority"]}
         icon={<ShieldCheck className="size-7" />}
-        title="এক্সিকিউটিভ HQ (ম্যানেজমেন্ট প্যানেল)"
-        description="পুরো দলের আজকের অবস্থা — কে কতখানি কাজ করেছো, লিড কোন ধাপে আছো, কল ও বুকিংএর হিসাব। শুধু দেখা ও পর্যালোচনো; পিন লাগবো।"
+        title={t({ bn: "এক্সিকিউটিভ এইচকিউ", en: "Executive HQ" })}
+        description={t({ bn: "টিমের কাজ, লিডের অগ্রগতি ও ব্যবসার ফলাফল। প্রবেশের জন্য পিন প্রয়োজন।", en: "Team performance, lead progress and business results. PIN required to enter." })}
       >
         <ControlBoard />
       </RoleGate>
@@ -104,6 +106,7 @@ function ControlBoardPage() {
 }
 
 function ControlBoard() {
+  const t = useT();
   const { profiles, leads, calls, messages, events, isPending, snapshotTime, readError } = useSnapshot();
   const [openLeadId, setOpenLeadId] = useState<string | null>(null);
   const [openAgentId, setOpenAgentId] = useState<string | null>(null);
@@ -184,47 +187,49 @@ function ControlBoard() {
   const openLead = leads.find((l) => l.id === openLeadId) ?? null;
   const openAgent = profiles.find((p) => p.id === openAgentId) ?? null;
   const [tab, setTab] = useSection("/hq");
-  const activeLabel = HQ_TABS.find((t) => t.key === tab)?.label ?? "";
+  const activeSection = HQ_TABS.find((item) => item.key === tab);
+  const activeLabel = activeSection ? t({ bn: activeSection.label, en: activeSection.en }) : "";
 
   return (
     <>
-      <div className="hq-luxe space-y-6 rounded-3xl p-3 sm:p-5">
+      <div className="hq-luxe min-w-0 space-y-5 py-2 sm:space-y-6 sm:py-3">
         <HqHeader />
 
         <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
           {/* Mobile: collapsible tab menu */}
-          <details className="group rounded-xl border border-border bg-card lg:hidden">
+          <details className="group rounded-lg border border-border bg-card lg:hidden">
             <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-3 text-sm font-semibold [&::-webkit-details-marker]:hidden">
               <span>{activeLabel}</span>
               <ChevronDown className="size-4 text-muted-foreground transition-transform group-open:rotate-180" />
             </summary>
             <nav aria-label="HQ sections" className="flex flex-col gap-1 border-t border-border p-2">
-              {HQ_TABS.map((t) => (
-                <button
-                  key={t.key}
+              {HQ_TABS.map((item) => (
+                <Button
+                  variant="ghost"
+                  key={item.key}
                   type="button"
                   onClick={(e) => {
-                    setTab(t.key);
+                    setTab(item.key);
                     e.currentTarget.closest("details")?.removeAttribute("open");
                   }}
-                  aria-current={tab === t.key ? "page" : undefined}
-                  className={`rounded-lg px-3 py-2.5 text-left text-sm font-semibold transition-colors ${
-                    tab === t.key
+                  aria-current={tab === item.key ? "page" : undefined}
+                  className={`h-auto justify-start whitespace-normal rounded-md px-3 py-2.5 text-left text-sm font-medium transition-colors ${
+                    tab === item.key
                       ? "bg-primary text-primary-foreground"
                       : "text-muted-foreground hover:bg-accent hover:text-foreground"
                   }`}
                 >
-                  {t.label}
-                </button>
+                  {t({ bn: item.label, en: item.en })}
+                </Button>
               ))}
             </nav>
           </details>
 
           {/* White content surface */}
-          <div className="min-w-0 flex-1 rounded-2xl border border-border bg-card p-4 text-card-foreground shadow-sm sm:p-6">
+          <div className="min-w-0 flex-1 space-y-5 text-foreground">
             <MaintenanceProfileNotice />
             <Suspense fallback={null}><SiteVisitAlerts /></Suspense>
-            {tab === "kpis" && <div className="space-y-6"><Button asChild variant="secondary"><Link to="/score-versions">তারিখভিত্তিক স্কোর · Dated scores</Link></Button><ScoreFormulaSettings /><DailyScoresPanel /><AgentSalesScorecards /><AgentSelfLeadsPanel /><AgentKpiDashboard /></div>}
+            {tab === "kpis" && <div className="space-y-6"><Button asChild variant="secondary"><Link to="/score-versions">{t({ bn: "তারিখভিত্তিক স্কোর", en: "Dated scores" })}</Link></Button><ScoreFormulaSettings /><DailyScoresPanel /><AgentSalesScorecards /><AgentSelfLeadsPanel /><AgentKpiDashboard /></div>}
             {tab === "overview" && (
               <div className="space-y-8">
                 <HqSmartSummary
@@ -235,12 +240,8 @@ function ControlBoard() {
                   messages={messages}
                   onSelectAgent={setOpenAgentId}
                 />
-                <WhatsappAgentSummary />
                 <LeadPoolNotice />
-                <DailyAllocationSummary surface="hq" />
-                <AgentTargetPanel />
                 <DistributionFailurePanel />
-                <SalesChartsDashboard scope="hq" />
                 <SalesCommandCenter
                   snapshotTime={snapshotTime}
                   snapshotError={readError}
@@ -252,17 +253,25 @@ function ControlBoard() {
                   onDrill={setDrill}
                   onSelectAgent={setOpenAgentId}
                 />
+                <details className="group border-y border-border py-4">
+                  <summary className="flex cursor-pointer list-none items-center justify-between gap-3 text-sm font-semibold [&::-webkit-details-marker]:hidden">
+                    {t({ bn: "বণ্টন ও যোগাযোগের বিস্তারিত", en: "Allocation & communication details" })}
+                    <ChevronDown className="size-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180" />
+                  </summary>
+                  <div className="mt-5 space-y-6"><DailyAllocationSummary surface="hq" /><AgentTargetPanel /><WhatsappAgentSummary /></div>
+                </details>
+                <SalesChartsDashboard scope="hq" />
                 <div className="grid gap-4 lg:grid-cols-2">
-                  <section className="rounded-2xl border border-border bg-background p-4">
+                  <section className="min-w-0 space-y-3 border-t border-border pt-4">
                     <div className="flex items-center justify-between gap-2">
-                      <h2 className="font-semibold">আজকের মার্কেট ব্রিফ</h2>
-                      <Link to="/news" className="text-xs font-medium text-primary hover:underline">সব খবর →</Link>
+                      <h2 className="font-semibold">{t({ bn: "আজকের মার্কেট ব্রিফ", en: "Today's market brief" })}</h2>
+                      <Link to="/news" className="text-xs font-medium text-primary hover:underline">{t({ bn: "সব খবর →", en: "All news →" })}</Link>
                     </div>
                     <MarketNewsFeed compact />
                   </section>
-                  <section className="rounded-2xl border border-border bg-background p-4">
-                    <h2 className="font-semibold">প্রপার্টি ও প্রজেক্ট আপডেট</h2>
-                    <p className="mb-2 text-xs text-muted-foreground">শুধু যাচাই-কৃত ও প্রকাশিত তথ্য — না থাকলে খালি।</p>
+                  <section className="min-w-0 space-y-3 border-t border-border pt-4">
+                    <h2 className="font-semibold">{t({ bn: "প্রপার্টি ও প্রজেক্ট আপডেট", en: "Property & project updates" })}</h2>
+                    <p className="text-xs text-muted-foreground">{t({ bn: "যাচাইকৃত ও প্রকাশিত তথ্য", en: "Verified, published information" })}</p>
                     <FactsBoard category="project_property" admin={false} />
                   </section>
                 </div>

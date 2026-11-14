@@ -42,7 +42,7 @@ export function HqSmartSummary({ profiles, leads, calls, loading, onSelectAgent 
         </div>
         <div className="min-w-0 rounded-lg border border-border bg-background p-4">
           <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold"><Inbox className="size-4 shrink-0 text-accent-foreground" />{t({ bn: "যে লিডগুলো এখনো কাজ হয়নি", en: "Leads not yet worked" })}</h3>
-          <p className="text-2xl font-bold tabular-nums">{summary.pendingCount}</p>
+          <p className="text-3xl font-semibold tabular-nums">{summary.pendingCount}</p>
           <p className="mb-3 text-xs text-muted-foreground">{t({ bn: "যেসব লিডে কোনো কল বা রিপোর্টের প্রমাণ নেই — সব দিন মিলিয়ে। এটা আজকের নতুন লিড নয়।", en: "Leads with no call or report proof — all dates combined. Not today's new leads." })}</p>
           <ul className="space-y-2">{summary.pendingByAgent.slice(0, 4).map(row => <li key={row.id} className="flex items-start justify-between gap-3 text-xs"><span className="min-w-0 break-words text-muted-foreground">{row.name}</span><span className="shrink-0 font-semibold tabular-nums">{row.count}</span></li>)}</ul>
         </div>
