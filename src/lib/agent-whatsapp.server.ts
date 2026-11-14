@@ -9,7 +9,7 @@
 import {
   AGENT_WA_HQ_NUMBER_KEY, AGENT_WA_LANGUAGE, AGENT_WA_SETTING_KEY, hqReportDedupeKey, hqReportParams, AGENT_WA_TEMPLATES, dailyProgressParams,
   inNewLeadWindow, isOptOutText, newLeadsParams, newLeadsSinceLastAlert, nextAlertStatus,
-  normalizeAgentWhatsApp, type AgentAlertKind, type AgentAlertStatus,
+  normalizeAgentWhatsApp, agentAlertRecipient, type AgentAlertKind, type AgentAlertStatus,
 } from "@/lib/agent-whatsapp";
 
 const GATEWAY_URL = "https://connector-gateway.lovable.dev/whatsapp";
@@ -72,6 +72,16 @@ async function sendAlert(input: {
   template: string; params: string[]; counts: Record<string, number | string>;
 }): Promise<"sent" | "failed" | "duplicate"> {
   const db = await admin();
+  // Re-read the current profile and consent at the send boundary, including cron and tests.
+  if (input.kind !== "hq_report") {
+    const [profile, consent] = await Promise.all([
+      db.from("profiles").select("phone").eq("id", input.agentId).maybeSingle(),
+      db.from("agent_whatsapp_optins").select("opted_in, whatsapp_number").eq("agent_id", input.agentId).maybeSingle(),
+    ]);
+    if (profile.error || consent.error) throw new Error("Alert recipient unavailable");
+    const to = agentAlertRecipient(profile.data?.phone, consent.data?.opted_in ?? false, consent.data?.whatsapp_number);
+    if (!to || to !== input.to) throw new Error("Renew WhatsApp opt-in for your saved profile phone");
+  }
   const reserve = await db.from("agent_whatsapp_alerts").insert({
     agent_id: input.agentId, kind: input.kind, work_date: input.workDate, dedupe_key: input.dedupeKey,
     template: input.template, counts: input.counts, status: "sending",
@@ -123,9 +133,12 @@ async function optedInRecipients(): Promise<Recipient[]> {
   const { data, error } = await db.from("agent_whatsapp_optins")
     .select("agent_id, whatsapp_number").eq("opted_in", true).in("agent_id", agents.map((a) => a.id));
   if (error) throw new Error("Opt-in list unavailable");
+  const profiles = await db.from("profiles").select("id, phone").in("id", agents.map((a) => a.id));
+  if (profiles.error) throw new Error("Profile phones unavailable");
+  const phones = new Map((profiles.data ?? []).map((p) => [p.id, p.phone]));
   const names = new Map(agents.map((a) => [a.id, a.name]));
   return (data ?? []).flatMap((row) => {
-    const to = normalizeAgentWhatsApp(row.whatsapp_number);
+    const to = agentAlertRecipient(phones.get(row.agent_id), true, row.whatsapp_number);
     return to ? [{ agentId: row.agent_id, name: names.get(row.agent_id) ?? "", to }] : [];
   });
 }

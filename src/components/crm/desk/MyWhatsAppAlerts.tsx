@@ -1,4 +1,3 @@
-import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { MessageCircle } from "lucide-react";
@@ -33,12 +32,11 @@ export function MyWhatsAppAlerts() {
   const save = useServerFn(setMyWhatsAppAlerts);
   const test = useServerFn(sendMyWhatsAppTest);
   const q = useQuery({ queryKey: ["my-whatsapp-alerts"], queryFn: () => read() });
-  const [number, setNumber] = useState("");
-  useEffect(() => { if (q.data?.number) setNumber(displayAgentWhatsApp(q.data.number)); }, [q.data?.number]);
+  const number = displayAgentWhatsApp(q.data?.number ?? null);
   const valid = normalizeAgentWhatsApp(number) != null;
 
   const toggle = useMutation({
-    mutationFn: (optedIn: boolean) => save({ data: { number, optedIn } }),
+    mutationFn: (optedIn: boolean) => save({ data: { optedIn } }),
     onSuccess: (r) => {
       toast.success(r.optedIn ? t({ en: "WhatsApp alerts turned on", bn: "WhatsApp alert চালু হয়েছে" }) : t({ en: "WhatsApp alerts turned off", bn: "WhatsApp alert বন্ধ হয়েছে" }));
       void qc.invalidateQueries({ queryKey: ["my-whatsapp-alerts"] });
@@ -88,10 +86,10 @@ export function MyWhatsAppAlerts() {
       {d && (
         <>
           <label className="block space-y-1 text-xs">
-            <span className="font-medium">{t({ en: "Your WhatsApp number", bn: "আপনার WhatsApp নম্বর" })}</span>
-            <Input inputMode="tel" autoComplete="tel" value={number} onChange={(e) => setNumber(e.target.value)} placeholder="01XXX-XXXXXX" className="h-10" disabled={d.optedIn} />
+            <span className="font-medium">{t({ en: "Your profile phone", bn: "আপনার প্রোফাইলের ফোন" })}</span>
+            <Input inputMode="tel" value={number} readOnly placeholder="01XXX-XXXXXX" className="h-10" />
           </label>
-          {!valid && number && <p className="text-xs text-destructive">{t({ en: "Enter a Bangladesh mobile number.", bn: "বাংলাদেশি মোবাইল নম্বর দিন।" })}</p>}
+          {!valid && <p className="text-xs text-destructive">{t({ en: "Save a Bangladesh mobile number on your profile first.", bn: "আগে আপনার প্রোফাইলে বাংলাদেশি মোবাইল নম্বর সংরক্ষণ করুন।" })}</p>}
           {d.optedOutByReply && <p className="text-xs text-muted-foreground">{t({ en: "You turned alerts off by replying STOP.", bn: "STOP লিখে আপনি alert বন্ধ করেছেন।" })}</p>}
           {!d.enabled && <p className="text-xs text-muted-foreground">{t({ en: "IT hasn't switched on WhatsApp alerts for the team yet. You can still send yourself a test.", bn: "IT এখনো টিমের জন্য WhatsApp alert চালু করেনি। তবু নিজেকে টেস্ট পাঠাতে পারবেন।" })}</p>}
           {d.optedIn && (

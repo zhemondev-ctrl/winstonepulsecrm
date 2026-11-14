@@ -1,10 +1,16 @@
 import { describe, expect, it } from "vitest";
 import {
   dailyProgressParams, inNewLeadWindow, isOptOutText, newLeadsSinceLastAlert,
-  nextAlertStatus, normalizeAgentWhatsApp,
+  nextAlertStatus, normalizeAgentWhatsApp, agentAlertRecipient,
 } from "@/lib/agent-whatsapp";
 
 describe("agent WhatsApp alerts", () => {
+  it("sends only to the saved profile phone with matching consent", () => {
+    expect(agentAlertRecipient("01712-345678", true, "8801712345678")).toBe("8801712345678");
+    expect(agentAlertRecipient("01812-345678", true, "8801712345678")).toBeNull();
+    expect(agentAlertRecipient(null, true, "8801712345678")).toBeNull();
+    expect(agentAlertRecipient("01712-345678", false, "8801712345678")).toBeNull();
+  });
   it("accepts Bangladesh mobiles in any common form and rejects others", () => {
     expect(normalizeAgentWhatsApp("01712-345678")).toBe("8801712345678");
     expect(normalizeAgentWhatsApp("+880 1712 345678")).toBe("8801712345678");

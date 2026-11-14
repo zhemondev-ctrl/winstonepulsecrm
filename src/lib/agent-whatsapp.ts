@@ -26,6 +26,12 @@ export function normalizeAgentWhatsApp(raw: string | null | undefined): string |
   return null;
 }
 
+/** Consent is tied to the current profile phone; changes never redirect an old opt-in. */
+export function agentAlertRecipient(profilePhone: string | null | undefined, optedIn: boolean, consentNumber: string | null | undefined): string | null {
+  const phone = normalizeAgentWhatsApp(profilePhone);
+  return optedIn && phone && phone === normalizeAgentWhatsApp(consentNumber) ? phone : null;
+}
+
 /** Shows 8801712345678 as 01712-345678 for staff screens. */
 export function displayAgentWhatsApp(digits: string | null): string {
   if (!digits || !/^8801\d{9}$/.test(digits)) return digits ?? "";

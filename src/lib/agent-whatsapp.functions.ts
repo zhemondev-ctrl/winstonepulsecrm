@@ -8,24 +8,20 @@ async function agentCaller() {
   return caller.profile;
 }
 
-/** The only WhatsApp numbers an agent may receive alerts on: their own saved profile/SIM numbers. */
-async function ownNumbers(agentId: string): Promise<Set<string>> {
+/** Resolve only the agent's saved profile phone, never a client or SIM destination. */
+async function ownNumber(agentId: string): Promise<string | null> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { normalizeAgentWhatsApp } = await import("@/lib/agent-whatsapp");
-  const { data } = await supabaseAdmin.from("profiles").select("phone, sim_number").eq("id", agentId).maybeSingle();
-  const out = new Set<string>();
-  for (const raw of [data?.phone, data?.sim_number]) {
-    const n = normalizeAgentWhatsApp(raw ?? null);
-    if (n) out.add(n);
-  }
-  return out;
+  const { data, error } = await supabaseAdmin.from("profiles").select("phone").eq("id", agentId).maybeSingle();
+  if (error) throw new Error("Profile phone unavailable");
+  return normalizeAgentWhatsApp(data?.phone);
 }
 
 /** Signed-in agent's own WhatsApp alert opt-in and their last few alert statuses. */
 export const getMyWhatsAppAlerts = createServerFn({ method: "POST" }).handler(async () => {
   const me = await agentCaller();
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const { normalizeAgentWhatsApp } = await import("@/lib/agent-whatsapp");
+  const { normalizeAgentWhatsApp, agentAlertRecipient } = await import("@/lib/agent-whatsapp");
   const { alertsEnabled } = await import("@/lib/agent-whatsapp.server");
   const [optin, recent, profile, enabled] = await Promise.all([
     supabaseAdmin.from("agent_whatsapp_optins").select("whatsapp_number, opted_in, opted_out_at, opt_out_source").eq("agent_id", me.id).maybeSingle(),
@@ -34,28 +30,33 @@ export const getMyWhatsAppAlerts = createServerFn({ method: "POST" }).handler(as
     supabaseAdmin.from("profiles").select("phone").eq("id", me.id).maybeSingle(),
     alertsEnabled(),
   ]);
-  if (optin.error || recent.error) throw new Error("WhatsApp alert settings unavailable");
+  if (optin.error || recent.error || profile.error) throw new Error("WhatsApp alert settings unavailable");
   return {
     enabled,
-    optedIn: optin.data?.opted_in ?? false,
-    number: optin.data?.whatsapp_number ?? normalizeAgentWhatsApp(profile.data?.phone) ?? null,
+    optedIn: Boolean(agentAlertRecipient(profile.data?.phone, optin.data?.opted_in ?? false, optin.data?.whatsapp_number)),
+    number: normalizeAgentWhatsApp(profile.data?.phone),
     optedOutByReply: optin.data?.opt_out_source === "whatsapp_reply" && !optin.data?.opted_in,
     recent: (recent.data ?? []).map((r) => ({ id: r.id, kind: r.kind, status: r.status, at: r.created_at, failed: r.status === "failed" })),
   };
 });
 
 export const setMyWhatsAppAlerts = createServerFn({ method: "POST" })
-  .inputValidator((input: unknown) => z.object({ number: z.string().min(10).max(20), optedIn: z.boolean() }).strict().parse(input))
+  .inputValidator((input: unknown) => z.object({ number: z.string().max(20).optional(), optedIn: z.boolean() }).strict().parse(input))
   .handler(async ({ data }) => {
     const me = await agentCaller();
     const { normalizeAgentWhatsApp } = await import("@/lib/agent-whatsapp");
-    const number = normalizeAgentWhatsApp(data.number);
-    if (!number) throw new Error("সঠিক বাংলাদেশি মোবাইল নম্বর দিন / Enter a valid Bangladesh mobile number");
-    if (data.optedIn && !(await ownNumbers(me.id)).has(number)) {
+    const number = await ownNumber(me.id);
+    if (data.optedIn && (!number || (data.number !== undefined && normalizeAgentWhatsApp(data.number) !== number))) {
       throw new Error("শুধু আপনার প্রোফাইলের নিজের নম্বর ব্যবহার করুন / Use the number saved on your own profile");
     }
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const now = new Date().toISOString();
+    if (!data.optedIn) {
+      const { error } = await supabaseAdmin.from("agent_whatsapp_optins").update({ opted_in: false, opted_out_at: now, opt_out_source: "crm", updated_at: now }).eq("agent_id", me.id);
+      if (error) throw new Error("Could not save your WhatsApp alert choice");
+      return { ok: true, number, optedIn: false };
+    }
+    if (!number) throw new Error("Save a valid phone on your profile first");
     const { error } = await supabaseAdmin.from("agent_whatsapp_optins").upsert({
       agent_id: me.id, whatsapp_number: number, opted_in: data.optedIn, updated_at: now,
       ...(data.optedIn ? { opted_in_at: now, opt_out_source: null } : { opted_out_at: now, opt_out_source: "crm" }),
@@ -73,7 +74,7 @@ export const sendMyWhatsAppTest = createServerFn({ method: "POST" }).handler(asy
   const { data, error } = await supabaseAdmin.from("agent_whatsapp_optins").select("whatsapp_number, opted_in").eq("agent_id", me.id).maybeSingle();
   if (error) throw new Error("WhatsApp alert settings unavailable");
   if (!data?.opted_in) throw new Error("আগে WhatsApp alert চালু করুন / Turn on WhatsApp alerts first");
-  if (!(await ownNumbers(me.id)).has(data.whatsapp_number)) {
+  if ((await ownNumber(me.id)) !== data.whatsapp_number) {
     throw new Error("শুধু আপনার প্রোফাইলের নিজের নম্বরে পাঠানো যায় / Alerts go only to your own profile number");
   }
   const { sendSelfTest } = await import("@/lib/agent-whatsapp.server");
