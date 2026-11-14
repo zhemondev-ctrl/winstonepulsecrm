@@ -1,4 +1,5 @@
 import { HubSyncStatusPanel } from "@/components/crm/HubAlerts";
+import { ItAgentWorkPanel } from "@/components/crm/ItAgentWorkPanel";
 import { DistributionFailurePanel } from "@/components/crm/DistributionFailurePanel";
 import { SystemManualCard } from "@/components/crm/SystemManualCard";
 import { DeploymentStatusPanel } from "@/components/crm/DeploymentStatusPanel";
@@ -67,16 +68,16 @@ export const Route = createFileRoute("/system")({
   validateSearch: sectionSearch,
   head: () => ({
     meta: [
-      { title: "System & Billing — Winstone Pulse" },
+      { title: "IT Console — Agent Work & Operations | Winstone Pulse" },
       {
         name: "description",
         content:
-          "IT controller view: database health, ingestion endpoints, API key status and monthly telephony billing.",
+          "Winstone Pulse IT Console: agent pending work, handout eligibility reviews, staff access and system operations.",
       },
-      { property: "og:title", content: "System & Billing — Winstone Pulse" },
+      { property: "og:title", content: "IT Console — Winstone Pulse" },
       {
         property: "og:description",
-        content: "Monthly call minutes, carrier cost estimates and ingestion endpoint health.",
+        content: "Agent work, secured handout eligibility reviews, staff access and IT operations.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -91,16 +92,16 @@ export const Route = createFileRoute("/system")({
 });
 
 function SystemPage() {
+  const t = useT();
   return (
     <AppShell>
       <RoleGate
         allow={["authority"]}
         icon={<Database className="size-7" />}
-        title="আইটি কনসোল"
-        description="সিস্টেম সেটিং, অ্যাকাউন্ট অনুমোদন, ডেটার অবস্থা আর বিল। মাস্টার পিন লাগবে।"
+        title={t({ en: "IT Console", bn: "আইটি কনসোল" })}
+        description={t({ en: "System settings, account approvals, data status and billing. IT PIN required.", bn: "সিস্টেম সেটিং, অ্যাকাউন্ট অনুমোদন, ডেটার অবস্থা আর বিল। IT পিন লাগবে।" })}
       >
-        <div className="mb-4"><HubSyncStatusPanel /></div>
-        <div className="hq-luxe rounded-3xl p-3 sm:p-5"><SystemBoard /></div>
+        <div className="min-w-0"><SystemBoard /></div>
       </RoleGate>
     </AppShell>
   );
@@ -144,33 +145,35 @@ function SystemBoard() {
     <div className="space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between">
         <div className="min-w-0">
-          <h1 className="text-xl font-bold tracking-tight sm:text-2xl">{t({ bn: "সিস্টেম ও বিল", en: "System & Billing" })}</h1>
-          <p className="text-xs text-muted-foreground sm:text-sm">
-            {t({ bn: "মূল ইঞ্জিনের অবস্থা, ডেটা আসার ঠিকানা আর মাসিক টেলিফোন খরচ।", en: "Core engine health, data intake endpoints and monthly phone cost." })}
-          </p>
+          <h1 className="text-xl font-semibold sm:text-2xl">{t({ bn: "আইটি কনসোল", en: "IT Console" })}</h1>
         </div>
         <CopilotDrawer />
       </div>
 
-      <SystemNoticeBar surface="it" />
-      <InstructionCopilot surface="system" />
-      <SafeWorkflowGuide />
-
-      <nav aria-label="IT Console sections" className="-mx-1 flex gap-1 overflow-x-auto px-1 pb-1 lg:hidden">
+      <nav aria-label="IT Console sections" className="grid grid-cols-2 gap-2 border-b border-border pb-4 sm:grid-cols-3 lg:grid-cols-5">
         {PAGE_SECTIONS["/system"].map((x) => (
-          <button
+          <Button
             key={x.key}
             type="button"
             onClick={() => setSec(x.key)}
-            className={`shrink-0 rounded-full border px-3 py-1.5 text-xs font-semibold ${sec === x.key ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card text-muted-foreground"}`}
+            variant={sec === x.key ? "default" : "outline"}
+            aria-pressed={sec === x.key}
+            className="h-auto min-h-10 whitespace-normal px-3 py-2 text-xs"
           >
             {t({ bn: x.label, en: x.en })}
-          </button>
+          </Button>
         ))}
       </nav>
 
+      {sec === "agent-work" && <div className="space-y-6"><ItAgentWorkPanel /><AccountabilityReviewPanel surface="it" /></div>}
+
       {sec === "health" && (
         <div className="space-y-6">
+          <HubSyncStatusPanel />
+          <SystemNoticeBar surface="it" />
+          <InstructionCopilot surface="system" />
+          <SafeWorkflowGuide />
+          <SystemCustomizer />
           <DeploymentStatusPanel />
           <ItPhoneTestReports />
           <SearchConsoleDashboard />
@@ -230,11 +233,8 @@ function SystemBoard() {
 
       {sec === "access" && (
         <div className="space-y-6">
-          <FinosAccessLogPanel />
-          <AccountabilityReviewPanel surface="it" />
           <StaffAccountsTable />
           <AccountApprovals />
-          <SystemCustomizer />
         </div>
       )}
 
@@ -251,6 +251,7 @@ function SystemBoard() {
       {sec === "billing" && (
         <div className="space-y-6">
       <MaintenancePanel />
+      <FinosAccessLogPanel />
       <OsSyncPanel />
       <LoginFailuresPanel />
       <MonthlySummaryPanel />

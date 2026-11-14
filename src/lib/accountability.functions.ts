@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { accountabilityReviewer } from "@/lib/accountability-access";
 
 const TokenInput = z.object({ adminToken: z.string().nullable().optional() });
 
@@ -38,7 +39,7 @@ export const listAccountabilityReviews = createServerFn({ method: "POST" })
     const caller = await resolveCaller(data.adminToken ?? null);
     if (caller.scope !== "authority") throw new Error("Executive HQ or IT access required");
     const { adminTokenScope } = await import("@/lib/admin-gate.server");
-    const canApprove = adminTokenScope(data.adminToken ?? null) === "hq";
+    const canApprove = Boolean(accountabilityReviewer(adminTokenScope(data.adminToken ?? null)));
 
     const { dhakaDate } = await import("@/lib/accountability");
     const { evaluateDay } = await import("@/lib/accountability.server");
@@ -60,7 +61,7 @@ export const listAccountabilityReviews = createServerFn({ method: "POST" })
     };
   });
 
-/** Executive HQ only (HQ PIN session). IT and everyone else are refused. */
+/** Verified HQ or full IT PIN: review and next-day unlock, never lead assignment. */
 export const reviewAccountability = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) =>
     TokenInput.extend({
@@ -71,9 +72,8 @@ export const reviewAccountability = createServerFn({ method: "POST" })
   )
   .handler(async ({ data }) => {
     const { adminTokenScope } = await import("@/lib/admin-gate.server");
-    if (adminTokenScope(data.adminToken ?? null) !== "hq") {
-      throw new Error("Only Executive HQ can review or unlock — IT and other roles cannot");
-    }
+    const by = accountabilityReviewer(adminTokenScope(data.adminToken ?? null));
+    if (!by) throw new Error("Executive HQ or full IT PIN required to review or unlock");
     if (data.action !== "approve" && !data.note) throw new Error("Add a review note");
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -85,7 +85,6 @@ export const reviewAccountability = createServerFn({ method: "POST" })
     if (error || !row) throw new Error("Review not found");
 
     const at = new Date().toISOString();
-    const by = "Executive HQ";
     const history = Array.isArray(row.review_history) ? row.review_history : [];
     const status = data.action === "approve" ? "approved" : data.action === "hold" ? "hold" : row.status;
     const patch: Record<string, unknown> = {
@@ -120,14 +119,13 @@ export const reviewAccountability = createServerFn({ method: "POST" })
     return { ok: true, status };
   });
 
-/** Executive HQ only (HQ PIN session): approve every waiting review (review_required + hold) in one click. */
+/** HQ or full IT PIN: approve waiting reviews through the same audited path. */
 export const approveAllAccountability = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => TokenInput.extend({ days: z.number().int().min(1).max(90).optional() }).parse(input))
   .handler(async ({ data }) => {
     const { adminTokenScope } = await import("@/lib/admin-gate.server");
-    if (adminTokenScope(data.adminToken ?? null) !== "hq") {
-      throw new Error("Only Executive HQ can review or unlock — IT and other roles cannot");
-    }
+    const by = accountabilityReviewer(adminTokenScope(data.adminToken ?? null));
+    if (!by) throw new Error("Executive HQ or full IT PIN required to review or unlock");
     const { dhakaDate } = await import("@/lib/accountability");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: rows, error } = await supabaseAdmin
@@ -138,7 +136,6 @@ export const approveAllAccountability = createServerFn({ method: "POST" })
       .limit(500);
     if (error) throw new Error(error.message);
     const at = new Date().toISOString();
-    const by = "Executive HQ";
     const note = "Bulk approval (Approve all)";
     const { logAudit } = await import("@/lib/audit.server");
     let approved = 0;

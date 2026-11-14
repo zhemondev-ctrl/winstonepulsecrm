@@ -20,6 +20,7 @@ import {
 } from "@/lib/accounts.functions";
 import { getAdminToken, useAdminToken } from "@/lib/local-session";
 import { AgentOnboarding } from "@/components/crm/AgentOnboarding";
+import { useT } from "@/lib/i18n";
 
 type Draft = {
   name: string;
@@ -33,6 +34,8 @@ const EMPTY: Draft = { name: "", employeeId: "", phone: "", password: "", role: 
 
 /** IT Console desk roster: open an account here, and edit name / ID / phone / password. */
 export function StaffAccountsTable() {
+  const t = useT();
+  const label = (en: string, bn: string) => t({ en, bn });
   const adminToken = useAdminToken();
   const queryClient = useQueryClient();
   const create = useServerFn(createStaffAccount);
@@ -66,7 +69,7 @@ export function StaffAccountsTable() {
   const add = useMutation({
     mutationFn: () => create({ data: { adminToken: getAdminToken(), ...draft } }),
     onSuccess: () => {
-      toast.success("অ্যাকাউন্ট খোলা হয়েছে");
+      toast.success(label("Account created", "অ্যাকাউন্ট খোলা হয়েছে"));
       setDraft(EMPTY);
       refresh();
     },
@@ -86,7 +89,7 @@ export function StaffAccountsTable() {
         },
       }),
     onSuccess: () => {
-      toast.success("হালনাগাদ হয়েছে");
+      toast.success(label("Account updated", "হালনাগাদ হয়েছে"));
       setEditing(null);
       setEdit({ name: "", employeeId: "", phone: "", password: "" });
       refresh();
@@ -98,7 +101,7 @@ export function StaffAccountsTable() {
     mutationFn: (input: { profileId: string; isActive: boolean }) =>
       update({ data: { adminToken: getAdminToken(), ...input } }),
     onSuccess: () => {
-      toast.success("স্ট্যাটাস বদলেছে");
+      toast.success(label("Status changed", "স্ট্যাটাস বদলেছে"));
       refresh();
     },
     onError: (error: Error) => toast.error(error.message),
@@ -110,29 +113,29 @@ export function StaffAccountsTable() {
     <section className="card-elevated p-4">
       <header className="flex flex-wrap items-center gap-2">
         <Users className="size-4 text-primary" />
-        <h2 className="text-sm font-semibold">এজেন্ট অ্যাকাউন্ট</h2>
-        <span className="ml-auto text-xs text-muted-foreground">{staff.length} জন</span>
+        <h2 className="text-sm font-semibold">{label("Agent accounts", "এজেন্ট অ্যাকাউন্ট")}</h2>
+        <span className="ml-auto text-xs text-muted-foreground">{label(`${staff.length} staff`, `${staff.length} জন`)}</span>
       </header>
 
       <div className="mt-3 grid gap-2 sm:grid-cols-6">
         <Input
           className="sm:col-span-2"
-          placeholder="এজেন্টের নাম"
+          placeholder={label("Agent name", "এজেন্টের নাম")}
           value={draft.name}
           onChange={(e) => setDraft({ ...draft, name: e.target.value })}
         />
         <Input
-          placeholder="Agent ID"
+          placeholder={label("Agent ID", "Agent ID")}
           value={draft.employeeId}
           onChange={(e) => setDraft({ ...draft, employeeId: e.target.value })}
         />
         <Input
-          placeholder="ফোন নম্বর"
+          placeholder={label("Phone number", "ফোন নম্বর")}
           value={draft.phone}
           onChange={(e) => setDraft({ ...draft, phone: e.target.value })}
         />
         <Input
-          placeholder="পাসওয়ার্ড"
+          placeholder={label("Password", "পাসওয়ার্ড")}
           value={draft.password}
           onChange={(e) => setDraft({ ...draft, password: e.target.value })}
         />
@@ -153,7 +156,7 @@ export function StaffAccountsTable() {
             ) : (
               <UserPlus className="size-4" />
             )}
-            খুলুন
+            {label("Create account", "খুলুন")}
           </Button>
         </div>
       </div>
@@ -165,20 +168,20 @@ export function StaffAccountsTable() {
             <li key={row.id} className="space-y-3 rounded-lg border border-border p-3">
               {isEditing ? (
                 <div className="grid gap-2">
-                  <Input defaultValue={row.name} aria-label="এজেন্টের নাম" onChange={(e) => setEdit((s) => ({ ...s, name: e.target.value }))} />
-                  <Input defaultValue={row.employee_id ?? ""} aria-label="Agent ID" onChange={(e) => setEdit((s) => ({ ...s, employeeId: e.target.value }))} />
-                  <Input defaultValue={row.phone ?? ""} aria-label="ফোন নম্বর" onChange={(e) => setEdit((s) => ({ ...s, phone: e.target.value }))} />
-                  <Input placeholder="নতুন পাসওয়ার্ড" aria-label="নতুন পাসওয়ার্ড" onChange={(e) => setEdit((s) => ({ ...s, password: e.target.value }))} />
+                  <Input defaultValue={row.name} aria-label={label("Agent name", "এজেন্টের নাম")} onChange={(e) => setEdit((s) => ({ ...s, name: e.target.value }))} />
+                  <Input defaultValue={row.employee_id ?? ""} aria-label={label("Agent ID", "Agent ID")} onChange={(e) => setEdit((s) => ({ ...s, employeeId: e.target.value }))} />
+                  <Input defaultValue={row.phone ?? ""} aria-label={label("Phone number", "ফোন নম্বর")} onChange={(e) => setEdit((s) => ({ ...s, phone: e.target.value }))} />
+                  <Input placeholder={label("New password", "নতুন পাসওয়ার্ড")} aria-label={label("New password", "নতুন পাসওয়ার্ড")} onChange={(e) => setEdit((s) => ({ ...s, password: e.target.value }))} />
                 </div>
               ) : (
                 <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-2">
                   <div className="min-w-0"><p className="truncate font-semibold">{row.name}</p><p className="tabular truncate text-xs text-muted-foreground">{row.employee_id ?? "—"} · {row.phone ?? "—"}</p></div>
-                  <span className="text-xs text-muted-foreground">{row.is_active ? "সক্রিয়" : "বন্ধ"}</span>
+                  <span className="text-xs text-muted-foreground">{row.is_active ? label("Active", "সক্রিয়") : label("Inactive", "বন্ধ")}</span>
                 </div>
               )}
-              <p className="text-xs text-muted-foreground">অ্যাসাইন করা লিড: <span className="tabular font-semibold text-foreground">{row.assignedLeads}</span></p>
+              <p className="text-xs text-muted-foreground">{label("Assigned leads:", "অ্যাসাইন করা লিড:")} <span className="tabular font-semibold text-foreground">{row.assignedLeads}</span></p>
               <div className="grid grid-cols-2 gap-2">
-                {isEditing ? <><Button size="sm" disabled={save.isPending} onClick={() => save.mutate(row.id)}>সেভ</Button><Button size="sm" variant="ghost" onClick={() => setEditing(null)}>বাতিল</Button></> : <><Button size="sm" variant="secondary" onClick={() => { setEditing(row.id); setEdit({ name: "", employeeId: "", phone: "", password: "" }); }}><Pencil className="size-3.5" /> এডিট</Button><Button size="sm" variant="ghost" disabled={toggle.isPending} onClick={() => toggle.mutate({ profileId: row.id, isActive: !row.is_active })}>{row.is_active ? "বন্ধ করুন" : "চালু করুন"}</Button></>}
+                {isEditing ? <><Button size="sm" disabled={save.isPending} onClick={() => save.mutate(row.id)}>{label("Save", "সেভ")}</Button><Button size="sm" variant="ghost" onClick={() => setEditing(null)}>{label("Cancel", "বাতিল")}</Button></> : <><Button size="sm" variant="secondary" onClick={() => { setEditing(row.id); setEdit({ name: "", employeeId: "", phone: "", password: "" }); }}><Pencil className="size-3.5" /> {label("Edit", "এডিট")}</Button><Button size="sm" variant="ghost" disabled={toggle.isPending} onClick={() => toggle.mutate({ profileId: row.id, isActive: !row.is_active })}>{row.is_active ? label("Deactivate", "বন্ধ করুন") : label("Activate", "চালু করুন")}</Button></>}
               </div>
             </li>
           );
@@ -189,12 +192,12 @@ export function StaffAccountsTable() {
         <table className="w-full min-w-[720px] text-sm">
           <thead className="text-left text-xs uppercase tracking-wide text-muted-foreground">
             <tr className="border-b border-border">
-              <th className="py-2 pr-3">এজেন্টের নাম</th>
-              <th className="py-2 pr-3">Agent ID</th>
-              <th className="py-2 pr-3">ফোন নম্বর</th>
-              <th className="py-2 pr-3">পাসওয়ার্ড</th>
-              <th className="py-2 pr-3">অ্যাসাইন করা লিড</th>
-              <th className="py-2">অবস্থা</th>
+              <th className="py-2 pr-3">{label("Agent name", "এজেন্টের নাম")}</th>
+              <th className="py-2 pr-3">{label("Agent ID", "Agent ID")}</th>
+              <th className="py-2 pr-3">{label("Phone number", "ফোন নম্বর")}</th>
+              <th className="py-2 pr-3">{label("Password", "পাসওয়ার্ড")}</th>
+              <th className="py-2 pr-3">{label("Assigned leads", "অ্যাসাইন করা লিড")}</th>
+              <th className="py-2">{label("Status", "অবস্থা")}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
@@ -239,7 +242,7 @@ export function StaffAccountsTable() {
                     {isEditing ? (
                       <Input
                         className="h-8"
-                        placeholder="নতুন পাসওয়ার্ড"
+                        placeholder={label("New password", "নতুন পাসওয়ার্ড")}
                         onChange={(e) => setEdit((s) => ({ ...s, password: e.target.value }))}
                       />
                     ) : (
@@ -250,7 +253,7 @@ export function StaffAccountsTable() {
                   <td className="py-2">
                     <div className="flex flex-wrap items-center gap-1.5">
                       <span className="text-xs text-muted-foreground">
-                        {row.is_active ? "সক্রিয়" : "বন্ধ"}
+                        {row.is_active ? label("Active", "সক্রিয়") : label("Inactive", "বন্ধ")}
                       </span>
                       {isEditing ? (
                         <>
@@ -259,10 +262,10 @@ export function StaffAccountsTable() {
                             disabled={save.isPending}
                             onClick={() => save.mutate(row.id)}
                           >
-                            সেভ
+                            {label("Save", "সেভ")}
                           </Button>
                           <Button size="sm" variant="ghost" onClick={() => setEditing(null)}>
-                            বাতিল
+                            {label("Cancel", "বাতিল")}
                           </Button>
                         </>
                       ) : (
@@ -275,7 +278,7 @@ export function StaffAccountsTable() {
                               setEdit({ name: "", employeeId: "", phone: "", password: "" });
                             }}
                           >
-                            <Pencil className="size-3.5" /> এডিট
+                            <Pencil className="size-3.5" /> {label("Edit", "এডিট")}
                           </Button>
                           <Button
                             size="sm"
@@ -285,7 +288,7 @@ export function StaffAccountsTable() {
                               toggle.mutate({ profileId: row.id, isActive: !row.is_active })
                             }
                           >
-                            {row.is_active ? "বন্ধ করুন" : "চালু করুন"}
+                            {row.is_active ? label("Deactivate", "বন্ধ করুন") : label("Activate", "চালু করুন")}
                           </Button>
                         </>
                       )}
@@ -298,9 +301,9 @@ export function StaffAccountsTable() {
         </table>
       </div>
 
-      {list.isPending && <p className="mt-3 text-sm text-muted-foreground">তালিকা আনা হচ্ছে…</p>}
+      {list.isPending && <p className="mt-3 text-sm text-muted-foreground">{label("Loading accounts…", "তালিকা আনা হচ্ছে…")}</p>}
       {!list.isPending && staff.length === 0 && (
-        <p className="mt-3 text-sm text-muted-foreground">এখনো কোনো ডেস্ক অ্যাকাউন্ট নেই।</p>
+        <p className="mt-3 text-sm text-muted-foreground">{label("No desk accounts yet.", "এখনো কোনো ডেস্ক অ্যাকাউন্ট নেই।")}</p>
       )}
       <AgentOnboarding />
     </section>

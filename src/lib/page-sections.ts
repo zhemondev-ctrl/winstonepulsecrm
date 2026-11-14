@@ -38,6 +38,7 @@ export const PAGE_SECTIONS = {
     { key: "admin", label: "তথ্য ব্যবস্থা", en: "Manage info" },
   ],
   "/system": [
+    { key: "agent-work", label: "এজেন্টের কাজ ও বণ্টন", en: "Agent work & handout" },
     { key: "health", label: "সিস্টেমের অবস্থা", en: "System check" },
     { key: "leads", label: "লিডের তালিকো", en: "Lead list" },
     { key: "calls", label: "কল ও রেকর্ডিং", en: "Calls & recordings" },

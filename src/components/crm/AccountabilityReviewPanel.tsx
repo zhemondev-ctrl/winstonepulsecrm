@@ -8,8 +8,9 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { approveAllAccountability, listAccountabilityReviews, reviewAccountability } from "@/lib/accountability.functions";
-import { STATUS_LABEL, type AccountabilityStatus } from "@/lib/accountability";
+import { type AccountabilityStatus } from "@/lib/accountability";
 import { useAdminToken } from "@/lib/local-session";
+import { useT } from "@/lib/i18n";
 
 type HistoryEntry = { action: string; at: string; by: string; note: string | null };
 
@@ -24,14 +25,18 @@ function fmt(iso: string | null | undefined) {
   return new Intl.DateTimeFormat("en-GB", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Dhaka" }).format(new Date(iso));
 }
 
-/** Executive HQ (approve) and IT Console (monitor only) — server decides who may act. */
+/** Server-approved HQ and full IT PIN reviewers share the existing audit path. */
 export function AccountabilityReviewPanel({ surface }: { surface: "hq" | "it" }) {
+  const t = useT();
+  const label = (en: string, bn: string) => t({ en, bn });
+  const stateLabel = (status: string) => status === "approved" ? label("Approved", "অনুমোদিত") : status === "hold" ? label("On hold", "স্থগিত") : label("Review required", "পর্যালোচনা প্রয়োজন");
   const adminToken = useAdminToken();
   const list = useServerFn(listAccountabilityReviews);
   const review = useServerFn(reviewAccountability);
   const qc = useQueryClient();
   const [openId, setOpenId] = useState<string | null>(null);
   const [note, setNote] = useState("");
+  const [showHistory, setShowHistory] = useState(false);
 
   const q = useQuery({
     queryKey: ["accountability-reviews", adminToken],
@@ -43,7 +48,7 @@ export function AccountabilityReviewPanel({ surface }: { surface: "hq" | "it" })
     mutationFn: (v: { id: string; action: "approve" | "hold" | "note" }) =>
       review({ data: { adminToken, id: v.id, action: v.action, note: note.trim() || undefined } }),
     onSuccess: (_r, v) => {
-      toast.success(v.action === "approve" ? "Next-day unlock approved" : v.action === "hold" ? "Kept on hold" : "Note added");
+      toast.success(v.action === "approve" ? label("Next-day unlock approved", "পরের দিনের কাজ অনুমোদিত") : v.action === "hold" ? label("Kept on hold", "স্থগিত রাখা হয়েছে") : label("Note added", "মন্তব্য যোগ হয়েছে"));
       setNote("");
       qc.invalidateQueries({ queryKey: ["accountability-reviews"] });
     },
@@ -54,14 +59,15 @@ export function AccountabilityReviewPanel({ surface }: { surface: "hq" | "it" })
   const all = useMutation({
     mutationFn: () => approveAll({ data: { adminToken, days: 30 } }),
     onSuccess: (r) => {
-      toast.success(`${r.approved} of ${r.total} reviews approved`);
+      toast.success(label(`${r.approved} of ${r.total} reviews approved`, `${r.total}টির মধ্যে ${r.approved}টি অনুমোদিত`));
       qc.invalidateQueries({ queryKey: ["accountability-reviews"] });
     },
     onError: (e) => toast.error(e instanceof Error ? e.message : "Could not approve"),
   });
 
-  const rows = q.data?.reviews ?? [];
-  const canApprove = surface === "hq" && Boolean(q.data?.canApprove);
+  const allRows = q.data?.reviews ?? [];
+  const rows = surface === "it" && !showHistory ? allRows.filter(r => r.status !== "approved") : allRows;
+  const canApprove = Boolean(q.data?.canApprove);
   const open = rows.find((r) => r.id === openId) ?? null;
   const history = (open?.review_history ?? []) as HistoryEntry[];
   const prior = open ? rows.filter((r) => r.agent_id === open.agent_id && r.id !== open.id) : [];
@@ -69,21 +75,22 @@ export function AccountabilityReviewPanel({ surface }: { surface: "hq" | "it" })
 
   return (
     <SectionGroup
-      eyebrow={surface === "hq" ? "Executive HQ" : "IT monitoring"}
-      title="Daily Accountability / Pending Review"
+      eyebrow={surface === "hq" ? label("Executive HQ", "এক্সিকিউটিভ HQ") : label("IT Console", "আইটি কনসোল")}
+      title={surface === "it" ? label("Handout eligibility / Pending review", "বণ্টনের যোগ্যতা / অপেক্ষমাণ পর্যালোচনা") : label("Daily Accountability / Pending Review", "দৈনিক জবাবদিহি / অপেক্ষমাণ পর্যালোচনা")}
       subtitle={
         surface === "hq"
-          ? "Agents above 10% pending work. Next-day queue opens only after HQ approval."
-          : "Read-only audit view. Approval and unlock are Executive HQ only."
+          ? label("Pending-work reviews. HQ or full IT PIN approval opens the next-day queue.", "বাকি কাজের পর্যালোচনা। HQ বা পূর্ণ IT পিনের অনুমোদনে পরের দিনের কাজ খুলবে।")
+          : label("Saved pending-work reviews · next-day unlock decisions. Lead assignment stays in LeadHub Nexus.", "সংরক্ষিত বাকি কাজের পর্যালোচনা ও পরের দিনের অনুমোদন। লিড বণ্টন LeadHub Nexus-এ থাকবে।")
       }
       count={waiting}
     >
+      {surface === "it" && <div className="mb-3 flex justify-end"><Button size="sm" variant="outline" onClick={() => setShowHistory(v => !v)}>{showHistory ? label("Pending only", "শুধু অপেক্ষমাণ") : label("Show review history", "পর্যালোচনার ইতিহাস")}</Button></div>}
       {q.isPending ? (
         <GroupState kind="loading" />
       ) : q.isError ? (
         <GroupState kind="error" message={q.error instanceof Error ? q.error.message : "Could not load"} />
       ) : rows.length === 0 ? (
-        <GroupState kind="empty" message="No pending-review records in the last 30 days" />
+        <GroupState kind="empty" message={label("No pending-review records in the last 30 days", "গত ৩০ দিনে অপেক্ষমাণ পর্যালোচনা নেই")} />
       ) : (
         <>
         {canApprove && waiting > 0 ? (
@@ -91,9 +98,9 @@ export function AccountabilityReviewPanel({ surface }: { surface: "hq" | "it" })
             <Button
               className="w-full sm:w-auto"
               disabled={all.isPending}
-              onClick={() => { if (window.confirm(`Approve next-day unlock for all ${waiting} waiting reviews (including ones on hold)?`)) all.mutate(); }}
+              onClick={() => { if (window.confirm(label(`Approve next-day unlock for all ${waiting} waiting reviews (including ones on hold)?`, `${waiting}টি অপেক্ষমাণ ও স্থগিত পর্যালোচনার পরের দিনের কাজ অনুমোদন করবেন?`))) all.mutate(); }}
             >
-              {all.isPending ? "Approving…" : `Approve all (${waiting})`}
+              {all.isPending ? label("Approving…", "অনুমোদন হচ্ছে…") : label(`Approve all (${waiting})`, `সব অনুমোদন (${waiting})`)}
             </Button>
           </div>
         ) : null}
@@ -102,9 +109,9 @@ export function AccountabilityReviewPanel({ surface }: { surface: "hq" | "it" })
             const agent = r.agent as { name?: string; employee_id?: string } | null;
             const st = r.status as AccountabilityStatus;
             return <li key={r.id} className="rounded-lg border border-border p-3 text-xs">
-              <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-2"><div className="min-w-0"><p className="truncate font-semibold">{agent?.name ?? "—"}</p><p className="text-muted-foreground">{agent?.employee_id ?? ""} · {r.business_date}</p></div><span className={`self-start rounded-full border px-2 py-0.5 text-[10px] font-semibold ${TONE[st]}`}>{STATUS_LABEL[st]}</span></div>
-              <dl className="mt-3 grid grid-cols-3 gap-2 text-center"><div><dt className="text-muted-foreground">Eligible</dt><dd className="tabular font-semibold">{r.eligible_count}</dd></div><div><dt className="text-muted-foreground">Done</dt><dd className="tabular font-semibold">{r.completed_count}</dd></div><div><dt className="text-muted-foreground">Pending</dt><dd className="tabular font-semibold">{r.pending_count} · {r.pending_percent}%</dd></div></dl>
-              <Button className="mt-3 w-full" size="sm" variant="outline" onClick={() => { setNote(""); setOpenId(r.id); }}>Review details</Button>
+              <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-2"><div className="min-w-0"><p className="truncate font-semibold">{agent?.name ?? "—"}</p><p className="text-muted-foreground">{agent?.employee_id ?? ""} · {r.business_date}</p></div><span className={`self-start rounded-full border px-2 py-0.5 text-[10px] font-semibold ${TONE[st]}`}>{stateLabel(st)}</span></div>
+              <dl className="mt-3 grid grid-cols-3 gap-2 text-center"><div><dt className="text-muted-foreground">{label("Eligible", "যোগ্য কাজ")}</dt><dd className="tabular font-semibold">{r.eligible_count}</dd></div><div><dt className="text-muted-foreground">{label("Done", "সম্পন্ন")}</dt><dd className="tabular font-semibold">{r.completed_count}</dd></div><div><dt className="text-muted-foreground">{label("Pending", "বাকি")}</dt><dd className="tabular font-semibold">{r.pending_count} · {r.pending_percent}%</dd></div></dl>
+              <Button className="mt-3 w-full" size="sm" variant="outline" onClick={() => { setNote(""); setOpenId(r.id); }}>{label("Review details", "বিস্তারিত পর্যালোচনা")}</Button>
             </li>;
           })}
         </ul>
@@ -112,11 +119,11 @@ export function AccountabilityReviewPanel({ surface }: { surface: "hq" | "it" })
           <table className="w-full min-w-[820px] text-left text-xs">
             <thead className="text-[10px] uppercase tracking-wider text-muted-foreground">
               <tr className="border-b border-border">
-                <th className="py-2 pr-3">Agent</th><th className="pr-3">Business date</th>
-                <th className="pr-3 text-right">Eligible</th><th className="pr-3 text-right">Done</th>
-                <th className="pr-3 text-right">Pending</th><th className="pr-3 text-right">%</th>
-                <th className="pr-3 text-right">Overdue FU</th><th className="pr-3 text-right">Incomplete reports</th>
-                <th className="pr-3">State</th><th />
+                <th className="py-2 pr-3">{label("Agent", "এজেন্ট")}</th><th className="pr-3">{label("Business date", "কাজের তারিখ")}</th>
+                <th className="pr-3 text-right">{label("Eligible", "যোগ্য কাজ")}</th><th className="pr-3 text-right">{label("Done", "সম্পন্ন")}</th>
+                <th className="pr-3 text-right">{label("Pending", "বাকি")}</th><th className="pr-3 text-right">%</th>
+                <th className="pr-3 text-right">{label("Overdue FU", "বকেয়া ফলো-আপ")}</th><th className="pr-3 text-right">{label("Incomplete reports", "অসম্পূর্ণ রিপোর্ট")}</th>
+                <th className="pr-3">{label("State", "অবস্থা")}</th><th />
               </tr>
             </thead>
             <tbody>
@@ -133,8 +140,8 @@ export function AccountabilityReviewPanel({ surface }: { surface: "hq" | "it" })
                     <td className="pr-3 text-right tabular font-semibold">{r.pending_percent}%</td>
                     <td className="pr-3 text-right tabular">{r.overdue_followups}</td>
                     <td className="pr-3 text-right tabular">{r.missed_reports}</td>
-                    <td className="pr-3"><span className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold ${TONE[st]}`}>{STATUS_LABEL[st]}</span></td>
-                    <td className="text-right"><Button size="sm" variant="outline" onClick={() => { setNote(""); setOpenId(r.id); }}>Review details</Button></td>
+                    <td className="pr-3"><span className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold ${TONE[st]}`}>{stateLabel(st)}</span></td>
+                    <td className="text-right"><Button size="sm" variant="outline" onClick={() => { setNote(""); setOpenId(r.id); }}>{label("Review details", "বিস্তারিত পর্যালোচনা")}</Button></td>
                   </tr>
                 );
               })}
@@ -156,17 +163,17 @@ export function AccountabilityReviewPanel({ surface }: { surface: "hq" | "it" })
               <div className="space-y-4 text-sm">
                 <p className="rounded-xl border border-border bg-surface-2/60 p-3 text-xs">{open.trigger_reason}</p>
                 <dl className="grid grid-cols-2 gap-2 text-xs">
-                  <dt className="text-muted-foreground">Assigned eligible leads</dt><dd className="tabular">{open.assigned_count}</dd>
-                  <dt className="text-muted-foreground">Total workload (incl. due follow-ups)</dt><dd className="tabular">{open.eligible_count}</dd>
-                  <dt className="text-muted-foreground">Completed / contacted</dt><dd className="tabular">{open.completed_count}</dd>
-                  <dt className="text-muted-foreground">Pending</dt><dd className="tabular">{open.pending_count} ({open.pending_percent}%)</dd>
-                  <dt className="text-muted-foreground">Overdue follow-ups</dt><dd className="tabular">{open.overdue_followups}</dd>
-                  <dt className="text-muted-foreground">Incomplete reports</dt><dd className="tabular">{open.missed_reports}</dd>
-                  <dt className="text-muted-foreground">Unlock for date</dt><dd className="tabular">{open.unlock_for_date}</dd>
-                  <dt className="text-muted-foreground">Reviewed</dt><dd>{open.reviewed_by ? `${open.reviewed_by}, ${fmt(open.reviewed_at)}` : "—"}</dd>
+                  <dt className="text-muted-foreground">{label("Assigned eligible leads", "অ্যাসাইন করা যোগ্য লিড")}</dt><dd className="tabular">{open.assigned_count}</dd>
+                  <dt className="text-muted-foreground">{label("Total workload (incl. due follow-ups)", "মোট কাজ (ফলো-আপসহ)")}</dt><dd className="tabular">{open.eligible_count}</dd>
+                  <dt className="text-muted-foreground">{label("Completed / contacted", "সম্পন্ন / যোগাযোগ হয়েছে")}</dt><dd className="tabular">{open.completed_count}</dd>
+                  <dt className="text-muted-foreground">{label("Pending", "বাকি")}</dt><dd className="tabular">{open.pending_count} ({open.pending_percent}%)</dd>
+                  <dt className="text-muted-foreground">{label("Overdue follow-ups", "বকেয়া ফলো-আপ")}</dt><dd className="tabular">{open.overdue_followups}</dd>
+                  <dt className="text-muted-foreground">{label("Incomplete reports", "অসম্পূর্ণ রিপোর্ট")}</dt><dd className="tabular">{open.missed_reports}</dd>
+                  <dt className="text-muted-foreground">{label("Unlock for date", "কাজ খোলার তারিখ")}</dt><dd className="tabular">{open.unlock_for_date}</dd>
+                  <dt className="text-muted-foreground">{label("Reviewed", "পর্যালোচিত")}</dt><dd>{open.reviewed_by ? `${open.reviewed_by}, ${fmt(open.reviewed_at)}` : "—"}</dd>
                 </dl>
                 <div>
-                  <p className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Evidence timeline</p>
+                  <p className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{label("Evidence timeline", "প্রমাণের ইতিহাস")}</p>
                   <ol className="space-y-1 text-xs">
                     {history.map((h, i) => (
                       <li key={i} className="border-l-2 border-primary/40 pl-2">
@@ -177,29 +184,29 @@ export function AccountabilityReviewPanel({ surface }: { surface: "hq" | "it" })
                   </ol>
                 </div>
                 <div>
-                  <p className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Previous reviews</p>
+                  <p className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{label("Previous reviews", "আগের পর্যালোচনা")}</p>
                   {prior.length === 0 ? (
-                    <p className="text-xs text-muted-foreground">None in the last 30 days.</p>
+                    <p className="text-xs text-muted-foreground">{label("None in the last 30 days.", "গত ৩০ দিনে নেই।")}</p>
                   ) : (
                     <ul className="space-y-0.5 text-xs">
                       {prior.map((p) => (
-                        <li key={p.id}>{p.business_date} — {p.pending_percent}% — {STATUS_LABEL[p.status as AccountabilityStatus]}</li>
+                        <li key={p.id}>{p.business_date} — {p.pending_percent}% — {stateLabel(p.status)}</li>
                       ))}
                     </ul>
                   )}
                 </div>
                 {canApprove ? (
                   <div className="space-y-2">
-                    <Textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder="Review note (required for Hold / Add note)" maxLength={1000} />
+                    <Textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder={label("Review note (required for Hold / Add note)", "পর্যালোচনার মন্তব্য (স্থগিত বা মন্তব্য যোগ করতে আবশ্যক)")} maxLength={1000} />
                     <div className="flex flex-wrap gap-2">
-                      <Button disabled={act.isPending || open.status === "approved"} onClick={() => act.mutate({ id: open.id, action: "approve" })}>Approve Next-Day Unlock</Button>
-                      <Button variant="outline" disabled={act.isPending || !note.trim()} onClick={() => act.mutate({ id: open.id, action: "hold" })}>Keep On Hold</Button>
-                      <Button variant="ghost" disabled={act.isPending || !note.trim()} onClick={() => act.mutate({ id: open.id, action: "note" })}>Add review note</Button>
+                      <Button disabled={act.isPending || open.status === "approved"} onClick={() => act.mutate({ id: open.id, action: "approve" })}>{label("Approve Next-Day Unlock", "পরের দিনের কাজ অনুমোদন")}</Button>
+                      <Button variant="outline" disabled={act.isPending || !note.trim()} onClick={() => act.mutate({ id: open.id, action: "hold" })}>{label("Keep On Hold", "স্থগিত রাখুন")}</Button>
+                      <Button variant="ghost" disabled={act.isPending || !note.trim()} onClick={() => act.mutate({ id: open.id, action: "note" })}>{label("Add review note", "পর্যালোচনার মন্তব্য যোগ করুন")}</Button>
                     </div>
                   </div>
                 ) : (
                   <p className="text-xs text-muted-foreground">
-                    {surface === "it" ? "IT can monitor only. Final approval is Executive HQ." : "Unlock with the Executive HQ PIN to act."}
+                    {label("Unlock with the Executive HQ or full IT PIN to act.", "সিদ্ধান্ত দিতে HQ বা পূর্ণ IT পিন দিয়ে খুলুন।")}
                   </p>
                 )}
               </div>

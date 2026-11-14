@@ -6,6 +6,7 @@ import { AdminPinDialog } from "@/components/crm/AdminPinDialog";
 import { SnapshotSkeleton } from "@/components/crm/SnapshotSkeleton";
 import { Button } from "@/components/ui/button";
 import { useMyAccount, type Account } from "@/lib/session";
+import { useT } from "@/lib/i18n";
 
 type Scope = Account["scope"];
 
@@ -30,6 +31,7 @@ export function RoleGate({
   surface?: "hq" | "system";
 }) {
   const { scope, isPending } = useMyAccount();
+  const t = useT();
   const [pinOpen, setPinOpen] = useState(false);
 
   if (isPending) return <SnapshotSkeleton />;
@@ -48,13 +50,13 @@ export function RoleGate({
       </div>
       <div className="flex flex-wrap justify-center gap-2">
         {pinAllowed && (
-          surface === "system" ? <Button size="lg" asChild><Link to="/it-access"><Lock className="size-4" />পিন দিন</Link></Button> : <Button size="lg" onClick={() => setPinOpen(true)}>
-            <Lock className="size-4" /> পিন দিন
+          surface === "system" ? <Button size="lg" asChild><Link to="/it-access"><Lock className="size-4" />{t({ en: "Enter PIN", bn: "পিন দিন" })}</Link></Button> : <Button size="lg" onClick={() => setPinOpen(true)}>
+            <Lock className="size-4" /> {t({ en: "Enter PIN", bn: "পিন দিন" })}
           </Button>
         )}
         <Button size="lg" variant={pinAllowed ? "secondary" : "default"} asChild>
           <Link to="/auth" search={{ role: "agent", mode: "signin" }}>
-            <LogIn className="size-4" /> সাইন ইন
+            <LogIn className="size-4" /> {t({ en: "Sign in", bn: "সাইন ইন" })}
           </Link>
         </Button>
       </div>

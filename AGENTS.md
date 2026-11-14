@@ -10,7 +10,7 @@
 <!-- LOVABLE:END -->
 - FinOS logs persist before summary return; full IT PIN reads. Why: no audit loss or fabricated reads.
 - Lead assignment only via LeadHub Nexus (server PIN scope); imports land unassigned; claimLead retired — why: one canonical path, no quota bypass.
-- agent_accountability_reviews is server-only; approval needs HQ PIN, never IT — why: Executive HQ final approval.
+- Accountability approval needs HQ/full IT PIN; server-only — why: explicit review scope, no routing rights.
 - 9:05 Dhaka briefing ack enforced server-side on every agent mutation (web + Android) — why: UI notices are bypassable.
 - History is append-only: follow_up_events never deleted, contact-close via DB trigger + immutable lead_events — why: UI checks can be bypassed.
 - Staff names cleaned by profiles trigger; legal_name never shown — why: one rule everywhere.
