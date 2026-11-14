@@ -1,6 +1,7 @@
 # Roadmap
 
 ## Open tasks
+- [ ] Build Android 2.22 (33) from current source for handset call-evidence testing — official signing inputs and JDK/Android SDK unavailable in this sandbox; no connected build runner or handset. Use approved signed build workflow or key custodian script; never substitute an old or differently signed APK. Installation/sync remains unverified.
 - [ ] Automatic Security history with provider-supplied commit SHA and completed-scan refresh — blocked: no accessible Lovable API account connection; do not infer revision from timestamps or scaffold unverified provider reads.
 - [x] Publication requested after user chose to proceed despite the critical call-score finding; basic scan clean. Live HQ/IT/System/Nexus/Agents and Security return 200, Security History title matches preview, HQ/IT/Nexus Master PIN dialogs and Agents identifier/password form match preview, zero page runtime errors observed. Manual 1.7.0/$35.29/50 release markers pass. Successful credential/PIN submission and exact deployed Git SHA remain unverified; automatic history still blocked on connection. Evidence: /tmp/browser/release-gates/check_gates.py and screenshots (14 Nov 2026).
 - [x] Read-only OAuth registration investigation: verified managed Google source, separate workspace Google service helpers and enabled CRM OAuth consent configuration; reported exact documented Google setup and distinguished app returns from provider callbacks. External provider/purpose remains unanswered; no settings or credential changes.
