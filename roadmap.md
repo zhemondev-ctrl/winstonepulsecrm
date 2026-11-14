@@ -160,3 +160,7 @@
 - [x] Show fresh backup evidence, then publish (requested 14 Nov)
 - [ ] Phone call proof → V: server path ready; blocked until agents install Android 2.22+ (devices report 2.3 and older)
 - [ ] Agent draft/submit test on live data (needs owner OK: creates permanent lead)
+
+## GitHub sync + CI (14 Nov 2026)
+- [ ] Sync main to github.com/zhemondev-ctrl/winstonepulsecrm — blocked: agent cannot push/connect; user connects Git sync (creates a NEW private repo, cannot link existing) or pushes from own machine
+- [x] Fix 9 failing tests so Web CI goes green and coverage reports (2,191 passed, lines 23.12%)
