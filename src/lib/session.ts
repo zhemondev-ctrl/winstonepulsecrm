@@ -79,6 +79,12 @@ export function useSignOut() {
   return async () => {
     await queryClient.cancelQueries();
     queryClient.clear();
+    // Log out of every surface: staff session plus HQ / IT / LeadHub PIN unlocks.
+    const ls = await import("@/lib/local-session");
+    ls.setAdminToken(null);
+    ls.setLeadHubToken(null);
+    ls.setCoordToken(null);
+    ls.setOperatorId(null);
     await supabase.auth.signOut();
   };
 }

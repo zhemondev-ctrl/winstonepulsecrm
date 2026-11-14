@@ -17,7 +17,7 @@ import { OfflineSyncBar } from "@/components/crm/OfflineSyncBar";
 
 import { Button } from "@/components/ui/button";
 import { useCrmRealtime } from "@/hooks/use-crm-realtime";
-import { setAdminToken, useAdminToken } from "@/lib/local-session";
+import { setAdminToken, useAdminToken, useLeadHubToken } from "@/lib/local-session";
 import { useMyAccount, useSignOut } from "@/lib/session";
 import { NAV_LABELS, setLang, useLang, useT } from "@/lib/i18n";
 import { filterNavForSurface } from "@/lib/nav-surface";
@@ -104,6 +104,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const adminToken = useAdminToken();
   const { scope, account } = useMyAccount();
   const signOut = useSignOut();
+  const leadHubToken = useLeadHubToken();
   const [pinOpen, setPinOpen] = useState(false);
   const lang = useLang();
   const t = useT();
@@ -199,17 +200,20 @@ export function AppShell({ children }: { children: ReactNode }) {
               </span>
             </button>
 
-            {scope !== "none" && !adminToken && (
+            {(scope !== "none" || adminToken || leadHubToken) && (
               <button
                 type="button"
-                aria-label={t({ bn: "সাইন আউট", en: "Sign out" })}
+                aria-label={t({ bn: "লগআউট", en: "Log out" })}
                 onClick={() => {
-                  void signOut().then(() => toast.info(t({ bn: "সাইন আউট হয়েছো", en: "Signed out" })));
+                  void signOut().then(() => {
+                    toast.info(t({ bn: "লগআউট হয়েছে", en: "Logged out" }));
+                    window.location.assign("/signin");
+                  });
                 }}
                 className="inline-flex h-8 min-w-8 shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-full border border-border bg-card px-2 text-xs font-semibold text-muted-foreground transition-all duration-300 hover:text-foreground hover:shadow-sm sm:px-3"
               >
                 <LogOut className="size-3.5 sm:hidden" />
-                <span className="hidden sm:inline">{t({ bn: "সাইন আউট", en: "Sign out" })}</span>
+                <span className="hidden sm:inline">{t({ bn: "লগআউট", en: "Log out" })}</span>
               </button>
             )}
 
