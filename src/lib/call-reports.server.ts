@@ -590,7 +590,7 @@ export async function submitCallReport(input: {
         ...(received ? { unanswered_attempts: 0 } : {}),
       };
   const plannedAt = input.followUpAt ?? cadence?.retryAt ?? null;
-  const stageNote = cadence ? (cadence.stage === "unresponsive" ? "Unresponsive Pool — 3 unanswered calls; reactivation after 7 days" : cadence.stage === "snooze_soft" ? "Second unanswered call — soft message, retry within 2 working days" : "First unanswered call — second try later today") : null;
+  const stageNote = cadence ? (cadence.stage === "unresponsive" ? "Unresponsive Pool — 3 unanswered calls; reactivation after 7 days" : cadence.stage === "snooze_soft" ? "Second unanswered call — soft message, retry within 48 hours" : "First unanswered call — second try later today") : null;
   const followUpPatch = plannedAt
     ? {
         lead_id: report.lead_id, agent_id: input.agentId, report_id: report.id,

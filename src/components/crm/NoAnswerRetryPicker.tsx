@@ -11,8 +11,8 @@ export const DEFAULT_RETRY_PICK: RetryPick = { mode: "plus2", slot: "morning", t
 export function NoAnswerRetryPicker({ value, onChange }: { value: RetryPick; onChange: (v: RetryPick) => void }) {
   const t = useT();
   const modes: { key: RetryMode; label: { bn: string; en: string } }[] = [
-    { key: "plus1", label: { bn: "+১ কর্মদিবস", en: "+1 working day" } },
-    { key: "plus2", label: { bn: "+২ কর্মদিবস", en: "+2 working days" } },
+    { key: "plus1", label: { bn: "+১ দিন", en: "+1 day" } },
+    { key: "plus2", label: { bn: "+২ দিন", en: "+2 days" } },
     { key: "custom", label: { bn: "নিজে তারিখ ও সময়", en: "Custom Date & Time" } },
   ];
   const slots: { key: RetrySlot; label: { bn: string; en: string } }[] = [
@@ -48,8 +48,8 @@ export function NoAnswerRetryPicker({ value, onChange }: { value: RetryPick; onC
       )}
       <p className="text-[11px] text-muted-foreground">
         {t({
-          bn: "১ম বার না ধরলে লিডটি ২ ঘণ্টা পর আজকের তালিকায় আবার আসবে (বিকেল ৫টার পরে হলে পরের কার্যদিবস সকালে) — এই পছন্দ তখন লাগবে না। ২য় বার না ধরলে এখানে বেছে নেওয়া সময় লাগবে, সর্বোচ্চ ২ কর্মদিবসের মধ্যে, সাথে সফট মেসেজের ড্রাফট। ৩য় বার হলে লিডটি Unresponsive Pool-এ যাবে এবং ৭ দিন পর আবার আসবে। লিড আপনার কাছেই থাকবে।",
-          en: "After a 1st miss the lead comes back on today's list 2 hours later (next working morning if that is after 5 PM) — this choice isn't used then. After a 2nd miss the time chosen here is used, at most 2 working days ahead, with a soft message draft. A 3rd miss moves the lead to the Unresponsive Pool and it returns after 7 days. The lead stays with you.",
+          bn: "১ম বার না ধরলে লিডটি ২ ঘণ্টা পর আজকের তালিকায় আবার আসবে (বিকেল ৫টার পরে হলে পরের কার্যদিবস সকালে) — এই পছন্দ তখন লাগবে না। ২য় বার না ধরলে এখানে বেছে নেওয়া সময় লাগবে, সর্বোচ্চ ৪৮ ঘণ্টার মধ্যে, সাথে সফট মেসেজের ড্রাফট। ৩য় বার হলে লিডটি Unresponsive Pool-এ যাবে এবং ৭ দিন পর আবার আসবে। লিড আপনার কাছেই থাকবে।",
+          en: "After a 1st miss the lead comes back on today's list 2 hours later (next working morning if that is after 5 PM) — this choice isn't used then. After a 2nd miss the time chosen here is used, at most 48 hours ahead, with a soft message draft. A 3rd miss moves the lead to the Unresponsive Pool and it returns after 7 days. The lead stays with you.",
         })}
       </p>
     </div>

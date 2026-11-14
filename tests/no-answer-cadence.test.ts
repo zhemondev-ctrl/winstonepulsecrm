@@ -18,23 +18,26 @@ describe("did-not-receive cadence", () => {
     const thuLate = Date.parse("2026-10-15T12:00:00Z"); // Thu 18:00 Dhaka
     expect(planNoAnswer(1, null, thuLate).retryAt).toBe(dhakaSlotIso("2026-10-17", "10:30"));
   });
-  it("attempt 2 defaults to +2 working days with the soft message stage", () => {
+  it("attempt 2 defaults to +2 days (within 48 hours) with the soft message stage", () => {
     const p = planNoAnswer(2, null, NOW);
     expect(p.stage).toBe("snooze_soft");
     expect(p.retryAt).toBe(dhakaSlotIso("2026-10-14", "10:30"));
   });
-  it("attempt 2 +1 working day uses the chosen slot", () => {
+  it("attempt 2 +1 day uses the chosen slot", () => {
     expect(planNoAnswer(2, { mode: "plus1", slot: "evening" }, NOW).retryAt).toBe(dhakaSlotIso("2026-10-13", "18:00"));
   });
-  it("older apps sending +3 days are capped at 2 working days", () => {
+  it("older apps sending +3 days are capped inside 48 hours", () => {
     expect(planNoAnswer(2, { mode: "plus3", slot: "morning" }, NOW).retryAt).toBe(dhakaSlotIso("2026-10-14", "10:30"));
   });
-  it("2 working days skip Friday (Wed → Sat)", () => {
+  it("attempt 2 never goes past 48 hours when Friday is in between (Wed → Thu)", () => {
     const wed = Date.parse("2026-10-14T06:00:00Z");
-    expect(planNoAnswer(2, { mode: "plus2", slot: "afternoon" }, wed).retryAt).toBe(dhakaSlotIso("2026-10-17", "15:00"));
+    expect(planNoAnswer(2, { mode: "plus2", slot: "afternoon" }, wed).retryAt).toBe(dhakaSlotIso("2026-10-15", "15:00"));
   });
-  it("attempt 2 refuses a custom date beyond 2 working days", () => {
-    expect(() => planNoAnswer(2, { mode: "custom", slot: "custom", customAt: dhakaSlotIso("2026-10-15", "10:00") }, NOW)).toThrow("within 2 working days");
+  it("attempt 2 evening pick past 48 hours falls back to the day before", () => {
+    expect(planNoAnswer(2, { mode: "plus2", slot: "evening" }, NOW).retryAt).toBe(dhakaSlotIso("2026-10-13", "18:00"));
+  });
+  it("attempt 2 refuses a custom time beyond 48 hours", () => {
+    expect(() => planNoAnswer(2, { mode: "custom", slot: "custom", customAt: dhakaSlotIso("2026-10-14", "12:01") }, NOW)).toThrow("within 48 hours");
   });
   it("attempt 3 goes to unresponsive, 7 days later, ignoring the pick", () => {
     const p = planNoAnswer(3, { mode: "plus2", slot: "evening" }, NOW);
