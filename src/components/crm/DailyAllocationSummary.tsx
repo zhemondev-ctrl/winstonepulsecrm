@@ -6,6 +6,7 @@ import { getDailyAllocation } from "@/lib/daily-allocation.functions";
 import { useAdminToken, useDeckToken } from "@/lib/local-session";
 import { useMyAccount } from "@/lib/session";
 import { useT } from "@/lib/i18n";
+import { useEffect, useState } from "react";
 
 export function DailyAllocationSummary({ surface }: { surface: "hq" | "leadhub" | "self" }) {
   const t = useT();
@@ -21,6 +22,14 @@ export function DailyAllocationSummary({ surface }: { surface: "hq" | "leadhub" 
     retry: false,
   });
   const d = query.data;
+  const [now, setNow] = useState<number | null>(null);
+  useEffect(() => {
+    setNow(Date.now());
+    const timer = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, []);
+  const seconds = now !== null && d?.nextHandoutAt ? Math.max(0, Math.ceil((Date.parse(d.nextHandoutAt) - now) / 1000)) : null;
+  const countdown = seconds === null ? "—" : `${Math.floor(seconds / 3600).toString().padStart(2, "0")}:${Math.floor(seconds % 3600 / 60).toString().padStart(2, "0")}:${(seconds % 60).toString().padStart(2, "0")}`;
   const operationLabels = {
     confirmed: t({ bn: "স্বয়ংক্রিয় বণ্টন সম্পন্ন — সংরক্ষিত রসিদ আছে", en: "Automatic assignment completed — saved receipt confirmed" }),
     friday: t({ bn: "শুক্রবার — নির্ধারিত বণ্টন নেই", en: "Friday — no scheduled assignment" }),
@@ -37,6 +46,10 @@ export function DailyAllocationSummary({ surface }: { surface: "hq" | "leadhub" 
       <Button size="icon" variant="ghost" disabled={query.isFetching} onClick={() => void query.refetch()} aria-label={t({ bn: "বণ্টন সারাংশ আবার দেখুন", en: "Refresh allocation summary" })} title={t({ bn: "আবার দেখুন", en: "Refresh" })}><RefreshCw className={query.isFetching ? "size-4 animate-spin motion-reduce:animate-none" : "size-4"} /></Button>
     </header>
     {query.isError ? <p role="alert" className="text-sm text-destructive">{t({ bn: "বণ্টনের তথ্য আনা যায়নি। আবার চেষ্টা করুন।", en: "Could not load the allocation data. Please try again." })}</p> : d && <>
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-3">
+        <div><h3 className="text-sm font-semibold">{t({ bn: "পরবর্তী কোম্পানি বণ্টন · সকাল ৯:১০", en: "Next company handout · 9:10 AM" })}</h3><p className="text-xs text-muted-foreground">{d.nextHandoutAt ? new Date(d.nextHandoutAt).toLocaleString("en-GB", { timeZone: "Asia/Dhaka" }) : t({ bn: "সময় পাওয়া যায়নি", en: "Schedule unavailable" })} · {t({ bn: "ঢাকা", en: "Dhaka" })}</p></div>
+        <span className="min-w-28 text-right font-mono text-xl tabular-nums" aria-label={t({ bn: "বণ্টনের কাউন্টডাউন", en: "Handout countdown" })}>{countdown}</span>
+      </div>
       {d.operations && <div className="space-y-1 border-l-2 border-border pl-3 text-sm" role={["missing", "manual_only", "unconfirmed"].includes(d.operations.state) ? "alert" : "status"}>
         <h3 className="font-semibold">{t({ bn: "অপারেশন চেক · কোম্পানি বণ্টন · সকাল ৯:১০", en: "Operations check · Company assignment · 9:10 AM" })}</h3>
         <p>{operationLabels[d.operations.state]}</p>
@@ -52,27 +65,33 @@ export function DailyAllocationSummary({ surface }: { surface: "hq" | "leadhub" 
         <ul className="grid gap-3 md:hidden" aria-label={t({ bn: "এজেন্টভিত্তিক বণ্টন সারাংশ", en: "Per-agent distribution summary" })}>
           {d.agents.map(agent => <li key={agent.id} className="rounded-md border border-border p-3">
             <p className="break-words text-sm font-semibold">{agent.name}</p>
-            <dl className="mt-3 grid grid-cols-3 gap-2 text-sm">
+            <dl className="mt-3 grid grid-cols-2 gap-3 text-sm">
               <div><dt className="text-xs text-muted-foreground">{t({ bn: "দৈনিক লক্ষ্য", en: "Daily target" })}</dt><dd className="tabular-nums font-semibold">{d.quota}</dd></div>
               <div><dt className="text-xs text-muted-foreground">{t({ bn: "লিড পেয়েছেন", en: "Received" })}</dt><dd className={agent.zeroAlert ? "tabular-nums font-semibold text-warning" : "tabular-nums font-semibold"}>{agent.received}</dd></div>
-              <div><dt className="text-xs text-muted-foreground">{t({ bn: "বাকি", en: "Remaining" })}</dt><dd className="tabular-nums font-semibold">{d.distributionOpen ? agent.remaining : t({ bn: "বণ্টন বন্ধ", en: "Paused" })}</dd></div>
+              <div><dt className="text-xs text-muted-foreground">{t({ bn: "কোম্পানি বাকি", en: "Company remaining" })}</dt><dd className="tabular-nums font-semibold">{d.distributionOpen ? agent.remaining : t({ bn: "বণ্টন বন্ধ", en: "Paused" })}</dd></div>
+              <div><dt className="text-xs text-muted-foreground">{t({ bn: "নিজের নিবন্ধন", en: "Self registered" })}</dt><dd className="tabular-nums font-semibold">{agent.registered} / {agent.selfLimit}</dd></div>
+              <div><dt className="text-xs text-muted-foreground">{t({ bn: "নিজের নিবন্ধন বাকি", en: "Self slots remaining" })}</dt><dd className="tabular-nums font-semibold">{agent.selfRemaining}</dd></div>
             </dl>
           </li>)}
         </ul>
-        <div className="hidden md:block">
-          <table className="w-full table-fixed text-sm">
+        <div className="table-scroll hidden md:block">
+          <table className="w-full min-w-[720px] text-sm">
             <caption className="sr-only">{t({ bn: "এজেন্টভিত্তিক দৈনিক লক্ষ্য, প্রাপ্ত লিড ও বাকি লিড", en: "Daily target, received leads and remaining leads per agent" })}</caption>
             <thead className="border-b border-border text-xs text-muted-foreground"><tr>
               <th className="w-2/5 py-2 text-left font-medium">{t({ bn: "এজেন্ট", en: "Agent" })}</th>
               <th className="py-2 text-right font-medium">{t({ bn: "দৈনিক লক্ষ্য", en: "Daily target" })}</th>
               <th className="py-2 text-right font-medium">{t({ bn: "লিড পেয়েছেন", en: "Received" })}</th>
-              <th className="py-2 text-right font-medium">{t({ bn: "বাকি", en: "Remaining" })}</th>
+              <th className="py-2 text-right font-medium">{t({ bn: "কোম্পানি বাকি", en: "Company remaining" })}</th>
+              <th className="py-2 text-right font-medium">{t({ bn: "নিজের নিবন্ধন", en: "Self registered" })}</th>
+              <th className="py-2 text-right font-medium">{t({ bn: "নিজের বাকি", en: "Self remaining" })}</th>
             </tr></thead>
             <tbody>{d.agents.map(agent => <tr key={agent.id} className="border-b border-border">
               <th scope="row" className="break-words py-3 pr-3 text-left font-medium">{agent.name}</th>
               <td className="py-3 text-right tabular-nums">{d.quota}</td>
               <td className={agent.zeroAlert ? "py-3 text-right tabular-nums font-semibold text-warning" : "py-3 text-right tabular-nums font-semibold"}>{agent.received}</td>
               <td className="py-3 text-right tabular-nums">{d.distributionOpen ? agent.remaining : t({ bn: "বণ্টন বন্ধ", en: "Paused" })}</td>
+              <td className="py-3 text-right tabular-nums">{agent.registered} / {agent.selfLimit}</td>
+              <td className="py-3 text-right tabular-nums">{agent.selfRemaining}</td>
             </tr>)}</tbody>
           </table>
         </div>
