@@ -1,15 +1,11 @@
-import { useMutation } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate, useRouter } from "@tanstack/react-router";
-import { ArrowLeft, KeyRound, Loader2, LogIn, ShieldCheck } from "lucide-react";
+import { ArrowLeft, KeyRound, Loader2, ShieldCheck } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { AdminPinDialog } from "@/components/crm/AdminPinDialog";
-import { ItOwnPasswordForm } from "@/components/crm/ItOwnPasswordForm";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
-import { getMyAccount, signInWithIdentifier } from "@/lib/accounts.functions";
+import { getMyAccount } from "@/lib/accounts.functions";
 import { visibleItStep } from "@/lib/access-navigation";
 import { takeArchitectReturnFocus } from "@/lib/access-focus";
 import { lovable } from "@/integrations/lovable/index";
@@ -35,23 +31,18 @@ function ItAccess() {
   const router = useRouter();
   const { step: requestedStep } = Route.useSearch();
   const [pinVerified, setPinVerified] = useState(false);
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [changePassword, setChangePassword] = useState(false);
-  const [operatorVerified, setOperatorVerified] = useState(false);
   const [googlePending, setGooglePending] = useState(false);
   const [googleError, setGoogleError] = useState<string | null>(null);
   const unlocking = useRef(false);
   const pinTrigger = useRef<HTMLAnchorElement>(null);
-  const emailInput = useRef<HTMLInputElement>(null);
+  const googleButton = useRef<HTMLButtonElement>(null);
   const architectTrigger = useRef<HTMLAnchorElement>(null);
-  const step = visibleItStep(requestedStep, pinVerified, operatorVerified);
-  useEffect(() => { setPassword(""); }, [requestedStep]);
+  const step = visibleItStep(requestedStep, pinVerified, false);
   useEffect(() => {
     if (step === "pin" || step === "password") return;
     const fromArchitect = takeArchitectReturnFocus();
     const frame = requestAnimationFrame(() => {
-      const target = fromArchitect ? architectTrigger.current ?? pinTrigger.current : step === "operator" ? emailInput.current : pinTrigger.current;
+      const target = fromArchitect ? architectTrigger.current ?? pinTrigger.current : step === "operator" ? googleButton.current : pinTrigger.current;
       target?.focus({ preventScroll: true });
     });
     return () => cancelAnimationFrame(frame);
@@ -60,18 +51,6 @@ function ItAccess() {
     if (router.history.canGoBack()) router.history.back();
     else void navigate({ to: "/it-access", search: fallback === "entry" ? {} : { step: fallback }, replace: true });
   };
-  const login = useMutation({
-    mutationFn: async () => {
-      const tokens = await signInWithIdentifier({ data: { identifier: email.trim(), password } });
-      setPassword("");
-      const { error } = await supabase.auth.setSession(tokens);
-      if (error) throw new Error(error.message);
-      // Never pass the PIN token here: it would mask the actual account permissions.
-      await verifyItOperator(() => getMyAccount({ data: { adminToken: null } }), () => supabase.auth.signOut());
-    },
-    onSuccess: () => { toast.success("IT Operator signed in"); if (changePassword) { setOperatorVerified(true); void navigate({ to: "/it-access", search: { step: "password" } }); } else void navigate({ to: "/system" }); },
-    onError: (error: Error) => { setPassword(""); toast.error(error.message); },
-  });
   const finishGoogleLogin = async () => {
     await verifyItOperator(() => getMyAccount({ data: { adminToken: null } }), () => supabase.auth.signOut());
     toast.success("IT Operator signed in");
@@ -92,7 +71,7 @@ function ItAccess() {
       sessionStorage.setItem("it-google-return", "pending");
       const result = await lovable.auth.signInWithOAuth("google", {
         redirect_uri: `${window.location.origin}/it-access?step=pin`,
-        extraParams: { prompt: "select_account", ...(email.trim() ? { login_hint: email.trim() } : {}) },
+        extraParams: { prompt: "select_account" },
       });
       if (result.error) throw result.error;
       if (result.redirected) return;
@@ -104,7 +83,7 @@ function ItAccess() {
     } finally { setGooglePending(false); }
   };
   return <main className="mx-auto min-h-dvh max-w-md space-y-6 px-4 py-8 sm:py-12">
-    {step === "operator" || step === "password" ? <Button variant="ghost" size="sm" disabled={login.isPending} onClick={() => returnTo(step === "password" ? "operator" : "entry")}><ArrowLeft className="size-4" />আগের ধাপে ফিরে যান</Button> : <Button asChild variant="ghost" size="sm"><Link to="/"><ArrowLeft className="size-4" />হোমে ফিরে যান</Link></Button>}
+    {step === "operator" || step === "password" ? <Button variant="ghost" size="sm" disabled={googlePending} onClick={() => returnTo(step === "password" ? "operator" : "entry")}><ArrowLeft className="size-4" />আগের ধাপে ফিরে যান</Button> : <Button asChild variant="ghost" size="sm"><Link to="/"><ArrowLeft className="size-4" />হোমে ফিরে যান</Link></Button>}
     <header className="flex items-center gap-3 border-b border-border pb-4">
       <ShieldCheck className="size-6 text-primary" />
       <h1 className="text-xl font-semibold">IT Console access</h1>
@@ -113,25 +92,18 @@ function ItAccess() {
       <h2 className="flex items-center gap-2 text-base font-semibold"><KeyRound className="size-4" />১. IT Console PIN</h2>
       <Button asChild variant={step === "operator" || step === "password" ? "outline" : "default"}><Link ref={pinTrigger} to="/it-access" search={{ step: "pin" }}>{step === "operator" || step === "password" ? "PIN যাচাই হয়েছে" : "PIN দিয়ে আনলক"}</Link></Button>
     </section>
-    {step === "password" ? <ItOwnPasswordForm onBack={() => returnTo("operator")} /> : step === "operator" && <section className="space-y-4 border-t border-border pt-5">
+    {step === "operator" && <section className="space-y-4 border-t border-border pt-5">
       <h2 className="text-base font-semibold">২. IT Operator লগইন</h2>
-      <Button type="button" variant="outline" className="google-sign-in w-full" disabled={googlePending || login.isPending} onClick={() => void continueWithGoogle()}>
+      <Button ref={googleButton} type="button" variant="outline" className="google-sign-in w-full" disabled={googlePending} onClick={() => void continueWithGoogle()}>
         {googlePending ? <Loader2 className="size-[18px] animate-spin" /> : <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="size-[18px] shrink-0"><path fill="#4285F4" d="M23.49 12.27c0-.79-.07-1.54-.19-2.27H12v4.51h6.47c-.29 1.48-1.14 2.73-2.4 3.58v3h3.86c2.26-2.09 3.56-5.17 3.56-8.82z"/><path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.86-3c-1.08.72-2.45 1.16-4.07 1.16-3.13 0-5.78-2.11-6.73-4.96H1.29v3.09C3.26 21.3 7.31 24 12 24z"/><path fill="#FBBC05" d="M5.27 14.29c-.25-.72-.38-1.49-.38-2.29s.14-1.57.38-2.29V6.62H1.29C.47 8.24 0 10.06 0 12s.47 3.76 1.29 5.38l3.98-3.09z"/><path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.26 2.7 1.29 6.62l3.98 3.09c.95-2.85 3.6-4.96 6.73-4.96z"/></svg>}
         Google দিয়ে চালিয়ে যান
       </Button>
       {googleError && <p role="alert" className="text-sm text-destructive">{googleError}</p>}
-      <form className="space-y-4" onSubmit={(event) => { event.preventDefault(); if (!login.isPending) login.mutate(); }}>
-        <div className="space-y-2"><Label htmlFor="it-email">Email</Label><Input ref={emailInput} id="it-email" type="email" autoComplete="username" autoCapitalize="none" required value={email} onChange={(event) => setEmail(event.target.value)} /></div>
-        <div className="space-y-2"><Label htmlFor="it-password">Password</Label><Input id="it-password" type="password" autoComplete="current-password" required value={password} onChange={(event) => setPassword(event.target.value)} /></div>
-        <Button type="submit" className="w-full" disabled={googlePending || login.isPending || !email.trim() || !password}>{login.isPending ? <Loader2 className="size-4 animate-spin" /> : <LogIn className="size-4" />}IT Operator হিসেবে লগইন</Button>
-        <label className="flex items-center gap-2 text-sm"><input type="checkbox" className="size-4 accent-primary" checked={changePassword} disabled={login.isPending} onChange={(event) => setChangePassword(event.target.checked)} />লগইনের পরে নিজের CRM পাসওয়ার্ড পরিবর্তন</label>
-        {login.error && <p role="alert" className="text-sm text-destructive">{login.error.message}</p>}
-      </form>
       <div className="space-y-3 border-t border-border pt-5">
         <h2 className="text-base font-semibold">System Architect</h2>
         <Button asChild variant="outline" className="w-full"><Link ref={architectTrigger} to="/tech"><ShieldCheck className="size-4" />Architect হিসেবে প্রবেশ</Link></Button>
       </div>
     </section>}
-    <AdminPinDialog open={step === "pin"} onCloseAutoFocus={(event) => { event.preventDefault(); (step === "operator" ? emailInput.current : pinTrigger.current)?.focus({ preventScroll: true }); }} onOpenChange={(open) => { if (!open) queueMicrotask(() => { if (!unlocking.current) returnTo("entry"); unlocking.current = false; }); }} surface="system" onUnlocked={() => { unlocking.current = true; setPinVerified(true); void navigate({ to: "/it-access", search: { step: "operator" }, replace: true }); }} />
+    <AdminPinDialog open={step === "pin"} onCloseAutoFocus={(event) => { event.preventDefault(); (step === "operator" ? googleButton.current : pinTrigger.current)?.focus({ preventScroll: true }); }} onOpenChange={(open) => { if (!open) queueMicrotask(() => { if (!unlocking.current) returnTo("entry"); unlocking.current = false; }); }} surface="system" onUnlocked={() => { unlocking.current = true; setPinVerified(true); void navigate({ to: "/it-access", search: { step: "operator" }, replace: true }); }} />
   </main>;
 }
