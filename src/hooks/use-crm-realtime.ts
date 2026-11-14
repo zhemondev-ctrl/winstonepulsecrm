@@ -2,21 +2,35 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 
 import { supabase } from "@/integrations/supabase/client";
+import { useMyAccount } from "@/lib/session";
+import { shouldSubscribeToCrm } from "@/lib/crm-live-refresh";
 
 const TABLES = ["leads", "call_recordings", "whatsapp_interactions", "profiles", "it_notices", "it_notice_recipients", "it_notice_replies"] as const;
 
 /** Keeps every open screen in sync with the backend as calls and chats land. */
 export function useCrmRealtime() {
   const queryClient = useQueryClient();
+  const { scope, isPending } = useMyAccount();
+  const enabled = shouldSubscribeToCrm(isPending, scope);
 
   useEffect(() => {
+    if (!enabled) return;
+    let timer: ReturnType<typeof setTimeout> | null = null;
     // Unique name per mount: reusing "crm-live" returns the already-subscribed
     // channel and throws "cannot add postgres_changes callbacks after subscribe()".
     const channel = supabase.channel(`crm-live-${Math.random().toString(36).slice(2)}`);
 
     for (const table of TABLES) {
       channel.on("postgres_changes", { event: "*", schema: "public", table }, () => {
-        void queryClient.invalidateQueries({ queryKey: ["crm-snapshot"] });
+        // Match the shared snapshot's 8s burst window instead of bypassing it
+        // with a second immediate full reload on every database change.
+        if (!timer) timer = setTimeout(() => {
+          timer = null;
+          void queryClient.invalidateQueries(
+            { queryKey: ["crm-snapshot"], refetchType: document.visibilityState === "hidden" ? "none" : "active" },
+            { cancelRefetch: false },
+          );
+        }, 8000);
         if (table.startsWith("it_notice")) void queryClient.invalidateQueries({ queryKey: ["it-notice-board"] });
       });
     }
@@ -24,7 +38,8 @@ export function useCrmRealtime() {
     channel.subscribe();
 
     return () => {
+      if (timer) clearTimeout(timer);
       void supabase.removeChannel(channel);
     };
-  }, [queryClient]);
+  }, [queryClient, enabled]);
 }

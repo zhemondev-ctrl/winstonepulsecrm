@@ -2,6 +2,7 @@ import { useLocation } from "@tanstack/react-router";
 import { queryOptions, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { leadOwner } from "./lead-owner";
+import { shouldSubscribeToCrm } from "./crm-live-refresh";
 import { useEffect } from "react";
 
 import { supabase } from "@/integrations/supabase/client";
@@ -131,9 +132,10 @@ function startLive(queryClient: ReturnType<typeof useQueryClient>) {
   };
 }
 
-function useLiveCrmRefresh() {
+function useLiveCrmRefresh(enabled: boolean) {
   const queryClient = useQueryClient();
   useEffect(() => {
+    if (!enabled) return;
     liveUsers += 1;
     if (!liveTeardown) liveTeardown = startLive(queryClient);
     return () => {
@@ -143,7 +145,7 @@ function useLiveCrmRefresh() {
         liveTeardown = null;
       }
     };
-  }, [queryClient]);
+  }, [queryClient, enabled]);
 }
 
 /** Snapshot for the current device; customer data requires an authority token. */
@@ -172,7 +174,7 @@ export function useSnapshot() {
     },
     enabled: !accountPending && scope !== "none",
   });
-  useLiveCrmRefresh();
+  useLiveCrmRefresh(shouldSubscribeToCrm(accountPending, scope));
   return {
     ...(query.data ?? EMPTY_SNAPSHOT),
     isPending: accountPending || (scope !== "none" && query.isPending),

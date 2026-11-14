@@ -23,32 +23,12 @@ const SnapshotScope = z.object({
 async function allLeads(
   client: { from: (t: "leads") => any },
 ): Promise<{ data: any[]; error: { message: string } | null }> {
-  const PAGE = 1000;
-  const MAX = 50_000;
-  const page = (from: number) =>
-    client.from("leads").select("*").order("updated_at", { ascending: false }).order("id").range(from, from + PAGE - 1);
-  // Count once, then download every page in parallel instead of one after another.
-  const { count, error: countError } = await client.from("leads").select("id", { count: "exact", head: true });
-  if (countError || count == null) {
-    const rows: any[] = [];
-    for (let from = 0; from < MAX; from += PAGE) {
-      const { data, error } = await page(from);
-      if (error) return { data: [], error };
-      rows.push(...(data ?? []));
-      if ((data?.length ?? 0) < PAGE) break;
-    }
-    return { data: rows, error: null };
-  }
-  // One extra page absorbs rows inserted between the count and the reads.
-  const pages = Math.min(Math.ceil(MAX / PAGE), Math.ceil(count / PAGE) + 1);
-  const results = await Promise.all(Array.from({ length: pages }, (_, i) => page(i * PAGE)));
-  const seen = new Set<string>();
-  const rows: any[] = [];
-  for (const r of results) {
-    if (r.error) return { data: [], error: r.error };
-    for (const l of r.data ?? []) if (!seen.has(l.id)) { seen.add(l.id); rows.push(l); }
-  }
-  return { data: rows, error: null };
+  // Reuse bounded paging: a short first page costs one read, no separate
+  // count or speculative empty page; errors/limits never return partial totals.
+  const result = await pageAllParallel<any>((from, to) =>
+    client.from("leads").select("*").order("updated_at", { ascending: false }).order("id").range(from, to),
+  );
+  return { data: result.data ?? [], error: result.error };
 }
 
 /**
