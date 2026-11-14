@@ -8,6 +8,19 @@ async function agentCaller() {
   return caller.profile;
 }
 
+/** The only WhatsApp numbers an agent may receive alerts on: their own saved profile/SIM numbers. */
+async function ownNumbers(agentId: string): Promise<Set<string>> {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { normalizeAgentWhatsApp } = await import("@/lib/agent-whatsapp");
+  const { data } = await supabaseAdmin.from("profiles").select("phone, sim_number").eq("id", agentId).maybeSingle();
+  const out = new Set<string>();
+  for (const raw of [data?.phone, data?.sim_number]) {
+    const n = normalizeAgentWhatsApp(raw ?? null);
+    if (n) out.add(n);
+  }
+  return out;
+}
+
 /** Signed-in agent's own WhatsApp alert opt-in and their last few alert statuses. */
 export const getMyWhatsAppAlerts = createServerFn({ method: "POST" }).handler(async () => {
   const me = await agentCaller();
@@ -38,6 +51,9 @@ export const setMyWhatsAppAlerts = createServerFn({ method: "POST" })
     const { normalizeAgentWhatsApp } = await import("@/lib/agent-whatsapp");
     const number = normalizeAgentWhatsApp(data.number);
     if (!number) throw new Error("সঠিক বাংলাদেশি মোবাইল নম্বর দিন / Enter a valid Bangladesh mobile number");
+    if (data.optedIn && !(await ownNumbers(me.id)).has(number)) {
+      throw new Error("শুধু আপনার প্রোফাইলের নিজের নম্বর ব্যবহার করুন / Use the number saved on your own profile");
+    }
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const now = new Date().toISOString();
     const { error } = await supabaseAdmin.from("agent_whatsapp_optins").upsert({
@@ -57,6 +73,9 @@ export const sendMyWhatsAppTest = createServerFn({ method: "POST" }).handler(asy
   const { data, error } = await supabaseAdmin.from("agent_whatsapp_optins").select("whatsapp_number, opted_in").eq("agent_id", me.id).maybeSingle();
   if (error) throw new Error("WhatsApp alert settings unavailable");
   if (!data?.opted_in) throw new Error("আগে WhatsApp alert চালু করুন / Turn on WhatsApp alerts first");
+  if (!(await ownNumbers(me.id)).has(data.whatsapp_number)) {
+    throw new Error("শুধু আপনার প্রোফাইলের নিজের নম্বরে পাঠানো যায় / Alerts go only to your own profile number");
+  }
   const { sendSelfTest } = await import("@/lib/agent-whatsapp.server");
   const outcome = await sendSelfTest(me.id, me.name, data.whatsapp_number);
   return { outcome };

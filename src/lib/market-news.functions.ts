@@ -54,7 +54,7 @@ export const newsCollectNow = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const m = await s();
     const c = await m.newsCaller(data.adminToken);
-    if (c.scope !== "authority") throw new Error("শুধু HQ");
+    if (c.scope !== "authority" || c.readOnly) throw new Error("শুধু HQ/IT write access");
     return m.collectNews(c.actor);
   });
 
@@ -71,6 +71,9 @@ export const newsAutoPublish = createServerFn({ method: "POST" })
     const m = await s();
     const c = await m.newsCaller(data.adminToken);
     if (c.scope !== "authority") throw new Error("শুধু HQ");
-    if (typeof data.enabled === "boolean") return m.setAutoPublish(c, data.enabled);
+    if (typeof data.enabled === "boolean") {
+      if (c.readOnly) throw new Error("Executive HQ is view-only");
+      return m.setAutoPublish(c, data.enabled);
+    }
     return { enabled: await m.getAutoPublish() };
   });

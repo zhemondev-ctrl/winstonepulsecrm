@@ -294,6 +294,14 @@ export const captureProjectInterest = createServerFn({ method: "POST" })
       if (e instanceof InvalidLeadPhoneError) throw new Error("সঠিক ফোন নম্বর দিন");
       throw e;
     }
+    if (r.duplicate && c.scope === "agent") {
+      // Existing lead: only its current owner may attach interest to it.
+      const { data: lead } = await db.from("leads").select("assigned_to, assigned_agent_id").eq("id", r.leadId).maybeSingle();
+      const { leadOwner } = await import("@/lib/lead-owner");
+      if (!lead || leadOwner(lead) !== c.agentId) {
+        return { leadId: null, duplicate: true, notOwned: true as const };
+      }
+    }
     const { error } = await db.from("project_sales_updates").insert({
       lead_id: r.leadId, project_id: p.id, agent_id: c.scope === "agent" ? c.agentId : null,
       interest: data.interest, offered_price: null, note: data.note || null, created_by: c.actor,

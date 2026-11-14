@@ -27,6 +27,7 @@ export async function newsCaller(adminToken: string | null | undefined): Promise
 }
 function requireHq(c: NewsCaller) {
   if (c.scope !== "authority") throw new Error("শুধু HQ নিউজ পরিচালনা করতে পারে");
+  if (c.readOnly) throw new Error("Executive HQ is view-only");
 }
 
 export type NewsRow = {
