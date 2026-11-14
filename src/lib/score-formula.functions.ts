@@ -50,11 +50,7 @@ export const readDailyScores = createServerFn({ method: "POST" })
     const { supabaseAdmin: db } = await import("@/integrations/supabase/client.server");
     const { pageAllParallel } = await import("./page-all");
     const { dhakaRangeToUtc } = await import("./import-funnel");
-    const { dailyScores } = await import("./daily-score");
-    const cfg = await db.from("app_config").select("data").eq("id", CONFIG_ID).maybeSingle();
-    if (cfg.error) throw new Error("Score settings unavailable");
-    const parsed = scoreFormulaSchema.safeParse((cfg.data?.data as { current?: unknown } | null)?.current);
-    if (!parsed.success) return { formula: null, rows: [], day: data.day, generatedAt: new Date().toISOString() };
+    const { policyScores, POLICY_WEIGHTS, POLICY_LABELS } = await import("./daily-score");
     const { startIso: s, endIso: e } = dhakaRangeToUtc(data.day, data.day);
     const [agents, calls, reports, visits, followUps, bookings, visitsHeld] = await Promise.all([
       pageAllParallel((a, b) => db.from("profiles").select("id,name").in("role", ["agent", "team_leader"]).order("id").range(a, b)),
@@ -67,12 +63,13 @@ export const readDailyScores = createServerFn({ method: "POST" })
     ]);
     if ([agents, calls, reports, visits, followUps, bookings, visitsHeld].some((r) => r.error)) throw new Error("Score evidence unavailable. Please refresh.");
     const leadIds = [...new Set([calls, reports, visits, followUps, bookings, visitsHeld].flatMap((r) => (r.data ?? []).map((x: { lead_id: string | null }) => x.lead_id).filter(Boolean) as string[]))];
-    const selfLeadIds = new Set<string>();
+    const finalLeadIds = new Set<string>();
     for (let i = 0; i < leadIds.length; i += 200) {
-      const r = await db.from("leads").select("id").in("id", leadIds.slice(i, i + 200)).or("assignment_source.eq.self,source.eq.agent_app");
+      const r = await db.from("leads").select("id").in("id", leadIds.slice(i, i + 200)).eq("status", "closed");
       if (r.error) throw new Error("Score evidence unavailable. Please refresh.");
-      for (const l of r.data ?? []) selfLeadIds.add(l.id);
+      for (const l of r.data ?? []) finalLeadIds.add(l.id);
     }
-    const rows = dailyScores(parsed.data, { agents: agents.data ?? [], selfLeadIds, calls: calls.data ?? [], reports: reports.data ?? [], visits: visits.data ?? [], followUps: followUps.data ?? [], bookings: bookings.data ?? [], visitsHeld: visitsHeld.data ?? [] });
-    return { formula: parsed.data, rows, day: data.day, generatedAt: new Date().toISOString() };
+    const formula = { letters: Object.fromEntries((["C", "R", "A", "V", "F"] as const).map((l) => [l, { label: POLICY_LABELS[l], points: POLICY_WEIGHTS[l] }])) as Record<"C" | "R" | "A" | "V" | "F", { label: string; points: number }> };
+    const rows = policyScores({ agents: agents.data ?? [], selfLeadIds: new Set<string>(), calls: calls.data ?? [], reports: reports.data ?? [], visits: visits.data ?? [], followUps: followUps.data ?? [], bookings: bookings.data ?? [], visitsHeld: visitsHeld.data ?? [] }, finalLeadIds);
+    return { formula, rows, day: data.day, generatedAt: new Date().toISOString() };
   });

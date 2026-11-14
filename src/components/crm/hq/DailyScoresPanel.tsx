@@ -8,7 +8,7 @@ import { dhakaDay } from "@/lib/lead-groups";
 import { useT } from "@/lib/i18n";
 import { useAdminToken } from "@/lib/local-session";
 
-/** HQ: read-only daily scores per agent from the saved C/R/A/V/F formula. */
+/** HQ: read-only daily scores per agent from the policy formula 2C+2R+A+4V+1.5F. */
 export function DailyScoresPanel() {
   const t = useT();
   const adminToken = useAdminToken();
@@ -24,7 +24,7 @@ export function DailyScoresPanel() {
           <Trophy className="mt-0.5 size-5 shrink-0 text-primary" />
           <div className="min-w-0">
             <h2 className="text-lg font-semibold">{t({ en: "Daily scores", bn: "দৈনিক স্কোর" })}</h2>
-            <p className="text-sm text-muted-foreground">{t({ en: "Out of 100, from the saved formula. Recordings never count.", bn: "সংরক্ষিত সূত্র অনুযায়ী ১০০-এর মধ্যে। রেকর্ডিং কখনো গণনা হয় না।" })}{d?.formula ? ` ${t({ en: d.formula.includeSelfLeads ? "Self-lead work included." : "Self-lead work excluded.", bn: d.formula.includeSelfLeads ? "নিজের লিডের কাজ অন্তর্ভুক্ত।" : "নিজের লিডের কাজ বাদ।" })}` : ""}</p>
+            <p className="text-sm text-muted-foreground">{t({ en: "Score = 2C + 2R + A + 4V + 1.5F (no upper limit). Company and self-collected work both count. Recordings never count.", bn: "স্কোর = 2C + 2R + A + 4V + 1.5F (কোনো সর্বোচ্চ সীমা নেই)। কোম্পানি ও নিজের লিড দুটোই গণনা হয়। রেকর্ডিং কখনো গণনা হয় না।" })}</p>
           </div>
         </div>
         <input type="date" aria-label={t({ en: "Day", bn: "দিন" })} max={today} value={day} onChange={(e) => e.target.value && setDay(e.target.value)} className="h-10 rounded-md border border-input bg-background px-3 text-sm" />
@@ -39,7 +39,7 @@ export function DailyScoresPanel() {
               {d.rows.map((r) => (
                 <li key={r.agentId} className="rounded-lg border border-border p-3">
                   <div className="flex items-center justify-between gap-2"><span className="truncate font-medium">{r.name}</span><span className="text-lg font-semibold">{r.total}</span></div>
-                  <p className="mt-1 text-xs text-muted-foreground">{r.parts.map((p) => `${p.letter} ${p.count}/${p.target} → ${p.earned}`).join(" · ")}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">{r.parts.map((p) => `${p.letter} ${p.count}×${p.points} → ${p.earned}`).join(" · ")}</p>
                 </li>
               ))}
             </ul>
@@ -53,7 +53,7 @@ export function DailyScoresPanel() {
                 <tbody>{d.rows.map((r) => (
                   <tr key={r.agentId} className="border-b border-border/60">
                     <td className="py-2 pr-3 font-medium">{r.name}</td>
-                    {r.parts.map((p) => <td key={p.letter} className="py-2 pr-3 tabular-nums">{p.earned} <span className="text-xs text-muted-foreground">({p.count}/{p.target})</span></td>)}
+                    {r.parts.map((p) => <td key={p.letter} className="py-2 pr-3 tabular-nums">{p.earned} <span className="text-xs text-muted-foreground">({p.count}×{p.points})</span></td>)}
                     <td className="py-2 text-right text-base font-semibold tabular-nums">{r.total}</td>
                   </tr>))}</tbody>
               </table>

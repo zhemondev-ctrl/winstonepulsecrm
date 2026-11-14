@@ -54,3 +54,37 @@ export function dailyScores(formula: ScoreFormula, input: ScoreInput) {
     .map((a) => ({ agentId: a.id, name: a.name ?? "Agent", ...scoreLetters(formula, metricCounts(input, a.id, formula.includeSelfLeads)) }))
     .sort((x, y) => y.total - x.total || x.name.localeCompare(y.name));
 }
+
+/**
+ * Policy score (owner-approved 14 Nov 2026, replaces the 100-point formula):
+ * Score = 2C + 2R + A + 4V + 1.5F, uncapped.
+ * C leads worked to a final outcome, R submitted call reports, A call attempts,
+ * V call-log-confirmed connected calls, F completed follow-ups. Company and
+ * self-collected work both count; each persisted row counts once.
+ */
+export const POLICY_WEIGHTS = { C: 2, R: 2, A: 1, V: 4, F: 1.5 } as const;
+export const POLICY_LABELS = {
+  C: "Leads worked to a final outcome", R: "Call reports submitted", A: "Call attempts",
+  V: "Phone-log verified connected calls", F: "Follow-ups completed",
+} as const;
+
+export function policyCounts(input: ScoreInput, agentId: string, finalLeadIds: Set<string>) {
+  const mine = <T extends Row>(rows: T[]) => { const seen = new Set<string>(); return rows.filter((r) => r.agent_id === agentId && !seen.has(r.id) && (seen.add(r.id), true)); };
+  const reports = mine(input.reports);
+  const calls = mine(input.calls);
+  return {
+    C: new Set(reports.filter((r) => r.lead_id && finalLeadIds.has(r.lead_id)).map((r) => r.lead_id)).size,
+    R: reports.length,
+    A: calls.length,
+    V: calls.filter((c) => isCallLogConfirmed(c)).length,
+    F: mine(input.followUps).filter((f) => f.completed_at).length,
+  };
+}
+
+export function policyScores(input: ScoreInput, finalLeadIds: Set<string>) {
+  return input.agents.map((a) => {
+    const c = policyCounts(input, a.id, finalLeadIds);
+    const parts = SCORE_LETTERS.map((l) => ({ letter: l, label: POLICY_LABELS[l], metric: l, count: c[l], target: POLICY_WEIGHTS[l], points: POLICY_WEIGHTS[l], earned: Math.round(c[l] * POLICY_WEIGHTS[l] * 10) / 10 }));
+    return { agentId: a.id, name: a.name ?? "Agent", parts, total: Math.round(parts.reduce((n, p) => n + p.earned, 0) * 10) / 10 };
+  }).sort((x, y) => y.total - x.total || x.name.localeCompare(y.name));
+}

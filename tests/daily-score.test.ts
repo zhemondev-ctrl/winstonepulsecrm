@@ -27,3 +27,18 @@ it("only completed visits count as visits completed", () => {
   const g = { ...f(true), letters: { ...f(true).letters, V: { label: "V", metric: "visits_completed" as const, points: 15, target: 1 } } };
   expect(dailyScores(g, { ...input, visitsHeld: [{ id: "v", agent_id: "a", lead_id: "co", status: "no_show" }] })[0].parts[3].earned).toBe(0);
 });
+
+import { policyScores } from "@/lib/daily-score";
+describe("policy score 2C + 2R + A + 4V + 1.5F", () => {
+  it("weights each letter and counts each row once", () => {
+    const base = { agents: [{ id: "a", name: "A" }], selfLeadIds: new Set<string>(), visits: [], visitsHeld: [], bookings: [] };
+    const call = (id: string, ok: boolean) => ({ id, agent_id: "a", lead_id: "L1", call_status: "completed", duration_seconds: ok ? 30 : 0, call_source: "android_sim", external_call_id: id, talk_time_source: ok ? "call_log" : null });
+    const [r] = policyScores({ ...base,
+      calls: [call("c1", true), call("c2", false), call("c1", true)] as never,
+      reports: [{ id: "r1", agent_id: "a", lead_id: "L1" }, { id: "r2", agent_id: "a", lead_id: "L2" }],
+      followUps: [{ id: "f1", agent_id: "a", lead_id: "L1", scheduled_at: null, completed_at: "2026-11-14T05:00:00Z" }],
+    }, new Set(["L1"]));
+    // C=1 (L1 final), R=2, A=2, V=1, F=1 → 2+4+2+4+1.5
+    expect(r.total).toBe(13.5);
+  });
+});
