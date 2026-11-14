@@ -71,5 +71,6 @@
 - No GitHub logic in the CRM app (panels, API calls, cron, issues); Git only runs Android CI (`.github/workflows/android-*.yml`, see android/AGENTS.md); APKs reach agents only via IT's PIN-gated `android-apk` links — why: no runtime Git dependency.
 - Agent collection follows src/lib/AGENTS.md's fail-closed receipt path — why: entry is not ownership.
 - The dated score page reuses readDailyScores and authority gates; score-version.ts resolves effective days and rejects unknown formulas — why: separate displays must never create a second scoring or permission path.
-- Meeting approval UI is retired from HQ/IT navigation and rendering; keep its historical storage and server protections intact — why: removing a workspace section must not delete audit evidence or change business gates.
+- HQ/IT meeting approval UI is retired; preserve storage and server gates — why: no audit loss.
+- Requested CRM development needs no owner/MD approval; preserve business/security gates and explicit production-action scope — why: development is not operational authority.
 

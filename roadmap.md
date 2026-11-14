@@ -1,6 +1,7 @@
 # Roadmap
 
 ## Open tasks
+- [x] Remove owner/MD approval as a prerequisite for requested CRM development; prior development-only approval blockers are superseded. Business approvals, security, real-data requirements, isolated testing and explicit production-action scope remain.
 - [x] Remove Meeting approvals navigation/screens from HQ and IT, including the HQ meeting approval report shortcut; retain billing notices, site-visit alerts and stored approval history. Not published.
 - [x] Fix dialer/incoming proof-sync failed-write acknowledgements and preserve verified talk time; 36 isolated tests pass, including synced V +1/+4 points and no retry double credit. Handset installation/real call remains unverified; publication requested separately.
 - [x] Build HQ dated score version page; 12 isolated tests pass. Real HQ read shows 10 agents, Nov 13/14 use V1, V2 is scheduled Nov 15; phone has no sideways overflow or runtime errors. No production writes or publishing; future-day V2 verified by tests only.
