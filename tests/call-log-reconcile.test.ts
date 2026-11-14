@@ -5,6 +5,7 @@ import { reconcileLateCallLog } from "@/lib/call-log-reconcile.server";
 import { callLogReconcilePatch, pickCallLogMatch } from "@/lib/call-reconciliation";
 import { isPhoneMeasuredCall, resolveCallDuration, resolveDurationSource } from "@/lib/call-duration";
 import { verifyLeadFromCallEvidence } from "@/lib/lead-verification";
+import { policyScores, type ScoreInput } from "@/lib/daily-score";
 
 type Row = Record<string, unknown>;
 
@@ -56,6 +57,26 @@ const input = (over: Partial<Parameters<typeof reconcileLateCallLog>[1]> = {}) =
 });
 
 describe("G2: late call-log entry reconciles the live row of the same call", () => {
+  it("phone-log sync increases V by one and four points, without double credit on retry", async () => {
+    const tables = { call_recordings: [liveRow()], call_reports: [] as Row[] };
+    const { db } = fakeDb(tables);
+    const scores = () => policyScores({ agents: [{ id: AGENT, name: "Agent" }], selfLeadIds: new Set<string>(), calls: tables.call_recordings as unknown as ScoreInput["calls"], reports: [], visits: [], visitsHeld: [], bookings: [], followUps: [] }, new Set<string>())[0];
+    const before = scores();
+    expect(before?.parts.find(p => p.letter === "V")?.count).toBe(0);
+    await reconcileLateCallLog(db, input());
+    const after = scores();
+    expect(after?.parts.find(p => p.letter === "V")).toMatchObject({ count: 1, earned: 4 });
+    expect((after?.total ?? 0) - (before?.total ?? 0)).toBe(4);
+    await reconcileLateCallLog(db, input());
+    expect(scores()?.total).toBe(after?.total);
+  });
+
+  it("unanswered phone-log sync earns no V points", async () => {
+    const tables = { call_recordings: [liveRow()], call_reports: [] as Row[] };
+    await reconcileLateCallLog(fakeDb(tables).db, input({ state: "no_answer", durationSeconds: 0 }));
+    const result = policyScores({ agents: [{ id: AGENT, name: "Agent" }], selfLeadIds: new Set<string>(), calls: tables.call_recordings as unknown as ScoreInput["calls"], reports: [], visits: [], visitsHeld: [], bookings: [], followUps: [] }, new Set<string>())[0];
+    expect(result?.parts.find(p => p.letter === "V")).toMatchObject({ count: 0, earned: 0 });
+  });
   it("updates the existing live row with CallLog duration and the source marker, without a second row", async () => {
     const tables = { call_recordings: [liveRow()], call_reports: [] as Row[] };
     const { db } = fakeDb(tables);

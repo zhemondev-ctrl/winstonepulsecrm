@@ -184,7 +184,7 @@ export const Route = createFileRoute("/api/public/agent/incoming-call")({
 
         const { data: existing } = await supabaseAdmin
           .from("call_recordings")
-          .select("id, agent_id, lead_id, call_status, storage_path, audio_url, upload_status, recording_status")
+          .select("id, agent_id, lead_id, call_status, storage_path, audio_url, upload_status, recording_status, talk_time_source")
           .eq("external_call_id", body.call_uid)
           .maybeSingle();
 
@@ -196,15 +196,18 @@ export const Route = createFileRoute("/api/public/agent/incoming-call")({
 
         const { talkTimeEvidence } = await import("@/lib/call-reconciliation");
         const evidence = talkTimeEvidence(body);
-        const acceptedPatch = { ...(existing ? lifecyclePatch(existing, patch) : patch), ...evidence };
+        const livePatch = existing ? lifecyclePatch(existing, patch) : patch;
+        const { duration_seconds: _liveDuration, ...withoutDuration } = livePatch as typeof livePatch & { duration_seconds?: number };
+        const acceptedPatch = { ...(existing?.talk_time_source === "call_log" ? withoutDuration : livePatch), ...evidence };
         let recordingId = existing?.id ?? null;
 
         if (existing) {
-          await supabaseAdmin
+          const { error: updateError } = await supabaseAdmin
             .from("call_recordings")
             .update(acceptedPatch)
             .eq("id", existing.id)
             .eq("agent_id", caller.profile.id);
+          if (updateError) return json({ error: "Call update failed" }, 500);
         } else {
           const { data: inserted, error } = await supabaseAdmin
             .from("call_recordings")
