@@ -1,6 +1,8 @@
 # Roadmap
 
 ## Open tasks
+- [x] Separate implementation permission, business authorization, security review and publication/verification conditions in development instructions.
+- [ ] After the fresh deep-security completion notification, verify published HQ (/hq), IT/System (/system), Nexus (/leadhub) and Agents (/desk), release markers and removed Meeting approvals UI. Blocked: current persisted deep results are stale (2 Nov); the newly requested scan has not returned completion evidence.
 - [x] Remove owner/MD approval as a prerequisite for requested CRM development; prior development-only approval blockers are superseded. Business approvals, security, real-data requirements, isolated testing and explicit production-action scope remain.
 - [x] Remove Meeting approvals navigation/screens from HQ and IT, including the HQ meeting approval report shortcut; retain billing notices, site-visit alerts and stored approval history. Not published.
 - [x] Fix dialer/incoming proof-sync failed-write acknowledgements and preserve verified talk time; 36 isolated tests pass, including synced V +1/+4 points and no retry double credit. Handset installation/real call remains unverified; publication requested separately.
