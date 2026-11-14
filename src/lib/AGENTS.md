@@ -86,3 +86,4 @@
 - CRM subscriptions require resolved account access; shell and snapshot refreshes retain the 8s coalescing/hidden-tab rules, and full lead snapshots use shared bounded paging without a preliminary count — why: visitors and bursts must not trigger redundant database work or partial totals.
 - Requested IT identity provisioning requires a full IT PIN, snapshots existing account/roles before changes and writes only protected user_roles; session authority resolves that table — why: verified Google identity, profile labels and HQ/LeadHub PINs never grant IT permissions themselves.
 - IT secondary tools mount through ItSecondaryTools only after explicit expansion — why: keep essential work visible and avoid unopened-panel reads.
+- activeAgents excludes protected admin accounts even with legacy agent profile labels and fails on role-read errors — why: IT operators must not enter company handout eligibility.

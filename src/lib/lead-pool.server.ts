@@ -42,14 +42,19 @@ export async function activeAgents(): Promise<PoolAgent[]> {
   const supabaseAdmin = await admin();
   const { data, error } = await supabaseAdmin
     .from("profiles")
-    .select("id, name, employee_id, role, is_active, approval_status")
+    .select("id, user_id, name, employee_id, role, is_active, approval_status")
     .eq("role", "agent")
     .eq("is_active", true)
     .eq("approval_status", "approved")
     .order("name");
   if (error) throw new Error(error.message);
+  const userIds = (data ?? []).flatMap(row => row.user_id ? [row.user_id] : []);
+  const roles = userIds.length ? await supabaseAdmin.from("user_roles").select("user_id,role").in("user_id", userIds) : { data: [], error: null };
+  if (roles.error) throw new Error("Sales roster role verification unavailable");
+  const rolesByUser = new Map<string, string[]>();
+  for (const role of roles.data ?? []) rolesByUser.set(role.user_id, [...(rolesByUser.get(role.user_id) ?? []), role.role]);
   const { eligibleRoster } = await import("@/lib/assignment-preview");
-  return (data ?? []).filter(eligibleRoster);
+  return (data ?? []).filter(row => Boolean(row.user_id) && eligibleRoster({ ...row, protectedRoles: rolesByUser.get(row.user_id ?? "") ?? [] }));
 }
 
 /** How many leads are still usable in the database. */

@@ -1,7 +1,7 @@
 import { extractBangladeshPhones } from "@/lib/lead-phone";
 export type PreviewLead = { id: string; name: string; phone_number: string | null; created_at: string };
-export function eligibleRoster(row: { role: string | null; is_active: boolean; approval_status: string | null }) {
-  return row.role === "agent" && row.is_active && row.approval_status === "approved";
+export function eligibleRoster(row: { role: string | null; is_active: boolean; approval_status: string | null; protectedRoles?: readonly string[] }) {
+  return row.role === "agent" && row.is_active && row.approval_status === "approved" && !row.protectedRoles?.includes("admin");
 }
 /** Side-effect-free oldest-first selection, rejecting any shared canonical phone key. */
 export function selectAssignmentCandidates(rows: PreviewLead[], eligibleIds: Set<string>, takenKeys: Set<string>, limit: number) {

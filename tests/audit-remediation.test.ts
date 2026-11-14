@@ -75,6 +75,12 @@ describe("human assignment preview", () => {
     expect(eligibleRoster({ role: "agent", is_active: true, approval_status: "approved" })).toBe(true);
     for (const row of [{ role: "admin", is_active: true, approval_status: "approved" }, { role: "agent", is_active: false, approval_status: "approved" }, { role: "agent", is_active: true, approval_status: "pending" }]) expect(eligibleRoster(row)).toBe(false);
   });
+  it.each(["fmnafis11", "zhemon.dev"])("excludes IT-only %s even with a stale agent profile", () => {
+    expect(eligibleRoster({ role: "agent", is_active: true, approval_status: "approved", protectedRoles: ["agent", "admin"] })).toBe(false);
+  });
+  it("keeps a genuine sales agent eligible", () => {
+    expect(eligibleRoster({ role: "agent", is_active: true, approval_status: "approved", protectedRoles: ["agent"] })).toBe(true);
+  });
   it("selects unique eligible oldest-first without modifying queue or taken keys", () => {
     const taken = new Set<string>(); const original = JSON.stringify(rows);
     expect(selectAssignmentCandidates([...rows].reverse(), new Set(rows.map(r => r.id)), taken, 50).map(r => r.id)).toEqual(["l1", "l3"]);
