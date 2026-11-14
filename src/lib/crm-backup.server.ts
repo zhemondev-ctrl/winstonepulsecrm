@@ -1,6 +1,10 @@
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
-export const BACKUP_TABLES = ["leads", "call_reports", "follow_up_events", "bookings", "site_visits", "profiles"] as const;
+export const BACKUP_TABLES = [
+  "leads", "call_reports", "follow_up_events", "bookings", "site_visits", "profiles",
+  // Append-only dual-lead baseline tables: backed up for evidence, never restorable.
+  "lead_daily_assignment_ledger", "agent_lead_receipts", "audit_logs", "lead_events",
+] as const;
 export type BackupTable = (typeof BACKUP_TABLES)[number];
 export const RESTORABLE = ["leads", "call_reports"] as const;
 /** Never restored: identity, ownership/assignment (LeadHub only), provenance. */
