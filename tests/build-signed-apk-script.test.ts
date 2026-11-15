@@ -8,7 +8,7 @@ import { join, resolve } from "node:path";
 // signing inputs are missing/unsafe, and must never print secret values.
 const SCRIPT = resolve(__dirname, "../scripts/build-signed-apk.sh");
 const SECRET = "Sup3r-Secret-Pass!";
-const GOOD_FP = "AB:".repeat(31) + "AB";
+const GOOD_FP = "2E:61:50:E6:06:52:45:C1:B2:B5:41:37:51:2D:63:ED:40:0D:22:9B:88:1D:1B:91:5A:29:06:17:4E:1C:7E:6D";
 
 let root: string;
 let androidDir: string;
@@ -24,12 +24,28 @@ beforeEach(() => {
   root = mkdtempSync(join(tmpdir(), "signed-apk-"));
   androidDir = join(root, "proj", "android");
   mkdirSync(androidDir, { recursive: true });
+  mkdirSync(join(androidDir, "app"));
+  writeFileSync(join(androidDir, "app", "build.gradle.kts"), 'versionCode = 33\nversionName = "2.22"\n');
   mkdirSync(join(root, "private"), { recursive: true });
   writeFileSync(join(root, "private", "company.jks"), "x");
 });
 afterEach(() => rmSync(root, { recursive: true, force: true }));
 
 describe("build-signed-apk.sh fails closed", () => {
+  it("rejects replacing the approved company fingerprint with another valid fingerprint", () => {
+    const r = run(`RELEASE_STORE_FILE=${join(root, "private", "company.jks")}\nRELEASE_STORE_PASSWORD=${SECRET}\nRELEASE_KEY_ALIAS=winstone\nRELEASE_CERT_SHA256=${"ab".repeat(32)}\n`);
+    expect(r.code).not.toBe(0);
+    expect(r.out).toContain("not the pinned company signer");
+    expect(r.out).not.toContain(SECRET);
+  });
+
+  it.each([['2.21', 33], ['2.22', 32], ['1.0.10', 10]])("rejects source version %s/code %s before any build", (name, code) => {
+    writeFileSync(join(androidDir, "app", "build.gradle.kts"), `versionCode = ${code}\nversionName = "${name}"\n`);
+    const r = run(`RELEASE_STORE_FILE=${join(root, "private", "company.jks")}\nRELEASE_STORE_PASSWORD=${SECRET}\nRELEASE_KEY_ALIAS=winstone\nRELEASE_CERT_SHA256=${GOOD_FP}\n`);
+    expect(r.code).not.toBe(0);
+    expect(r.out).toContain("requires version 2.22 (code 33)");
+    expect(r.out).not.toContain(SECRET);
+  });
   it("lists every missing signing input by name only", () => {
     const r = run(`RELEASE_STORE_PASSWORD=${SECRET}\n`);
     expect(r.code).not.toBe(0);

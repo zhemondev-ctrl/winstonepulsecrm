@@ -18,6 +18,7 @@ set -euo pipefail
 ANDROID_DIR="${WINSTONE_ANDROID_DIR:-$(cd "$(dirname "$0")/.." && pwd)/android}"
 PROPS="$ANDROID_DIR/local.properties"
 EXPECTED_PACKAGE="com.winstone.connect"
+APPROVED_FP="2e6150e6065245c1b2b54137512d63ed400d229b881d1b915a2906174e1c7e6d"
 
 fail() { echo "OFFICIAL RELEASE BLOCKED: $*" >&2; exit 1; }
 
@@ -44,6 +45,12 @@ EXPECTED_FP="$(norm_fp "$(prop RELEASE_CERT_SHA256 WINSTONE_RELEASE_CERT_SHA256)
 [ ${#missing[@]} -eq 0 ] || fail "missing: ${missing[*]} (set in android/local.properties; values are never printed)"
 
 [[ "$EXPECTED_FP" =~ ^[0-9a-f]{64}$ ]] || fail "RELEASE_CERT_SHA256 is not a 64-hex SHA-256 fingerprint"
+[ "$EXPECTED_FP" = "$APPROVED_FP" ] || fail "RELEASE_CERT_SHA256 is not the pinned company signer"
+GRADLE_FILE="$ANDROID_DIR/app/build.gradle.kts"
+[ -f "$GRADLE_FILE" ] || fail "app/build.gradle.kts missing"
+WANT_CODE="$(grep -E '^[[:space:]]*versionCode[[:space:]]*=' "$GRADLE_FILE" | head -n1 | grep -oE '[0-9]+' || true)"
+WANT_NAME="$(grep -E '^[[:space:]]*versionName[[:space:]]*=' "$GRADLE_FILE" | head -n1 | sed -E 's/.*"([^"]+)".*/\1/' || true)"
+[ "$WANT_NAME" = "2.22" ] && [ "$WANT_CODE" = "33" ] || fail "this release requires version 2.22 (code 33)"
 [ -f "$STORE_FILE" ] || fail "keystore file not found at RELEASE_STORE_FILE"
 
 PROJECT_ROOT="$(cd "$ANDROID_DIR/.." && pwd)"
@@ -66,11 +73,6 @@ BT="$(ls -1 "$SDK/build-tools" | sort -V | tail -n1)"
 APKSIGNER="$SDK/build-tools/$BT/apksigner"
 AAPT2="$SDK/build-tools/$BT/aapt2"
 [ -x "$APKSIGNER" ] && [ -x "$AAPT2" ] || fail "apksigner/aapt2 missing in build-tools $BT"
-
-GRADLE_FILE="$ANDROID_DIR/app/build.gradle.kts"
-WANT_CODE="$(grep -E '^[[:space:]]*versionCode[[:space:]]*=' "$GRADLE_FILE" | head -n1 | grep -oE '[0-9]+')"
-WANT_NAME="$(grep -E '^[[:space:]]*versionName[[:space:]]*=' "$GRADLE_FILE" | head -n1 | sed -E 's/.*"([^"]+)".*/\1/')"
-[ -n "$WANT_CODE" ] && [ -n "$WANT_NAME" ] || fail "could not read versionCode/versionName from app/build.gradle.kts"
 
 # 4) Unit tests + release build.
 cd "$ANDROID_DIR"

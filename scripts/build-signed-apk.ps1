@@ -7,6 +7,7 @@ $ErrorActionPreference = "Stop"
 $androidDir = if ($env:WINSTONE_ANDROID_DIR) { $env:WINSTONE_ANDROID_DIR } else { Join-Path (Split-Path -Parent $PSScriptRoot) "android" }
 $props = Join-Path $androidDir "local.properties"
 $expectedPackage = "com.winstone.connect"
+$approvedFp = "2e6150e6065245c1b2b54137512d63ed400d229b881d1b915a2906174e1c7e6d"
 
 function Fail($msg) { Write-Host "OFFICIAL RELEASE BLOCKED: $msg" -ForegroundColor Red; exit 1 }
 
@@ -32,6 +33,12 @@ $expectedFp = NormFp (Prop "RELEASE_CERT_SHA256" "WINSTONE_RELEASE_CERT_SHA256")
 if (-not $expectedFp) { $missing += "RELEASE_CERT_SHA256" }
 if ($missing.Count -gt 0) { Fail "missing: $($missing -join ', ') (set in android\local.properties; values are never printed)" }
 if ($expectedFp -notmatch "^[0-9a-f]{64}$") { Fail "RELEASE_CERT_SHA256 is not a 64-hex SHA-256 fingerprint" }
+if ($expectedFp -ne $approvedFp) { Fail "RELEASE_CERT_SHA256 is not the pinned company signer" }
+$gradleFile = Join-Path $androidDir "app\build.gradle.kts"
+if (-not (Test-Path $gradleFile)) { Fail "app\build.gradle.kts missing" }
+$wantCode = ([regex]::Match((Get-Content $gradleFile -Raw), '(?m)^\s*versionCode\s*=\s*(\d+)')).Groups[1].Value
+$wantName = ([regex]::Match((Get-Content $gradleFile -Raw), '(?m)^\s*versionName\s*=\s*"([^"]+)"')).Groups[1].Value
+if ($wantName -ne "2.22" -or $wantCode -ne "33") { Fail "this release requires version 2.22 (code 33)" }
 if (-not (Test-Path $storeFile)) { Fail "keystore file not found at RELEASE_STORE_FILE" }
 
 $projectRoot = (Resolve-Path (Join-Path $androidDir "..")).Path
@@ -52,11 +59,6 @@ $bt = (Get-ChildItem (Join-Path $sdk "build-tools") -Directory | Sort-Object { [
 $apksigner = Join-Path $sdk "build-tools\$bt\apksigner.bat"
 $aapt2 = Join-Path $sdk "build-tools\$bt\aapt2.exe"
 if (-not (Test-Path $apksigner) -or -not (Test-Path $aapt2)) { Fail "apksigner/aapt2 missing in build-tools $bt" }
-
-$gradleFile = Join-Path $androidDir "app\build.gradle.kts"
-$wantCode = ([regex]::Match((Get-Content $gradleFile -Raw), '(?m)^\s*versionCode\s*=\s*(\d+)')).Groups[1].Value
-$wantName = ([regex]::Match((Get-Content $gradleFile -Raw), '(?m)^\s*versionName\s*=\s*"([^"]+)"')).Groups[1].Value
-if (-not $wantCode -or -not $wantName) { Fail "could not read versionCode/versionName from app\build.gradle.kts" }
 
 # 4) Unit tests + release build.
 Set-Location $androidDir
