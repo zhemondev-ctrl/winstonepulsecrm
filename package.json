@@ -13,7 +13,7 @@
     "preview": "vite preview",
     "lint": "eslint .",
     "test": "vitest run",
-    "typecheck": "tsgo --noEmit",
+    "typecheck": "tsc --noEmit",
     "format": "prettier --write .",
     "check:colors": "node scripts/check-dashboard-colors.mjs",
     "manual:pdf": "node scripts/manual/build-html.mjs && python3 scripts/manual/print_pdf.py && node scripts/manual/manual-meta.mjs write",

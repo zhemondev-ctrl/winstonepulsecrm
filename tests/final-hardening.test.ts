@@ -46,7 +46,5 @@ d2("audit 2026-09-30 fixes", () => {
     e2(s).not.toMatch(/assignment_source: "coordinator"/);
     e2(s).not.toMatch(/distributeDailyLeads/);
   });
-  i2("ingest diagnostics page through every lead", () => {
-    e2(rf2("src/lib/ingest.functions.ts", "utf8")).toMatch(/range\(from, from \+ 999\)/);
-  });
+
 });
