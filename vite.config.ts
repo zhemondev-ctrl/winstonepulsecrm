@@ -121,6 +121,6 @@ export default defineConfig({
     // entirely. Discovery stays off: authenticated workspaces must never be
     // captured into a shared static file.
     pages: [{ path: "/" }],
-    prerender: { enabled: true, autoStaticPathsDiscovery: false },
+    prerender: { enabled: true, autoStaticPathsDiscovery: false, crawlLinks: false },
   },
 });
